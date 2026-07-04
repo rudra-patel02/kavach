@@ -11,6 +11,7 @@ import connectDB, { disconnectDB } from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import copilotRoutes from "./routes/copilotRoutes.js";
 import machineRoutes from "./routes/machineRoutes.js";
+import predictionRoutes from "./routes/predictionRoutes.js";
 import { startSensorSimulation } from "./services/SensorService.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -142,6 +143,7 @@ const start = async () => {
   app.use("/api/auth", authRoutes);
   app.use("/api/copilot", copilotRoutes);
   app.use("/api/machines", machineRoutes);
+  app.use("/api/predictive", predictionRoutes);
 
   app.get("/api/health", (req, res) => {
     const databaseState =

@@ -8,6 +8,7 @@ import {
   BrainCircuit,
   Bell,
   BarChart3,
+  Activity,
   Settings,
 } from "lucide-react";
 
@@ -16,6 +17,7 @@ const menuItems = [
   { name: "Digital Twin", icon: Factory, href: "/plant" },
   { name: "Analytics", icon: BarChart3, href: "/analytics" },
   { name: "Copilot", icon: BrainCircuit, href: "/copilot" },
+  { name: "Predictive", icon: Activity, href: "/predictive" },
   { name: "Alerts", icon: Bell, href: "/alerts" },
   { name: "Settings", icon: Settings, href: "/settings" },
 ];
