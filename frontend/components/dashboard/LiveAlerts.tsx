@@ -1,22 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fetchMachines } from "@/lib/machines";
 import socket from "@/lib/socket";
+import type { MachineData } from "@/types/machine";
 
 export default function LiveAlerts() {
-  const [machines, setMachines] = useState<any[]>([]);
+  const [machines, setMachines] = useState<MachineData[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/machines")
-      .then((res) => res.json())
+    fetchMachines()
       .then((data) => setMachines(data));
 
-    socket.on("machineUpdate", (data: any[]) => {
+    const handleMachineUpdate = (data: MachineData[]) => {
       setMachines(data);
-    });
+    };
+
+    socket.on("machineUpdate", handleMachineUpdate);
 
     return () => {
-      socket.off("machineUpdate");
+      socket.off("machineUpdate", handleMachineUpdate);
     };
   }, []);
 

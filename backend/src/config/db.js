@@ -1,15 +1,32 @@
 import mongoose from "mongoose";
 
+mongoose.set("strictQuery", true);
+
 const connectDB = async () => {
-  try {
-    console.log("Mongo URI:", process.env.MONGO_URI);
+  const mongoUri = process.env.MONGO_URI?.trim();
 
-    await mongoose.connect(process.env.MONGO_URI);
+  if (!mongoUri) {
+    throw new Error("MONGO_URI is required");
+  }
 
-    console.log("✅ MongoDB Connected");
-  } catch (error) {
-    console.error("❌ MongoDB Connection Failed");
-    console.error(error);
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
+
+  const maxPoolSize = Number(process.env.MONGO_MAX_POOL_SIZE || 10);
+
+  await mongoose.connect(mongoUri, {
+    maxPoolSize: Number.isFinite(maxPoolSize) && maxPoolSize > 0 ? maxPoolSize : 10,
+    serverSelectionTimeoutMS: 10000,
+  });
+
+  console.log("MongoDB connected");
+  return mongoose.connection;
+};
+
+export const disconnectDB = async () => {
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.connection.close();
   }
 };
 

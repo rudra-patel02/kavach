@@ -3,8 +3,13 @@
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import * as THREE from "three";
+import type { MachineDisplayData } from "@/types/machine";
 
-export default function Machine({ machine }: any) {
+export default function Machine({
+  machine,
+}: {
+  machine: MachineDisplayData;
+}) {
   const groupRef = useRef<THREE.Group>(null);
   const gearRef = useRef<THREE.Mesh>(null);
 

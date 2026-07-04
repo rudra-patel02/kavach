@@ -15,28 +15,22 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { fetchMachine } from "@/lib/machines";
+import type { MachineData } from "@/types/machine";
 
 export default function MachineDetails() {
-  const{ id } = useParams();
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
   
-  const [machine, setMachine] = useState<any>(null);
+  const [machine, setMachine] = useState<MachineData | null>(null);
   const [liveHealth, setLiveHealth] = useState(98);
   const [liveTemperature, setLiveTemperature] = useState(62);
 
  useEffect(() => {
   if (!id) return;
 
-  fetch("http://localhost:5000/api/machines")
-    .then((res) => res.json())
-    .then((data) => {
-      const found = data.find((m: any) => m.machineId === id);
-
-      if (found) {
-        setMachine(found);
-      } else {
-        console.error("Machine not found");
-      }
-    })
+  fetchMachine(id)
+    .then(setMachine)
     .catch((err) => console.error(err));
 }, [id]);
 

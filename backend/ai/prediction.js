@@ -27,13 +27,10 @@ function predictMachine(machine) {
   }
 
   return {
-    ...machine,
-    aiPrediction: {
-      failureRisk: risk,
-      maintenancePriority: priority,
-      maintenanceInDays: maintenanceDays,
-      recommendation,
-    },
+    failureRisk: risk,
+    maintenancePriority: priority,
+    maintenanceInDays: maintenanceDays,
+    recommendation,
   };
 }
 

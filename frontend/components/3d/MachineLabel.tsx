@@ -1,8 +1,13 @@
 "use client";
 
 import { Html } from "@react-three/drei";
+import type { MachineDisplayData } from "@/types/machine";
 
-export default function MachineLabel({ machine }: any) {
+export default function MachineLabel({
+  machine,
+}: {
+  machine: MachineDisplayData;
+}) {
   const prediction = Array.isArray(machine.aiPrediction)
     ? machine.aiPrediction[0] || {}
     : machine.aiPrediction || {};

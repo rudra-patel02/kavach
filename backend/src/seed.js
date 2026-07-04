@@ -1,13 +1,17 @@
 import dotenv from "dotenv";
-import dns from "node:dns";
 import mongoose from "mongoose";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import connectDB from "./config/db.js";
 import Machine from "./models/machine.js";
 
-dns.setServers(["8.8.8.8", "8.8.4.4"]);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-dotenv.config();
+dotenv.config({
+  path: path.resolve(__dirname, "../.env"),
+});
 
 await connectDB();
 

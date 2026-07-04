@@ -2,12 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiUrl } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
-
-  const API =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -39,7 +37,7 @@ export default function LoginPage() {
     try {
       setLoading(true);
 
-      const res = await fetch(`${API}/api/auth/login`, {
+      const res = await fetch(apiUrl("/api/auth/login"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -61,7 +59,7 @@ export default function LoginPage() {
       localStorage.setItem("user", JSON.stringify(data.user));
 
       router.replace("/");
-    } catch (err) {
+    } catch {
       setError("Unable to connect to server.");
     } finally {
       setLoading(false);

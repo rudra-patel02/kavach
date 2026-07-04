@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { fetchMachines } from "@/lib/machines";
 import socket from "@/lib/socket";
 
 type Machine = {
@@ -18,14 +19,17 @@ export default function AICopilot() {
   const [question, setQuestion] = useState("");
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/machines")
-      .then((res) => res.json())
+    fetchMachines()
       .then(setMachines);
 
-    socket.on("machineUpdate", setMachines);
+    const handleMachineUpdate = (data: Machine[]) => {
+      setMachines(data);
+    };
+
+    socket.on("machineUpdate", handleMachineUpdate);
 
     return () => {
-      socket.off("machineUpdate");
+      socket.off("machineUpdate", handleMachineUpdate);
     };
   }, []);
 

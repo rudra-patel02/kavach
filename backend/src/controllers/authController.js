@@ -3,11 +3,42 @@ import jwt from "jsonwebtoken";
 
 import User from "../models/user.js";
 
+const normalizeEmail = (email = "") => email.trim().toLowerCase();
+
+const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+const toSafeUser = (user) => {
+  const safeUser = user.toObject();
+  delete safeUser.password;
+  return safeUser;
+};
+
 export const register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const name = String(req.body.name || "").trim();
+    const email = normalizeEmail(String(req.body.email || ""));
+    const password = String(req.body.password || "");
+    const role = req.body.role;
 
-    const existing = await User.findOne({ email });
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        message: "Name, email, and password are required",
+      });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({
+        message: "Enter a valid email address",
+      });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({
+        message: "Password must be at least 8 characters long",
+      });
+    }
+
+    const existing = await User.findOne({ email }).lean();
 
     if (existing) {
       return res.status(400).json({
@@ -24,46 +55,54 @@ export const register = async (req, res) => {
       role,
     });
 
-    // Remove password before sending response
-    const { password: _, ...safeUser } = user.toObject();
-
     res.status(201).json({
       message: "User Registered Successfully",
-      user: safeUser,
+      user: toSafeUser(user),
     });
   } catch (err) {
     console.error(err);
 
+    if (err.code === 11000) {
+      return res.status(409).json({
+        message: "User already exists",
+      });
+    }
+
     res.status(500).json({
-      message: err.message,
+      message: "Registration failed",
     });
   }
 };
 
 export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const email = normalizeEmail(String(req.body.email || ""));
+    const password = String(req.body.password || "");
 
-    console.log("Login Request:", email);
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Email and password are required",
+      });
+    }
 
-    const user = await User.findOne({ email });
-
-    console.log("User Found:", user);
+    const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
       return res.status(400).json({
-        message: "Invalid Credentials - User Not Found",
+        message: "Invalid credentials",
       });
     }
 
     const valid = await bcrypt.compare(password, user.password);
 
-    console.log("Password Match:", valid);
-
     if (!valid) {
       return res.status(400).json({
-        message: "Invalid Credentials - Wrong Password",
+        message: "Invalid credentials",
       });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is required");
     }
 
     const token = jwt.sign(
@@ -77,19 +116,16 @@ export const login = async (req, res) => {
       }
     );
 
-    // Remove password before sending response
-    const { password: _, ...safeUser } = user.toObject();
-
     res.status(200).json({
       message: "Login Successful",
       token,
-      user: safeUser,
+      user: toSafeUser(user),
     });
   } catch (err) {
     console.error(err);
 
     res.status(500).json({
-      message: err.message,
+      message: "Login failed",
     });
   }
 };

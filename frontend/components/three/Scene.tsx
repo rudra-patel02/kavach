@@ -14,27 +14,30 @@ import Pipe from "./Pipe";
 import Conveyor from "./Conveyor";
 
 import socket from "@/lib/socket";
+import { fetchMachines } from "@/lib/machines";
+import type { MachineData } from "@/types/machine";
 
 export default function Scene() {
-  const [machines, setMachines] = useState<any[]>([]);
+  const [machines, setMachines] = useState<MachineData[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/machines")
-      .then((res) => res.json())
+    fetchMachines()
       .then((data) => setMachines(data));
 
-    socket.on("machineUpdate", (data: any[]) => {
+    const handleMachineUpdate = (data: MachineData[]) => {
       setMachines(data);
-    });
+    };
+
+    socket.on("machineUpdate", handleMachineUpdate);
 
     return () => {
-      socket.off("machineUpdate");
+      socket.off("machineUpdate", handleMachineUpdate);
     };
   }, []);
 
   return (
     <div className="w-full h-[500px] rounded-2xl overflow-hidden border border-slate-700">
-      <Canvas shadows camera={{ position: [8, 6, 8], fov: 45 }}>
+      <Canvas camera={{ position: [8, 6, 8], fov: 45 }}>
         <Lights />
 
         <Ground />

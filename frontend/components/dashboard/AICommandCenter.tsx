@@ -2,24 +2,27 @@
 
 import { useEffect, useState } from "react";
 import CountUp from "react-countup";
+import { fetchMachines } from "@/lib/machines";
 import LiveBadge from "./LiveBadge";
 import socket from "@/lib/socket";
+import type { MachineData } from "@/types/machine";
 
 export default function AICommandCenter() {
-  const [machines, setMachines] = useState<any[]>([]);
+  const [machines, setMachines] = useState<MachineData[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/machines")
-      .then((res) => res.json())
+    fetchMachines()
       .then((data) => setMachines(data))
       .catch(console.error);
 
-    socket.on("machineUpdate", (data: any[]) => {
+    const handleMachineUpdate = (data: MachineData[]) => {
       setMachines(data);
-    });
+    };
+
+    socket.on("machineUpdate", handleMachineUpdate);
 
     return () => {
-      socket.off("machineUpdate");
+      socket.off("machineUpdate", handleMachineUpdate);
     };
   }, []);
 

@@ -56,20 +56,20 @@ export default function Chimney({ running }: ChimneyProps) {
         />
       </mesh>
 
-      {[smoke1, smoke2, smoke3].map((ref, i) => (
-        <mesh
-          key={i}
-          ref={ref}
-          position={[2.7, 4 + i * 0.8, -2]}
-        >
-          <sphereGeometry args={[0.3, 16, 16]} />
-          <meshStandardMaterial
-            color="#d1d5db"
-            transparent
-            opacity={0.5}
-          />
-        </mesh>
-      ))}
+      <mesh ref={smoke1} position={[2.7, 4, -2]}>
+        <sphereGeometry args={[0.3, 16, 16]} />
+        <meshStandardMaterial color="#d1d5db" transparent opacity={0.5} />
+      </mesh>
+
+      <mesh ref={smoke2} position={[2.7, 4.8, -2]}>
+        <sphereGeometry args={[0.3, 16, 16]} />
+        <meshStandardMaterial color="#d1d5db" transparent opacity={0.5} />
+      </mesh>
+
+      <mesh ref={smoke3} position={[2.7, 5.6, -2]}>
+        <sphereGeometry args={[0.3, 16, 16]} />
+        <meshStandardMaterial color="#d1d5db" transparent opacity={0.5} />
+      </mesh>
     </group>
   );
 }

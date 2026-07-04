@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fetchMachines } from "@/lib/machines";
 import socket from "@/lib/socket";
 
 type Machine = {
@@ -13,8 +14,7 @@ export default function MaintenanceTimeline() {
   const [machines, setMachines] = useState<Machine[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/machines")
-      .then((res) => res.json())
+    fetchMachines()
       .then((data: Machine[]) => {
         setMachines(data);
       })

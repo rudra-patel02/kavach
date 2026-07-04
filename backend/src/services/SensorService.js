@@ -3,8 +3,11 @@ import predictMachine from "../../ai/prediction.js";
 
 const random = (min, max) => Math.random() * (max - min) + min;
 
-export const startSensorSimulation = (io) => {
-  setInterval(async () => {
+export const startSensorSimulation = (io, intervalMs = 1000) => {
+  let stopped = false;
+  let timer;
+
+  const runSimulation = async () => {
     try {
       const machines = await Machine.find();
 
@@ -19,16 +22,11 @@ export const startSensorSimulation = (io) => {
           machine.vibration + random(-0.1, 0.1)
         );
 
-        machine.power = Math.max(
-          0,
-          machine.power + random(-3, 3)
-        );
-
+        machine.power = Math.max(0, machine.power + random(-3, 3));
         machine.efficiency = Math.min(
           100,
           Math.max(50, machine.efficiency + random(-1, 1))
         );
-
         machine.health = Math.min(
           100,
           Math.max(0, machine.health + random(-0.5, 0.3))
@@ -49,10 +47,20 @@ export const startSensorSimulation = (io) => {
       }
 
       const updatedMachines = await Machine.find();
-
       io.emit("machineUpdate", updatedMachines);
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error("Sensor simulation failed:", error.message);
+    } finally {
+      if (!stopped) {
+        timer = setTimeout(runSimulation, intervalMs);
+      }
     }
-  }, 1000);
+  };
+
+  timer = setTimeout(runSimulation, intervalMs);
+
+  return () => {
+    stopped = true;
+    clearTimeout(timer);
+  };
 };

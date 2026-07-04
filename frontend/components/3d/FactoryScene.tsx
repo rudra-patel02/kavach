@@ -17,11 +17,12 @@ import Chimney from "./ChimneyNew";
 import RobotArm from "./RobotArm";
 import Road from "./Road";
 import StreetLight from "./StreetLight";
+import type { MachineStatus } from "@/types/machine";
 
 type MachineType = {
   id: number;
   name: string;
-  status: string;
+  status: MachineStatus;
 };
 
 export default function FactoryScene() {
@@ -33,7 +34,7 @@ export default function FactoryScene() {
   ]);
 
   useEffect(() => {
-    const states = [
+    const states: MachineStatus[][] = [
       ["Running", "Idle", "Idle", "Idle"],
       ["Running", "Running", "Idle", "Idle"],
       ["Running", "Running", "Running", "Idle"],
@@ -66,7 +67,6 @@ export default function FactoryScene() {
       }}
     >
       <Canvas
-        shadows
         camera={{
           position: [9, 7, 11],
           fov: 45,

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import FactoryScene from "@/components/3d/FactoryScene";
+import { fetchMachines } from "@/lib/machines";
 import socket from "@/lib/socket";
 
 type Machine = {
@@ -28,13 +29,7 @@ export default function MachinesPage() {
   useEffect(() => {
     const loadMachines = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/machines");
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch machines");
-        }
-
-        const data = await response.json();
+        const data = await fetchMachines();
 
         setMachines(Array.isArray(data) ? data : []);
       } catch (error) {
@@ -47,12 +42,14 @@ export default function MachinesPage() {
 
     loadMachines();
 
-    socket.on("machineUpdate", (updatedMachines: Machine[]) => {
+    const handleMachineUpdate = (updatedMachines: Machine[]) => {
       setMachines(updatedMachines);
-    });
+    };
+
+    socket.on("machineUpdate", handleMachineUpdate);
 
     return () => {
-      socket.off("machineUpdate");
+      socket.off("machineUpdate", handleMachineUpdate);
     };
   }, []);
 
@@ -197,21 +194,13 @@ export default function MachinesPage() {
                     </div>
                   </td>
 
-                  <td className="p-4 flex gap-2">
+                  <td className="p-4">
                     <Link
                       href={`/machines/${machine.machineId}`}
                       className="bg-cyan-600 px-3 py-1 rounded hover:bg-cyan-700"
                     >
                       View
                     </Link>
-
-                    <button className="bg-yellow-500 text-black px-3 py-1 rounded hover:bg-yellow-400">
-                      Edit
-                    </button>
-
-                    <button className="bg-red-600 px-3 py-1 rounded hover:bg-red-700">
-                      Delete
-                    </button>
                   </td>
                 </tr>
               ))
