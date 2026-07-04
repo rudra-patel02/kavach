@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Factory,
-  ShieldCheck,
   BrainCircuit,
   Bell,
   BarChart3,
@@ -13,17 +13,18 @@ import {
 
 const menuItems = [
   { name: "Dashboard", icon: LayoutDashboard, href: "/" },
-  { name: "Plant", icon: Factory, href: "/plant" },
-  { name: "Safety", icon: ShieldCheck, href: "/safety" },
+  { name: "Digital Twin", icon: Factory, href: "/plant" },
   { name: "Analytics", icon: BarChart3, href: "/analytics" },
-  { name: "AI Copilot", icon: BrainCircuit, href: "/copilot" },
+  { name: "Copilot", icon: BrainCircuit, href: "/copilot" },
   { name: "Alerts", icon: Bell, href: "/alerts" },
   { name: "Settings", icon: Settings, href: "/settings" },
 ];
 
 export default function Sidebar() {
+  const pathname = usePathname();
+
   return (
-    <aside className="w-72 h-screen bg-slate-950 border-r border-slate-800 flex flex-col">
+    <aside className="hidden h-screen w-72 flex-col border-r border-slate-800 bg-slate-950 lg:flex lg:sticky lg:top-0">
 
       <div className="p-8 border-b border-slate-800">
         <h1 className="text-3xl font-bold text-cyan-400">
@@ -40,12 +41,21 @@ export default function Sidebar() {
         {menuItems.map((item) => {
 
           const Icon = item.icon;
+          const isActive =
+            item.href === "/"
+              ? pathname === "/"
+              : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           return (
             <Link
               key={item.name}
               href={item.href}
-              className="flex items-center gap-4 px-5 py-3 rounded-xl text-slate-300 hover:bg-cyan-500/15 hover:text-cyan-400 transition-all duration-300"
+              aria-current={isActive ? "page" : undefined}
+              className={`flex items-center gap-4 rounded-xl px-5 py-3 transition-all duration-300 ${
+                isActive
+                  ? "border border-cyan-400/30 bg-cyan-500/15 text-cyan-300 shadow-lg shadow-cyan-950/20"
+                  : "text-slate-300 hover:bg-cyan-500/15 hover:text-cyan-400"
+              }`}
             >
               <Icon size={22} />
               <span>{item.name}</span>

@@ -9,6 +9,7 @@ import { fileURLToPath } from "url";
 
 import connectDB, { disconnectDB } from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
+import copilotRoutes from "./routes/copilotRoutes.js";
 import machineRoutes from "./routes/machineRoutes.js";
 import { startSensorSimulation } from "./services/SensorService.js";
 
@@ -139,6 +140,7 @@ const start = async () => {
   app.use(express.json({ limit: "1mb" }));
 
   app.use("/api/auth", authRoutes);
+  app.use("/api/copilot", copilotRoutes);
   app.use("/api/machines", machineRoutes);
 
   app.get("/api/health", (req, res) => {
