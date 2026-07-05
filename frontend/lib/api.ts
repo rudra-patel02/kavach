@@ -1,9 +1,30 @@
 const DEV_BACKEND_URL = "http://localhost:5000";
+const API_PREFIX = "/api";
 
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
 
 const isLocalHostname = (hostname: string) =>
   hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+
+const normalizePath = (path: string) => (path.startsWith("/") ? path : `/${path}`);
+
+const joinApiBaseAndPath = (baseUrl: string, path: string) => {
+  const normalizedBaseUrl = trimTrailingSlash(baseUrl);
+  const normalizedPath = normalizePath(path);
+
+  if (!normalizedBaseUrl) {
+    return normalizedPath;
+  }
+
+  if (
+    normalizedBaseUrl.endsWith(API_PREFIX) &&
+    (normalizedPath === API_PREFIX || normalizedPath.startsWith(`${API_PREFIX}/`))
+  ) {
+    return `${normalizedBaseUrl}${normalizedPath.slice(API_PREFIX.length)}`;
+  }
+
+  return `${normalizedBaseUrl}${normalizedPath}`;
+};
 
 export const getApiBaseUrl = () => {
   const configuredUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
@@ -35,8 +56,7 @@ export const apiUrl = (path: string) => {
     return path;
   }
 
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `${getApiBaseUrl()}${normalizedPath}`;
+  return joinApiBaseAndPath(getApiBaseUrl(), path);
 };
 
 export const fetchJson = async <T>(path: string, init: RequestInit = {}) => {
