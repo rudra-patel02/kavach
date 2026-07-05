@@ -10,6 +10,18 @@ const predictionSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const maintenanceHistorySchema = new mongoose.Schema(
+  {
+    workOrderId: String,
+    status: String,
+    completedAt: Date,
+    summary: String,
+    engineer: String,
+    notes: String,
+  },
+  { _id: false }
+);
+
 const machineSchema = new mongoose.Schema(
   {
     machineId: {
@@ -85,6 +97,11 @@ const machineSchema = new mongoose.Schema(
     },
 
     aiPrediction: predictionSchema,
+
+    maintenanceHistory: {
+      type: [maintenanceHistorySchema],
+      default: [],
+    },
   },
   {
     timestamps: true,

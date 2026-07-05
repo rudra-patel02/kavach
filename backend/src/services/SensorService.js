@@ -1,6 +1,7 @@
 import Machine from "../models/machine.js";
 import predictMachine from "../../ai/prediction.js";
 import { createNotificationsForMachines } from "./notificationService.js";
+import { createWorkOrdersForMachines } from "./workOrderService.js";
 
 const random = (min, max) => Math.random() * (max - min) + min;
 
@@ -49,6 +50,7 @@ export const startSensorSimulation = (io, intervalMs = 1000) => {
 
       const updatedMachines = await Machine.find();
       await createNotificationsForMachines(updatedMachines, io);
+      await createWorkOrdersForMachines(updatedMachines, io);
       io.emit("machineUpdate", updatedMachines);
     } catch (error) {
       console.error("Sensor simulation failed:", error.message);

@@ -1,5 +1,6 @@
 import Machine from "../models/machine.js";
 import Notification from "../models/notification.js";
+import { createWorkOrderFromCriticalNotification } from "./workOrderService.js";
 import { createMachinePrediction } from "./predictionService.js";
 
 const DEFAULT_THRESHOLDS = {
@@ -221,6 +222,10 @@ export const createNotificationsForMachine = async (machine, io) => {
 
     if (io) {
       io.emit("notification:new", serializedNotification);
+    }
+
+    if (serializedNotification.severity === "Critical") {
+      await createWorkOrderFromCriticalNotification(notification, io);
     }
   }
 

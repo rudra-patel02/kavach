@@ -9,6 +9,7 @@ import {
   Bell,
   BarChart3,
   Activity,
+  ClipboardList,
   Settings,
 } from "lucide-react";
 
@@ -18,6 +19,7 @@ const menuItems = [
   { name: "Analytics", icon: BarChart3, href: "/analytics" },
   { name: "Copilot", icon: BrainCircuit, href: "/copilot" },
   { name: "Predictive", icon: Activity, href: "/predictive" },
+  { name: "Work Orders", icon: ClipboardList, href: "/workorders" },
   { name: "Alerts", icon: Bell, href: "/alerts" },
   { name: "Settings", icon: Settings, href: "/settings" },
 ];

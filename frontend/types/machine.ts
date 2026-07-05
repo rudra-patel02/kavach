@@ -38,4 +38,12 @@ export interface MachineData {
   energyConsumed?: number;
   lastHeartbeat?: string;
   aiPrediction?: MachinePrediction;
+  maintenanceHistory?: {
+    workOrderId?: string;
+    status?: string;
+    completedAt?: string;
+    summary?: string;
+    engineer?: string;
+    notes?: string;
+  }[];
 }

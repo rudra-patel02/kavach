@@ -13,8 +13,10 @@ import copilotRoutes from "./routes/copilotRoutes.js";
 import machineRoutes from "./routes/machineRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import predictionRoutes from "./routes/predictionRoutes.js";
+import workOrderRoutes from "./routes/workOrderRoutes.js";
 import { startSensorSimulation } from "./services/SensorService.js";
 import { syncActiveMachineNotifications } from "./services/notificationService.js";
+import { syncActiveMachineWorkOrders } from "./services/workOrderService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -148,6 +150,7 @@ const start = async () => {
   app.use("/api/machines", machineRoutes);
   app.use("/api/notifications", notificationRoutes);
   app.use("/api/predictive", predictionRoutes);
+  app.use("/api/workorders", workOrderRoutes);
 
   app.get("/api/health", (req, res) => {
     const databaseState =
@@ -211,8 +214,9 @@ const start = async () => {
 
   try {
     await syncActiveMachineNotifications(io);
+    await syncActiveMachineWorkOrders(io);
   } catch (error) {
-    console.error("Initial notification sync failed:", error.message);
+    console.error("Initial maintenance automation sync failed:", error.message);
   }
 
   const stopSensorSimulation = enableSensorSimulation
