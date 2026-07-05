@@ -5,19 +5,41 @@ export type NotificationType =
   | "machine_health"
   | "temperature"
   | "vibration"
+  | "pressure"
+  | "power"
   | "maintenance";
 
 export interface NotificationItem {
   id: string;
   type: NotificationType;
   severity: NotificationSeverity;
+  displaySeverity?: "Critical" | "Warning" | "Information";
   machineId: string;
   machineName: string;
   title: string;
   message: string;
+  description?: string;
   icon: string;
   value?: number;
   threshold?: number;
+  priority: "P1" | "P2" | "P3" | "P4";
+  failureProbability: number;
+  suggestedAction: string;
+  estimatedDowntimeHours: number;
+  recommendedEngineer: string;
+  machineLocation: string;
+  alertTimeline: {
+    event: string;
+    at: string;
+    actor: string;
+    message: string;
+  }[];
+  alertHistory: {
+    event: string;
+    at: string;
+    actor: string;
+    message: string;
+  }[];
   read: boolean;
   readAt: string | null;
   createdAt: string;

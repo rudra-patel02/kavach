@@ -24,6 +24,7 @@ import TypingIndicator from "@/components/copilot/TypingIndicator";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { fetchCopilotReport, sendCopilotMessage } from "@/lib/copilot";
 import { fetchMachines } from "@/lib/machines";
+import { downloadReportPdf } from "@/lib/reports";
 import socket from "@/lib/socket";
 import type { CopilotReport } from "@/types/copilot";
 import type { MachineData } from "@/types/machine";
@@ -269,20 +270,8 @@ export default function CopilotPage() {
     setIsReportLoading(true);
 
     try {
-      const response = await fetchCopilotReport();
-      const payload = JSON.stringify(response.report, null, 2);
-      const blob = new Blob([payload], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-
-      link.href = url;
-      link.download = `${response.report.reportId}.json`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-
-      addAssistantMessage(`Downloaded report ${response.report.reportId}.`);
+      await downloadReportPdf("maintenance");
+      addAssistantMessage("Downloaded the maintenance PDF report.");
     } catch (error) {
       addAssistantMessage(
         `I could not download the report. ${

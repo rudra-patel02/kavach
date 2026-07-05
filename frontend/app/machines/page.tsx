@@ -5,6 +5,7 @@ import Link from "next/link";
 import FactoryScene from "@/components/3d/FactoryScene";
 import { fetchMachines } from "@/lib/machines";
 import socket from "@/lib/socket";
+import { useRouter } from "next/navigation";
 
 type Machine = {
   _id: string;
@@ -25,6 +26,7 @@ export default function MachinesPage() {
   const [search, setSearch] = useState("");
   const [machines, setMachines] = useState<Machine[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const loadMachines = async () => {
@@ -66,9 +68,20 @@ export default function MachinesPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white p-8">
 
-      <h1 className="text-4xl font-bold mb-6">
-        Machine Management
-      </h1>
+      <div className="flex justify-between items-center mb-6">
+
+  <h1 className="text-4xl font-bold">
+    Machine Management
+  </h1>
+
+  <button
+    onClick={() => router.push("/machines/add")}
+    className="bg-cyan-600 hover:bg-cyan-700 px-5 py-3 rounded-lg font-semibold"
+  >
+    + Add Machine
+  </button>
+
+</div>
 
       <input
         type="text"

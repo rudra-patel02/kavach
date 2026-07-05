@@ -29,18 +29,36 @@ export interface PredictiveMachine {
   status: string;
   machineHealth: number;
   failureProbability: number;
+  failureProbabilityPercent: number;
   remainingUsefulLifeHours: number;
   aiConfidence: number;
+  confidenceScore: number;
   riskLevel: PredictiveRiskLevel;
   maintenancePriority: string;
   trendDirection: string;
+  riskTrend: string;
   probableCause: string;
+  rootCause: string;
   recommendation: string;
   estimatedDowntimeHours: number;
   inspectionDate: string;
   telemetry: PredictiveMachineTelemetry;
   aiPrediction: MachinePrediction | null;
   trends: {
+    temperature: PredictiveTrendPoint[];
+    health: PredictiveTrendPoint[];
+    failureProbability: PredictiveTrendPoint[];
+    energy: PredictiveTrendPoint[];
+  };
+  predictionHistory: {
+    timestamp: string;
+    failureProbability: number;
+    remainingUsefulLifeHours: number;
+    maintenancePriority: string;
+    riskLevel: PredictiveRiskLevel;
+    confidenceScore: number;
+  }[];
+  historicalTrend: {
     temperature: PredictiveTrendPoint[];
     health: PredictiveTrendPoint[];
     failureProbability: PredictiveTrendPoint[];
@@ -112,4 +130,22 @@ export interface PredictiveOverview {
 export interface PredictiveOverviewResponse {
   success: boolean;
   overview: PredictiveOverview;
+}
+
+export interface PredictiveMachineDetailResponse {
+  success: boolean;
+  detail: {
+    generatedAt: string;
+    source: string;
+    machine: {
+      machineId: string;
+      name: string;
+      department: string;
+      status: string;
+      lastHeartbeat: string | null;
+    };
+    prediction: PredictiveMachine;
+    predictionHistory: PredictiveMachine["predictionHistory"];
+    historicalTrend: PredictiveMachine["historicalTrend"];
+  };
 }

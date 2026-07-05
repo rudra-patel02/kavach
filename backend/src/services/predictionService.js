@@ -261,6 +261,46 @@ const buildMachineTrend = (prediction, key, baseline) => {
   });
 };
 
+const normalizePredictionHistory = (machine, prediction, trends) => {
+  const existingHistory = Array.isArray(machine.predictionHistory)
+    ? machine.predictionHistory
+    : [];
+
+  if (existingHistory.length > 0) {
+    return existingHistory.slice(-20).map((item) => ({
+      timestamp: item.timestamp
+        ? new Date(item.timestamp).toISOString()
+        : new Date().toISOString(),
+      failureProbability: round(item.failureProbability, 1),
+      remainingUsefulLifeHours: Math.round(
+        Number(item.remainingUsefulLifeHours || prediction.remainingUsefulLifeHours)
+      ),
+      maintenancePriority:
+        item.maintenancePriority || prediction.maintenancePriority,
+      riskLevel: item.riskLevel || prediction.riskLevel,
+      confidenceScore: round(item.confidenceScore || prediction.aiConfidence, 1),
+    }));
+  }
+
+  return trends.failureProbability.map((point, index) => {
+    const timestamp = new Date();
+    timestamp.setHours(timestamp.getHours() - (trends.failureProbability.length - index - 1));
+
+    return {
+      timestamp: timestamp.toISOString(),
+      failureProbability: point.value,
+      remainingUsefulLifeHours: Math.max(
+        4,
+        prediction.remainingUsefulLifeHours +
+          (trends.failureProbability.length - index - 1) * 4
+      ),
+      maintenancePriority: prediction.maintenancePriority,
+      riskLevel: prediction.riskLevel,
+      confidenceScore: prediction.aiConfidence,
+    };
+  });
+};
+
 export const createMachinePrediction = (machine) => {
   const machineHealth = round(machine.health, 1);
   const failureProbability = getFailureProbability(machine);
@@ -280,38 +320,59 @@ export const createMachinePrediction = (machine) => {
     department: machine.department || "Production",
     status: machine.status || "Unknown",
     machineHealth,
+    healthScore: machineHealth,
     failureProbability,
+    failureProbabilityPercent: failureProbability,
     remainingUsefulLifeHours,
     aiConfidence,
+    confidencePercent: aiConfidence,
     riskLevel,
     maintenancePriority,
     trendDirection: getTrendDirection(riskLevel),
     probableCause: getProbableCause(machine),
     recommendation: getRecommendation(machine, riskLevel),
+    recommendedAction: getRecommendation(machine, riskLevel),
     estimatedDowntimeHours: getEstimatedDowntimeHours(riskLevel),
     inspectionDate: createCalendarDate(riskLevel),
     telemetry: {
       temperature: round(machine.temperature, 1),
       vibration: round(machine.vibration, 2),
       pressure: round(machine.pressure, 2),
+      humidity: round(machine.humidity, 1),
+      power: round(machine.power, 1),
+      current: round(machine.current, 1),
+      voltage: round(machine.voltage, 1),
+      efficiency: round(machine.efficiency, 1),
+      oee: round(machine.oee, 1),
       energy,
       health: machineHealth,
     },
     aiPrediction: machine.aiPrediction || null,
   };
+  const trends = {
+    temperature: buildMachineTrend(prediction, "temperature", prediction.telemetry.temperature),
+    health: buildMachineTrend(prediction, "health", prediction.machineHealth),
+    failureProbability: buildMachineTrend(
+      prediction,
+      "failureProbability",
+      prediction.failureProbability
+    ),
+    energy: buildMachineTrend(prediction, "energy", prediction.telemetry.energy),
+  };
 
   return {
     ...prediction,
-    trends: {
-      temperature: buildMachineTrend(prediction, "temperature", prediction.telemetry.temperature),
-      health: buildMachineTrend(prediction, "health", prediction.machineHealth),
-      failureProbability: buildMachineTrend(
-        prediction,
-        "failureProbability",
-        prediction.failureProbability
-      ),
-      energy: buildMachineTrend(prediction, "energy", prediction.telemetry.energy),
+    rootCause: prediction.probableCause,
+    confidenceScore: prediction.aiConfidence,
+    riskTrend: prediction.trendDirection,
+    predictionHistory: normalizePredictionHistory(machine, prediction, trends),
+    historicalTrend: {
+      health: trends.health,
+      temperature: trends.temperature,
+      failureProbability: trends.failureProbability,
+      energy: trends.energy,
     },
+    trends,
   };
 };
 
@@ -472,5 +533,24 @@ export const buildPredictiveOverview = (machines) => {
       recommendation: prediction.recommendation,
       confidence: prediction.aiConfidence,
     })),
+  };
+};
+
+export const buildPredictiveMachineDetail = (machine) => {
+  const prediction = createMachinePrediction(machine);
+
+  return {
+    generatedAt: new Date().toISOString(),
+    source: "rule_based_current_telemetry",
+    machine: {
+      machineId: machine.machineId,
+      name: machine.name,
+      department: machine.department || "Production",
+      status: machine.status || "Unknown",
+      lastHeartbeat: machine.lastHeartbeat || null,
+    },
+    prediction,
+    predictionHistory: prediction.predictionHistory,
+    historicalTrend: prediction.historicalTrend,
   };
 };

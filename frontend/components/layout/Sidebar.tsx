@@ -3,29 +3,41 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  Factory,
-  BrainCircuit,
-  Bell,
-  BarChart3,
   Activity,
+  BarChart3,
+  Bell,
+  BrainCircuit,
   ClipboardList,
+  Cpu,
+  Factory,
+  Gauge,
+  LayoutDashboard,
   Settings,
+  Users,
 } from "lucide-react";
+import { hasAnyRole, useStoredUser } from "@/lib/auth";
+import { NAVIGATION_ITEMS, type NavigationIcon } from "@/lib/navigation";
 
-const menuItems = [
-  { name: "Dashboard", icon: LayoutDashboard, href: "/" },
-  { name: "Digital Twin", icon: Factory, href: "/plant" },
-  { name: "Analytics", icon: BarChart3, href: "/analytics" },
-  { name: "Copilot", icon: BrainCircuit, href: "/copilot" },
-  { name: "Predictive", icon: Activity, href: "/predictive" },
-  { name: "Work Orders", icon: ClipboardList, href: "/workorders" },
-  { name: "Alerts", icon: Bell, href: "/alerts" },
-  { name: "Settings", icon: Settings, href: "/settings" },
-];
+const iconMap: Record<NavigationIcon, typeof Activity> = {
+  activity: Activity,
+  barChart: BarChart3,
+  bell: Bell,
+  brain: BrainCircuit,
+  clipboard: ClipboardList,
+  cpu: Cpu,
+  factory: Factory,
+  gauge: Gauge,
+  layout: LayoutDashboard,
+  settings: Settings,
+  users: Users,
+};
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const user = useStoredUser();
+  const visibleItems = NAVIGATION_ITEMS.filter((item) =>
+    hasAnyRole(user?.role, item.roles)
+  );
 
   return (
     <aside className="hidden h-screen w-72 flex-col border-r border-slate-800 bg-slate-950 lg:flex lg:sticky lg:top-0">
@@ -42,9 +54,9 @@ export default function Sidebar() {
 
       <nav className="flex-1 p-5 space-y-3">
 
-        {menuItems.map((item) => {
+        {visibleItems.map((item) => {
 
-          const Icon = item.icon;
+          const Icon = iconMap[item.icon];
           const isActive =
             item.href === "/"
               ? pathname === "/"

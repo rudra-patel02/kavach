@@ -4,19 +4,31 @@ import express from "express";
 import http from "http";
 import mongoose from "mongoose";
 import path from "path";
-import { Server } from "socket.io";
 import { fileURLToPath } from "url";
 
+import aiRoutes from "./routes/aiRoutes.js";
+import analyticsRoutes from "./routes/analyticsRoutes.js";
 import connectDB, { disconnectDB } from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import copilotRoutes from "./routes/copilotRoutes.js";
+import executiveRoutes from "./routes/executiveRoutes.js";
 import machineRoutes from "./routes/machineRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import predictionRoutes from "./routes/predictionRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
+import searchRoutes from "./routes/searchRoutes.js";
+import settingsRoutes from "./routes/settingsRoutes.js";
 import workOrderRoutes from "./routes/workOrderRoutes.js";
 import { startSensorSimulation } from "./services/SensorService.js";
 import { syncActiveMachineNotifications } from "./services/notificationService.js";
 import { syncActiveMachineWorkOrders } from "./services/workOrderService.js";
+import { createSocketServer } from "./socket/index.js";
+import userRoutes from "./routes/userRoutes.js";
+import {
+  rateLimit,
+  sanitizeRequest,
+  securityHeaders,
+} from "./middleware/securityMiddleware.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -91,7 +103,7 @@ const getConfiguration = () => {
   }
 
   const port = Number(process.env.PORT || 5000);
-  const sensorIntervalMs = Number(process.env.SENSOR_INTERVAL_MS || 1000);
+  const sensorIntervalMs = Number(process.env.SENSOR_INTERVAL_MS || 2000);
 
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
     throw new Error("PORT must be an integer between 1 and 65535");
@@ -131,25 +143,32 @@ const start = async () => {
   const app = express();
   const server = http.createServer(app);
   const corsOptions = buildCorsOptions(allowedOrigins);
-
-  const io = new Server(server, {
-    cors: corsOptions,
-    pingInterval: 25000,
-    pingTimeout: 30000,
-  });
+  const socketServer = createSocketServer(server, corsOptions);
+  const { io, gateway: machineGateway } = socketServer;
 
   app.disable("x-powered-by");
   app.set("trust proxy", 1);
   app.set("io", io);
+  app.set("machineGateway", machineGateway);
 
+  app.use(securityHeaders);
+  app.use(rateLimit());
   app.use(cors(corsOptions));
   app.use(express.json({ limit: "1mb" }));
+  app.use(sanitizeRequest);
 
   app.use("/api/auth", authRoutes);
+  app.use("/api/ai", aiRoutes);
+  app.use("/api/analytics", analyticsRoutes);
   app.use("/api/copilot", copilotRoutes);
+  app.use("/api/executive", executiveRoutes);
   app.use("/api/machines", machineRoutes);
+  app.use("/api/users", userRoutes);
   app.use("/api/notifications", notificationRoutes);
   app.use("/api/predictive", predictionRoutes);
+  app.use("/api/reports", reportRoutes);
+  app.use("/api/search", searchRoutes);
+  app.use("/api/settings", settingsRoutes);
   app.use("/api/workorders", workOrderRoutes);
 
   app.get("/api/health", (req, res) => {
@@ -168,18 +187,6 @@ const start = async () => {
     res.json({
       success: true,
       message: "Kavach Backend Running",
-    });
-  });
-
-  io.on("connection", (socket) => {
-    console.log("Socket connected:", socket.id);
-
-    socket.emit("hello", {
-      message: "Socket Working",
-    });
-
-    socket.on("disconnect", () => {
-      console.log("Socket disconnected:", socket.id);
     });
   });
 
@@ -213,14 +220,14 @@ const start = async () => {
   console.log(`Server running on port ${port}`);
 
   try {
-    await syncActiveMachineNotifications(io);
-    await syncActiveMachineWorkOrders(io);
+    await syncActiveMachineNotifications(machineGateway);
+    await syncActiveMachineWorkOrders(machineGateway);
   } catch (error) {
     console.error("Initial maintenance automation sync failed:", error.message);
   }
 
   const stopSensorSimulation = enableSensorSimulation
-    ? startSensorSimulation(io, sensorIntervalMs)
+    ? startSensorSimulation(machineGateway, sensorIntervalMs)
     : () => {};
 
   if (!enableSensorSimulation) {
@@ -239,7 +246,7 @@ const start = async () => {
     stopSensorSimulation();
 
     await new Promise((resolve) => {
-      io.close(() => {
+      socketServer.close(() => {
         server.close(() => resolve());
       });
     });

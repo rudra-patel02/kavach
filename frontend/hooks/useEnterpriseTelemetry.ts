@@ -10,7 +10,11 @@ import {
 import { fetchMachines } from "@/lib/machines";
 import { fetchNotifications } from "@/lib/notifications";
 import { fetchPredictiveOverview } from "@/lib/predictive";
-import socket from "@/lib/socket";
+import socket, {
+  SOCKET_EVENTS,
+  joinPlantRoom,
+  leavePlantRoom,
+} from "@/lib/socket";
 import { fetchWorkOrders } from "@/lib/workorders";
 import type { MachineData } from "@/types/machine";
 import type { NotificationItem } from "@/types/notification";
@@ -23,6 +27,22 @@ const upsertById = <T extends { id: string }>(items: T[], item: T) =>
         currentItem.id === item.id ? item : currentItem
       )
     : [item, ...items];
+
+const upsertMachine = (items: MachineData[], item: MachineData) =>
+  items.some((currentItem) => currentItem.machineId === item.machineId)
+    ? items.map((currentItem) =>
+        currentItem.machineId === item.machineId ? item : currentItem
+      )
+    : [item, ...items];
+
+type NotificationSocketPayload =
+  | NotificationItem
+  | { notification?: NotificationItem };
+
+const isWrappedNotificationPayload = (
+  payload: NotificationSocketPayload
+): payload is { notification?: NotificationItem } =>
+  Object.prototype.hasOwnProperty.call(payload, "notification");
 
 export function useEnterpriseTelemetry() {
   const [machines, setMachines] = useState<MachineData[]>([]);
@@ -115,7 +135,34 @@ export function useEnterpriseTelemetry() {
       refreshPredictiveOverview();
     };
 
-    const handleNewNotification = (notification: NotificationItem) => {
+    const handleMachinesUpdate = (payload: { machines?: MachineData[] }) => {
+      if (Array.isArray(payload?.machines)) {
+        setMachines(payload.machines);
+        refreshPredictiveOverview();
+      }
+    };
+
+    const handleSingleMachineUpdate = (payload: { machine?: MachineData }) => {
+      if (payload?.machine) {
+        setMachines((currentMachines) =>
+          upsertMachine(currentMachines, payload.machine as MachineData)
+        );
+        refreshPredictiveOverview();
+      }
+    };
+
+    const handlePredictiveOverview = (nextOverview: PredictiveOverview) => {
+      setOverview(nextOverview);
+    };
+
+    const handleNewNotification = (payload: NotificationSocketPayload) => {
+      const notification: NotificationItem | undefined =
+        isWrappedNotificationPayload(payload) ? payload.notification : payload;
+
+      if (!notification?.id) {
+        return;
+      }
+
       setNotifications((currentNotifications) =>
         upsertById(currentNotifications, notification)
       );
@@ -179,8 +226,15 @@ export function useEnterpriseTelemetry() {
       );
     };
 
-    socket.on("machineUpdate", handleMachineUpdate);
-    socket.on("notification:new", handleNewNotification);
+    joinPlantRoom("default");
+
+    socket.on(SOCKET_EVENTS.LEGACY_MACHINE_UPDATE, handleMachineUpdate);
+    socket.on(SOCKET_EVENTS.MACHINES_UPDATE, handleMachinesUpdate);
+    socket.on(SOCKET_EVENTS.MACHINE_UPDATE, handleSingleMachineUpdate);
+    socket.on(SOCKET_EVENTS.PREDICTIVE_OVERVIEW, handlePredictiveOverview);
+    socket.on(SOCKET_EVENTS.LEGACY_NOTIFICATION_CREATED, handleNewNotification);
+    socket.on(SOCKET_EVENTS.NOTIFICATION_CREATED, handleNewNotification);
+    socket.on(SOCKET_EVENTS.ALERT_CREATED, handleNewNotification);
     socket.on("notification:read", handleNotificationRead);
     socket.on("notifications:readAll", handleAllNotificationsRead);
     socket.on("notification:deleted", handleNotificationDeleted);
@@ -190,8 +244,13 @@ export function useEnterpriseTelemetry() {
     socket.on("workorder:deleted", handleDeletedWorkOrder);
 
     return () => {
-      socket.off("machineUpdate", handleMachineUpdate);
-      socket.off("notification:new", handleNewNotification);
+      socket.off(SOCKET_EVENTS.LEGACY_MACHINE_UPDATE, handleMachineUpdate);
+      socket.off(SOCKET_EVENTS.MACHINES_UPDATE, handleMachinesUpdate);
+      socket.off(SOCKET_EVENTS.MACHINE_UPDATE, handleSingleMachineUpdate);
+      socket.off(SOCKET_EVENTS.PREDICTIVE_OVERVIEW, handlePredictiveOverview);
+      socket.off(SOCKET_EVENTS.LEGACY_NOTIFICATION_CREATED, handleNewNotification);
+      socket.off(SOCKET_EVENTS.NOTIFICATION_CREATED, handleNewNotification);
+      socket.off(SOCKET_EVENTS.ALERT_CREATED, handleNewNotification);
       socket.off("notification:read", handleNotificationRead);
       socket.off("notifications:readAll", handleAllNotificationsRead);
       socket.off("notification:deleted", handleNotificationDeleted);
@@ -203,6 +262,8 @@ export function useEnterpriseTelemetry() {
       if (predictiveRefreshRef.current) {
         window.clearTimeout(predictiveRefreshRef.current);
       }
+
+      leavePlantRoom("default");
     };
   }, [refreshPredictiveOverview]);
 

@@ -72,11 +72,75 @@ export const apiUrl = (path: string) => {
   return joinApiBaseAndPath(getApiBaseUrl(), path);
 };
 
-export const fetchJson = async <T>(path: string, init: RequestInit = {}) => {
-  const response = await fetch(apiUrl(path), {
-    cache: "no-store",
-    ...init,
+const getToken = () =>
+  typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+const refreshAccessToken = async () => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const refreshToken = localStorage.getItem("refreshToken");
+
+  if (!refreshToken) {
+    return null;
+  }
+
+  const response = await fetch(apiUrl("/api/auth/refresh"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ refreshToken }),
   });
+
+  if (!response.ok) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
+    return null;
+  }
+
+  const payload = (await response.json()) as {
+    token?: string;
+    refreshToken?: string;
+    user?: unknown;
+  };
+
+  if (payload.token) {
+    localStorage.setItem("token", payload.token);
+  }
+
+  if (payload.refreshToken) {
+    localStorage.setItem("refreshToken", payload.refreshToken);
+  }
+
+  if (payload.user) {
+    localStorage.setItem("user", JSON.stringify(payload.user));
+  }
+
+  return payload.token || null;
+};
+
+export const fetchJson = async <T>(path: string, init: RequestInit = {}) => {
+  const makeRequest = (token: string | null) =>
+    fetch(apiUrl(path), {
+      cache: "no-store",
+      ...init,
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(init.headers || {}),
+      },
+    });
+
+  let response = await makeRequest(getToken());
+
+  if (response.status === 401) {
+    const refreshedToken = await refreshAccessToken();
+
+    if (refreshedToken) {
+      response = await makeRequest(refreshedToken);
+    }
+  }
 
   const contentType = response.headers.get("content-type") || "";
   const payload = contentType.includes("application/json")

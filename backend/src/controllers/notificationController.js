@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import Notification from "../models/notification.js";
 import { serializeNotification } from "../services/notificationService.js";
 
-const getIo = (req) => req.app.get("io");
+const getRealtime = (req) => req.app.get("machineGateway") || req.app.get("io");
 
 const isValidId = (id) => mongoose.isValidObjectId(id);
 
@@ -47,10 +47,17 @@ export const markNotificationRead = async (req, res) => {
     }
 
     const serializedNotification = serializeNotification(notification);
-    getIo(req)?.emit("notification:read", {
+    const eventPayload = {
       id: serializedNotification.id,
       notification: serializedNotification,
-    });
+    };
+    const realtime = getRealtime(req);
+
+    if (realtime?.broadcastNotificationRead) {
+      realtime.broadcastNotificationRead(eventPayload);
+    } else {
+      realtime?.emit("notification:read", eventPayload);
+    }
 
     res.json({
       success: true,
@@ -73,9 +80,16 @@ export const markAllNotificationsRead = async (req, res) => {
       }
     );
 
-    getIo(req)?.emit("notifications:readAll", {
+    const eventPayload = {
       readAt: readAt.toISOString(),
-    });
+    };
+    const realtime = getRealtime(req);
+
+    if (realtime?.broadcastAllNotificationsRead) {
+      realtime.broadcastAllNotificationsRead(eventPayload);
+    } else {
+      realtime?.emit("notifications:readAll", eventPayload);
+    }
 
     res.json({
       success: true,
@@ -100,9 +114,16 @@ export const deleteNotification = async (req, res) => {
       return res.status(404).json({ message: "Notification not found" });
     }
 
-    getIo(req)?.emit("notification:deleted", {
+    const eventPayload = {
       id: String(notification._id),
-    });
+    };
+    const realtime = getRealtime(req);
+
+    if (realtime?.broadcastNotificationDeleted) {
+      realtime.broadcastNotificationDeleted(eventPayload);
+    } else {
+      realtime?.emit("notification:deleted", eventPayload);
+    }
 
     res.json({
       success: true,
@@ -118,7 +139,13 @@ export const clearNotifications = async (req, res) => {
   try {
     const result = await Notification.deleteMany({});
 
-    getIo(req)?.emit("notifications:cleared");
+    const realtime = getRealtime(req);
+
+    if (realtime?.broadcastNotificationsCleared) {
+      realtime.broadcastNotificationsCleared();
+    } else {
+      realtime?.emit("notifications:cleared");
+    }
 
     res.json({
       success: true,

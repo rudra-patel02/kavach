@@ -1,7 +1,7 @@
 import Machine from "../models/machine.js";
+import { buildAiCopilotResponse } from "../services/aiCopilotService.js";
 import {
   buildCopilotReport,
-  buildCopilotResponse,
 } from "../services/copilotAnalysisService.js";
 
 export const chatWithCopilot = async (req, res) => {
@@ -21,7 +21,7 @@ export const chatWithCopilot = async (req, res) => {
     }
 
     const machines = await Machine.find().sort({ machineId: 1 }).lean();
-    const response = buildCopilotResponse(message, machines);
+    const response = await buildAiCopilotResponse(message, machines);
 
     res.json({
       success: true,

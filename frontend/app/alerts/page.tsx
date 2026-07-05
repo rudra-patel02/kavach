@@ -226,6 +226,9 @@ export default function AlertsPage() {
                       >
                         {alert.severity}
                       </span>
+                      <span className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-xs font-bold text-cyan-100">
+                        {alert.priority}
+                      </span>
                       <span className="rounded-full border border-slate-700 bg-slate-950/70 px-3 py-1 text-xs font-bold text-slate-300">
                         {alert.category}
                       </span>
@@ -256,7 +259,33 @@ export default function AlertsPage() {
                         Engineer
                       </p>
                       <p className="mt-1 font-semibold text-white">
-                        {alert.assignedEngineer}
+                        {alert.assignedEngineer !== "Unassigned"
+                          ? alert.assignedEngineer
+                          : alert.recommendedEngineer || "Unassigned"}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3">
+                      <p className="text-xs uppercase text-slate-500">
+                        Failure Probability
+                      </p>
+                      <p className="mt-1 font-semibold text-white">
+                        {alert.failureProbability}%
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3">
+                      <p className="text-xs uppercase text-slate-500">
+                        Downtime
+                      </p>
+                      <p className="mt-1 font-semibold text-white">
+                        {alert.estimatedDowntimeHours} hrs
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3">
+                      <p className="text-xs uppercase text-slate-500">
+                        Location
+                      </p>
+                      <p className="mt-1 font-semibold text-white">
+                        {alert.machineLocation || "Plant floor"}
                       </p>
                     </div>
                     <div className="rounded-lg border border-slate-800 bg-slate-950/60 p-3">
@@ -280,10 +309,36 @@ export default function AlertsPage() {
 
                 <div className="mt-4 rounded-lg border border-slate-800 bg-slate-950/60 p-3 text-sm text-slate-300">
                   <span className="font-semibold text-slate-100">
+                    Suggested Action:
+                  </span>{" "}
+                  {alert.suggestedAction || "Validate telemetry and assign maintenance response."}
+                </div>
+
+                <div className="mt-3 rounded-lg border border-slate-800 bg-slate-950/60 p-3 text-sm text-slate-300">
+                  <span className="font-semibold text-slate-100">
                     Resolution Notes:
                   </span>{" "}
                   {alert.resolutionNotes}
                 </div>
+
+                {alert.alertTimeline.length > 0 ? (
+                  <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                    {alert.alertTimeline.slice(0, 2).map((item, index) => (
+                      <div
+                        key={`${alert.id}-${item.event}-${index}`}
+                        className="rounded-lg border border-slate-800 bg-slate-950/60 p-3 text-sm"
+                      >
+                        <p className="font-semibold text-white">
+                          {item.event.replaceAll("_", " ")}
+                        </p>
+                        <p className="mt-1 text-slate-400">
+                          {formatDate(item.at)} - {item.actor}
+                        </p>
+                        <p className="mt-1 text-slate-300">{item.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
               </article>
             ))
           )}

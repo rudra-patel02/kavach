@@ -5,7 +5,7 @@ import type {
 } from "@/types/copilot";
 
 export const sendCopilotMessage = (message: string) =>
-  fetchJson<CopilotChatResponse>("/api/copilot/chat", {
+  fetchJson<CopilotChatResponse>("/api/ai/chat", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -14,4 +14,4 @@ export const sendCopilotMessage = (message: string) =>
   });
 
 export const fetchCopilotReport = () =>
-  fetchJson<CopilotReportResponse>("/api/copilot/report");
+  fetchJson<CopilotReportResponse>("/api/ai/report");

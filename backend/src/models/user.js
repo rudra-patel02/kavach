@@ -5,6 +5,7 @@ const userSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
+      trim: true,
     },
 
     email: {
@@ -23,8 +24,75 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["Admin", "Supervisor", "Operator"],
-      default: "Operator",
+      enum: [
+        "Admin",
+        "Super Admin",
+        "Plant Manager",
+        "Maintenance Engineer",
+        "Operator",
+        "Viewer",
+      ],
+      default: "Viewer",
+    },
+
+    department: {
+      type: String,
+      default: "Production",
+    },
+
+    employeeId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+
+    phone: {
+      type: String,
+      default: "",
+    },
+
+    status: {
+      type: String,
+      enum: ["Active", "Inactive", "Suspended"],
+      default: "Active",
+    },
+
+    lastLogin: {
+      type: Date,
+      default: null,
+    },
+
+    permissions: [
+      {
+        type: String,
+      },
+    ],
+
+    refreshToken: {
+      type: String,
+      select: false,
+      default: "",
+    },
+
+    notificationPreferences: {
+      email: {
+        type: Boolean,
+        default: true,
+      },
+      criticalAlerts: {
+        type: Boolean,
+        default: true,
+      },
+      weeklyReports: {
+        type: Boolean,
+        default: true,
+      },
+    },
+
+    themePreference: {
+      type: String,
+      enum: ["dark", "system"],
+      default: "dark",
     },
   },
   {

@@ -6,6 +6,9 @@ import { createMachinePrediction } from "./predictionService.js";
 const DEFAULT_THRESHOLDS = {
   temperature: 90,
   vibration: 1.2,
+  pressureHigh: 2.1,
+  pressureLow: 0.65,
+  power: 850,
 };
 
 const NOTIFICATION_COOLDOWN_MS = 15 * 60 * 1000;
@@ -41,18 +44,88 @@ export const serializeNotification = (notification) => {
     id: String(value._id),
     type: value.type,
     severity: value.severity,
+    displaySeverity:
+      value.severity === "Critical"
+        ? "Critical"
+        : ["High", "Medium"].includes(value.severity)
+          ? "Warning"
+          : "Information",
     machineId: value.machineId,
     machineName: value.machineName,
     title: value.title,
     message: value.message,
+    description: value.description || value.message,
     icon: value.icon,
     value: value.value,
     threshold: value.threshold,
+    priority: value.priority || "P4",
+    failureProbability: round(value.failureProbability, 1),
+    suggestedAction: value.suggestedAction || "",
+    estimatedDowntimeHours: round(value.estimatedDowntimeHours, 1),
+    recommendedEngineer: value.recommendedEngineer || "",
+    machineLocation: value.machineLocation || "",
+    alertTimeline: (value.alertTimeline || []).map((item) => ({
+      event: item.event,
+      at: new Date(item.at).toISOString(),
+      actor: item.actor,
+      message: item.message,
+    })),
+    alertHistory: (value.alertHistory || []).map((item) => ({
+      event: item.event,
+      at: new Date(item.at).toISOString(),
+      actor: item.actor,
+      message: item.message,
+    })),
     read: Boolean(value.read),
     readAt: value.readAt ? new Date(value.readAt).toISOString() : null,
     createdAt: new Date(value.createdAt).toISOString(),
     updatedAt: new Date(value.updatedAt).toISOString(),
   };
+};
+
+const getPriority = (severity) => {
+  if (severity === "Critical") return "P1";
+  if (severity === "High") return "P2";
+  if (severity === "Medium") return "P3";
+  return "P4";
+};
+
+const getRecommendedEngineer = (machine) => {
+  const department = String(machine.department || "").toLowerCase();
+
+  if (department.includes("boiler")) return "Thermal Systems Engineer";
+  if (department.includes("utility")) return "Utilities Maintenance Engineer";
+  if (department.includes("packaging")) return "Packaging Line Engineer";
+  if (department.includes("cooling")) return "Cooling Systems Engineer";
+  return "Maintenance Engineer";
+};
+
+const getSuggestedAction = (type, prediction) => {
+  if (type === "temperature") {
+    return "Inspect cooling, lubrication, thermal load, and heat-transfer surfaces.";
+  }
+
+  if (type === "vibration") {
+    return "Run vibration analysis and inspect bearings, alignment, mounts, and lubrication.";
+  }
+
+  if (type === "pressure") {
+    return "Inspect pressure controls, filters, valves, pumps, and sensor calibration.";
+  }
+
+  if (type === "power") {
+    return "Inspect load profile, electrical draw, lubrication, friction, and drive efficiency.";
+  }
+
+  if (type === "machine_health") {
+    return "Reduce operating load if safe and schedule controlled inspection.";
+  }
+
+  if (type === "failure_probability") {
+    return prediction.recommendation;
+  }
+
+  return prediction.recommendation || "Validate telemetry and schedule maintenance review.";
 };
 
 const buildNotification = ({
@@ -64,25 +137,53 @@ const buildNotification = ({
   icon,
   value,
   threshold,
-}) => ({
-  type,
-  severity,
-  machineId: machine.machineId,
-  machineName: machine.name,
-  title,
-  message,
-  icon,
-  value,
-  threshold,
-  dedupeKey: `${machine.machineId}:${type}:${severity}`,
-});
+  prediction,
+}) => {
+  const suggestedAction = getSuggestedAction(type, prediction);
+  const timelineEvent = {
+    event: "ALERT_CREATED",
+    at: new Date(),
+    actor: "KAVACH Alert Engine",
+    message,
+    description: message,
+  };
+
+  return {
+    type,
+    severity,
+    priority: getPriority(severity),
+    machineId: machine.machineId,
+    machineName: machine.name,
+    title,
+    message,
+    icon,
+    value,
+    threshold,
+    failureProbability: prediction.failureProbability,
+    suggestedAction,
+    estimatedDowntimeHours: prediction.estimatedDowntimeHours,
+    recommendedEngineer: getRecommendedEngineer(machine),
+    machineLocation:
+      machine.location ||
+      machine.machineLocation ||
+      `${machine.department || "Production"} line`,
+    alertTimeline: [timelineEvent],
+    alertHistory: [timelineEvent],
+    dedupeKey: `${machine.machineId}:${type}:${severity}`,
+  };
+};
 
 export const buildNotificationCandidates = (machine) => {
   const prediction = createMachinePrediction(machine);
   const temperatureThreshold = getMachineThreshold(machine, "temperature");
   const vibrationThreshold = getMachineThreshold(machine, "vibration");
+  const pressureHighThreshold = getMachineThreshold(machine, "pressureHigh");
+  const pressureLowThreshold = getMachineThreshold(machine, "pressureLow");
+  const powerThreshold = getMachineThreshold(machine, "power");
   const temperature = Number(machine.temperature);
   const vibration = Number(machine.vibration);
+  const pressure = Number(machine.pressure);
+  const power = Number(machine.power);
   const health = Number(machine.health);
   const candidates = [];
 
@@ -100,6 +201,7 @@ export const buildNotificationCandidates = (machine) => {
         icon: "activity",
         value: round(prediction.failureProbability, 1),
         threshold: 80,
+        prediction,
       })
     );
   }
@@ -118,6 +220,7 @@ export const buildNotificationCandidates = (machine) => {
         icon: "heart-pulse",
         value: round(health, 1),
         threshold: 30,
+        prediction,
       })
     );
   }
@@ -137,6 +240,7 @@ export const buildNotificationCandidates = (machine) => {
         icon: "thermometer",
         value: round(temperature, 1),
         threshold: round(temperatureThreshold, 1),
+        prediction,
       })
     );
   }
@@ -156,6 +260,59 @@ export const buildNotificationCandidates = (machine) => {
         icon: "gauge",
         value: round(vibration, 2),
         threshold: round(vibrationThreshold, 2),
+        prediction,
+      })
+    );
+  }
+
+  if (
+    Number.isFinite(pressure) &&
+    (pressure > pressureHighThreshold || pressure < pressureLowThreshold)
+  ) {
+    const isHighPressure = pressure > pressureHighThreshold;
+    const criticalPressure =
+      pressure >= pressureHighThreshold + 0.3 ||
+      pressure <= pressureLowThreshold - 0.15;
+
+    candidates.push(
+      buildNotification({
+        machine,
+        type: "pressure",
+        severity: criticalPressure ? "Critical" : "High",
+        title: "Pressure anomaly detected",
+        message: `${machine.name} pressure is ${round(
+          pressure,
+          2
+        )}, outside the ${round(pressureLowThreshold, 2)}-${round(
+          pressureHighThreshold,
+          2
+        )} operating band.`,
+        icon: "gauge",
+        value: round(pressure, 2),
+        threshold: round(
+          isHighPressure ? pressureHighThreshold : pressureLowThreshold,
+          2
+        ),
+        prediction,
+      })
+    );
+  }
+
+  if (Number.isFinite(power) && power > powerThreshold) {
+    candidates.push(
+      buildNotification({
+        machine,
+        type: "power",
+        severity: power >= powerThreshold + 120 ? "Critical" : "High",
+        title: "Power spike detected",
+        message: `${machine.name} power draw reached ${round(
+          power,
+          1
+        )} kW, above its ${round(powerThreshold, 1)} kW threshold.`,
+        icon: "zap",
+        value: round(power, 1),
+        threshold: round(powerThreshold, 1),
+        prediction,
       })
     );
   }
@@ -178,6 +335,7 @@ export const buildNotificationCandidates = (machine) => {
         icon: "wrench",
         value: prediction.remainingUsefulLifeHours,
         threshold: 24,
+        prediction,
       })
     );
   }
@@ -220,7 +378,9 @@ export const createNotificationsForMachine = async (machine, io) => {
     const serializedNotification = serializeNotification(notification);
     createdNotifications.push(serializedNotification);
 
-    if (io) {
+    if (io?.broadcastAlert) {
+      io.broadcastAlert(serializedNotification);
+    } else if (io?.emit) {
       io.emit("notification:new", serializedNotification);
     }
 

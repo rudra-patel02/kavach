@@ -55,6 +55,14 @@ export interface EnhancedAlert {
   escalationLevel: string;
   resolutionNotes: string;
   message: string;
+  priority: string;
+  failureProbability: number;
+  suggestedAction: string;
+  estimatedDowntimeHours: number;
+  recommendedEngineer: string;
+  machineLocation: string;
+  alertTimeline: NotificationItem["alertTimeline"];
+  alertHistory: NotificationItem["alertHistory"];
 }
 
 const activeStatuses = ["OPEN", "ASSIGNED", "IN_PROGRESS", "WAITING_PARTS"];
@@ -350,6 +358,14 @@ export const buildEnhancedAlerts = (
       escalationLevel: getEscalationLevel(notification, workOrder),
       resolutionNotes: latestNote || "No resolution notes recorded.",
       message: notification.message,
+      priority: notification.priority,
+      failureProbability: notification.failureProbability,
+      suggestedAction: notification.suggestedAction,
+      estimatedDowntimeHours: notification.estimatedDowntimeHours,
+      recommendedEngineer: notification.recommendedEngineer,
+      machineLocation: notification.machineLocation,
+      alertTimeline: notification.alertTimeline,
+      alertHistory: notification.alertHistory,
     };
   });
 

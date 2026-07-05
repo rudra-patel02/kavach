@@ -33,6 +33,7 @@ test("creates notification candidates for critical telemetry and immediate maint
     health: 24,
     temperature: 98,
     vibration: 1.44,
+    pressure: 2.4,
     energyConsumed: 980,
     aiPrediction: {
       failureRisk: "High",
@@ -42,16 +43,29 @@ test("creates notification candidates for critical telemetry and immediate maint
     },
   });
 
-  assert.equal(candidates.length, 5);
+  assert.equal(candidates.length, 6);
   assert.deepEqual(
     candidates.map((candidate) => candidate.type).sort(),
     [
       "failure_probability",
       "machine_health",
       "maintenance",
+      "pressure",
       "temperature",
       "vibration",
     ]
   );
   assert.ok(candidates.every((candidate) => candidate.machineId === "M999"));
+});
+
+test("creates a notification candidate for power spikes", () => {
+  const candidates = buildNotificationCandidates({
+    ...baseMachine,
+    power: 980,
+    energyConsumed: 300,
+  });
+
+  assert.equal(candidates.length, 1);
+  assert.equal(candidates[0].type, "power");
+  assert.equal(candidates[0].severity, "Critical");
 });

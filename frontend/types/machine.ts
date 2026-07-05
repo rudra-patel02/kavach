@@ -11,6 +11,11 @@ export interface MachinePrediction {
   maintenancePriority: string;
   maintenanceInDays: number;
   recommendation?: string;
+  recommendedAction?: string;
+  riskLevel?: string;
+  confidencePercent?: number;
+  failureProbability?: number;
+  remainingUsefulLifeHours?: number;
 }
 
 export interface MachineDisplayData {
@@ -31,11 +36,17 @@ export interface MachineData {
   temperature: number;
   vibration: number;
   power: number;
+  current?: number;
+  voltage?: number;
   efficiency: number;
   rpm?: number;
   humidity?: number;
   pressure?: number;
   energyConsumed?: number;
+  downtime?: number;
+  oee?: number;
+  remainingUsefulLifeHours?: number;
+  predictedFailureProbability?: number;
   lastHeartbeat?: string;
   aiPrediction?: MachinePrediction;
   maintenanceHistory?: {

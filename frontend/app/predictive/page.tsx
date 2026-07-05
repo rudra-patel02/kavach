@@ -84,11 +84,18 @@ export default function PredictiveMaintenancePage() {
         void loadOverview();
       }, 350);
     };
+    const handlePredictiveOverview = (nextOverview: PredictiveOverview) => {
+      setOverview(nextOverview);
+      setError(null);
+      setIsRefreshing(false);
+    };
 
     socket.on("machineUpdate", handleMachineUpdate);
+    socket.on("predictive:overview", handlePredictiveOverview);
 
     return () => {
       socket.off("machineUpdate", handleMachineUpdate);
+      socket.off("predictive:overview", handlePredictiveOverview);
 
       if (refreshTimerRef.current) {
         window.clearTimeout(refreshTimerRef.current);

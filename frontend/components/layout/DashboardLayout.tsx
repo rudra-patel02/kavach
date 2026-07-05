@@ -1,6 +1,8 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useStoredToken } from "@/lib/auth";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 
@@ -9,6 +11,19 @@ interface Props {
 }
 
 export default function DashboardLayout({ children }: Props) {
+  const router = useRouter();
+  const token = useStoredToken();
+
+  useEffect(() => {
+    if (!token) {
+      router.replace("/login");
+    }
+  }, [router, token]);
+
+  if (!token) {
+    return <div className="min-h-screen bg-slate-950" />;
+  }
+
   return (
     <div className="flex bg-slate-950 min-h-screen">
 

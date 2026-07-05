@@ -7,6 +7,7 @@ import {
   BarChart3,
   BatteryCharging,
   Clock,
+  Download,
   Factory,
   Gauge,
   HeartPulse,
@@ -33,6 +34,7 @@ import {
   buildAnalyticsSeries,
   type AnalyticsPoint,
 } from "@/lib/enterpriseAnalytics";
+import { apiUrl } from "@/lib/api";
 import { useEnterpriseTelemetry } from "@/hooks/useEnterpriseTelemetry";
 
 const kpiToneClasses = {
@@ -153,6 +155,7 @@ export default function AnalyticsPage() {
     error,
   } = useEnterpriseTelemetry();
   const [activeInsightIndex, setActiveInsightIndex] = useState(0);
+  const [isExporting, setIsExporting] = useState(false);
   const analyticsSeries = useMemo(
     () => buildAnalyticsSeries(machines, overview, workOrders),
     [machines, overview, workOrders]
@@ -169,6 +172,36 @@ export default function AnalyticsPage() {
       window.clearInterval(timer);
     };
   }, [insights.length]);
+
+  const exportCsv = async () => {
+    setIsExporting(true);
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(apiUrl("/api/analytics/export.csv"), {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (!response.ok) {
+        throw new Error(`Export failed with status ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = `kavach-analytics-${Date.now()}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (requestError) {
+      console.error(requestError);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const kpiCards = [
     { label: "Total Machines", value: kpis.totalMachines, icon: Factory, tone: "cyan" },
@@ -206,6 +239,16 @@ export default function AnalyticsPage() {
             {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Activity size={16} />}
             Socket.IO live analytics
           </div>
+
+          <button
+            type="button"
+            onClick={() => void exportCsv()}
+            disabled={isExporting}
+            className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition-colors hover:bg-cyan-500/20 disabled:opacity-60"
+          >
+            {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+            Export CSV
+          </button>
         </section>
 
         {error ? (
