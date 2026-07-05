@@ -7,8 +7,12 @@ import type { MachineDisplayData } from "@/types/machine";
 
 export default function Machine({
   machine,
+  selected = false,
+  hovered = false,
 }: {
   machine: MachineDisplayData;
+  selected?: boolean;
+  hovered?: boolean;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const gearRef = useRef<THREE.Mesh>(null);
@@ -60,7 +64,11 @@ export default function Machine({
       : "#22c55e";
 
   return (
-    <group ref={groupRef} position={[0, 0.6, 0]}>
+    <group
+      ref={groupRef}
+      position={[0, 0.6, 0]}
+      scale={selected ? 1.12 : hovered ? 1.06 : 1}
+    >
       {/* Main Body */}
       <mesh castShadow receiveShadow>
         <boxGeometry args={[1.2, 1.2, 1.2]} />
@@ -110,6 +118,19 @@ export default function Machine({
           }
         />
       </mesh>
+
+      {selected || hovered ? (
+        <mesh position={[0, -0.64, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.92, 1.05, 48]} />
+          <meshStandardMaterial
+            color={selected ? "#22d3ee" : "#94a3b8"}
+            emissive={selected ? "#22d3ee" : "#64748b"}
+            emissiveIntensity={selected ? 1.2 : 0.45}
+            transparent
+            opacity={0.72}
+          />
+        </mesh>
+      ) : null}
     </group>
   );
 }
