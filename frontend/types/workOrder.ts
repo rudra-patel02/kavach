@@ -72,6 +72,22 @@ export interface WorkOrdersResponse {
   workOrders: WorkOrder[];
 }
 
+export interface WorkOrderStats {
+  pending: number;
+  active: number;
+  completed: number;
+  overdue: number;
+  highPriority: number;
+  estimatedDurationHours: number;
+  byStatus: Partial<Record<WorkOrderStatus, number>>;
+  byPriority: Partial<Record<WorkOrderPriority, number>>;
+}
+
+export interface WorkOrderStatsResponse {
+  success: boolean;
+  stats: WorkOrderStats;
+}
+
 export interface WorkOrderResponse {
   success: boolean;
   workOrder: WorkOrder;

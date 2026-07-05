@@ -1,27 +1,45 @@
-import Machine from "../models/machine.js";
 import { buildAiCopilotResponse } from "../services/aiCopilotService.js";
 import {
   buildCopilotReport,
 } from "../services/copilotAnalysisService.js";
+import { loadCopilotContext } from "../services/copilotContextService.js";
+import { validateCopilotChatPayload } from "../validators/copilotValidator.js";
 
 export const chatWithCopilot = async (req, res) => {
   try {
-    const message = String(req.body?.message || "").trim();
+    const { message, stream } = validateCopilotChatPayload(req.body);
+    const context = await loadCopilotContext();
+    const response = await buildAiCopilotResponse(message, context);
 
-    if (!message) {
-      return res.status(400).json({
-        message: "Message is required",
+    if (stream || req.accepts("text/event-stream")) {
+      res.writeHead(200, {
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+        "Content-Type": "text/event-stream; charset=utf-8",
       });
-    }
+      res.write(
+        `event: meta\ndata: ${JSON.stringify({
+          ...response,
+          answer: "",
+          message,
+          success: true,
+        })}\n\n`
+      );
 
-    if (message.length > 1000) {
-      return res.status(400).json({
-        message: "Message must be 1000 characters or fewer",
-      });
-    }
+      for (const token of response.answer.match(/\S+\s*/g) || []) {
+        res.write(`event: token\ndata: ${JSON.stringify({ token })}\n\n`);
+      }
 
-    const machines = await Machine.find().sort({ machineId: 1 }).lean();
-    const response = await buildAiCopilotResponse(message, machines);
+      res.write(
+        `event: done\ndata: ${JSON.stringify({
+          success: true,
+          message,
+          ...response,
+        })}\n\n`
+      );
+      res.end();
+      return;
+    }
 
     res.json({
       success: true,
@@ -30,16 +48,21 @@ export const chatWithCopilot = async (req, res) => {
     });
   } catch (error) {
     console.error("Copilot chat failed:", error);
-    res.status(500).json({
-      message: "Failed to generate copilot response",
+    const statusCode = error.statusCode || 500;
+
+    res.status(statusCode).json({
+      message:
+        statusCode < 500
+          ? error.message
+          : "Failed to generate copilot response",
     });
   }
 };
 
 export const getCopilotReport = async (req, res) => {
   try {
-    const machines = await Machine.find().sort({ machineId: 1 }).lean();
-    const report = buildCopilotReport(machines);
+    const context = await loadCopilotContext();
+    const report = buildCopilotReport(context.machines);
 
     res.json({
       success: true,

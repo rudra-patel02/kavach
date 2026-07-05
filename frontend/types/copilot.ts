@@ -68,7 +68,14 @@ export interface CopilotChatResponse {
   affectedMachines: CopilotMachineInsight[];
   suggestedQuestions?: string[];
   generatedAt: string;
+  provider?: string;
+  providerError?: string;
 }
+
+export type CopilotStreamEvent =
+  | { type: "meta"; response: Partial<CopilotChatResponse> }
+  | { type: "token"; token: string }
+  | { type: "done"; response: CopilotChatResponse };
 
 export interface CopilotReport {
   reportId: string;

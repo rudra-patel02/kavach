@@ -6,6 +6,11 @@ import {
 } from "./copilotAnalysisService.js";
 import { buildPredictiveOverview } from "./predictionService.js";
 
+const getContextMachines = (contextOrMachines) =>
+  Array.isArray(contextOrMachines)
+    ? contextOrMachines
+    : contextOrMachines?.machines || [];
+
 const includesAny = (message, terms) =>
   terms.some((term) => message.includes(term));
 
@@ -73,6 +78,120 @@ const buildFailureLeaderResponse = (message, machines) => {
       "Show unhealthy machines",
       "Generate today's maintenance report",
       "Which department consumes most energy?",
+    ],
+    generatedAt: new Date().toISOString(),
+  };
+};
+
+const buildCriticalAlertsResponse = (machines, context = {}) => {
+  const alerts = (context.notifications || []).filter((notification) =>
+    ["Critical", "High"].includes(notification.severity)
+  );
+  const topAlerts = alerts.slice(0, 8);
+
+  return {
+    intent: "critical_alerts",
+    answer: [
+      `Critical alert count: ${topAlerts.length}`,
+      "",
+      ...(topAlerts.length
+        ? topAlerts.map(
+            (alert, index) =>
+              `${index + 1}. ${alert.machineName} (${alert.machineId}) - ${alert.severity}: ${alert.message}`
+          )
+        : ["No critical or high severity alerts are currently active."]),
+      "",
+      "Recommended action: prioritize unresolved Critical alerts, check linked work orders, and verify live telemetry before shift handoff.",
+    ].join("\n"),
+    recommendation: formatRecommendation(
+      context.predictiveOverview?.predictions?.[0]
+    ),
+    summary: buildPlantSummary(machines),
+    affectedMachines: topAlerts
+      .map((alert) =>
+        createMachineInsight(
+          machines.find((machine) => machine.machineId === alert.machineId)
+        )
+      )
+      .filter(Boolean),
+    suggestedQuestions: [
+      "Which alert is highest priority?",
+      "Create a maintenance plan",
+      "Show unhealthy machines",
+      "Explain the top failure risk",
+    ],
+    generatedAt: new Date().toISOString(),
+  };
+};
+
+const buildOeeExplanationResponse = (machines, context = {}) => {
+  const kpis = context.executiveDashboard?.kpis || {};
+
+  return {
+    intent: "oee_explanation",
+    answer: [
+      "OEE combines Availability, Performance, and Quality into one plant effectiveness score.",
+      "",
+      `Current OEE: ${kpis.oee ?? 0}%`,
+      `Availability: ${kpis.availability ?? 0}%`,
+      `Performance: ${kpis.performance ?? kpis.productionEfficiency ?? 0}%`,
+      `Quality: ${kpis.quality ?? kpis.health ?? 0}%`,
+      "",
+      "Formula: OEE = Availability x Performance x Quality.",
+      "",
+      "For maintenance teams, a falling OEE usually means downtime, speed loss, quality loss, or a combination of all three. Compare the OEE trend against active alerts and work orders before deciding whether to reduce load or schedule inspection.",
+    ].join("\n"),
+    recommendation: formatRecommendation(
+      context.predictiveOverview?.predictions?.[0]
+    ),
+    summary: buildPlantSummary(machines),
+    affectedMachines: [],
+    suggestedQuestions: [
+      "Which department has lowest OEE?",
+      "Show downtime trend",
+      "Which machine is hurting OEE?",
+      "Energy optimization suggestions",
+    ],
+    generatedAt: new Date().toISOString(),
+  };
+};
+
+const buildWeeklyFailureResponse = (machines, context = {}) => {
+  const overview = context.predictiveOverview || buildPredictiveOverview(machines);
+  const candidates = overview.predictions
+    .filter((prediction) => prediction.remainingUsefulLifeHours <= 168)
+    .slice(0, 8);
+
+  return {
+    intent: "weekly_failure_prediction",
+    answer: [
+      "Failure forecast for this week",
+      "",
+      ...(candidates.length
+        ? candidates.map(
+            (machine, index) =>
+              `${index + 1}. ${machine.name} (${machine.machineId}) - ${machine.riskLevel}, failure probability ${machine.failureProbability}%, RUL ${machine.remainingUsefulLifeHours}h, priority ${machine.maintenancePriority}.`
+          )
+        : ["No machine is predicted to fail inside the next 7 days."]),
+      "",
+      candidates[0]
+        ? `First action: ${candidates[0].recommendation}`
+        : "First action: continue routine monitoring and keep weekly preventive checks on schedule.",
+    ].join("\n"),
+    recommendation: formatRecommendation(candidates[0] || overview.predictions[0]),
+    summary: buildPlantSummary(machines),
+    affectedMachines: candidates.map((candidate) =>
+      createMachineInsight(
+        machines.find((machine) => machine.machineId === candidate.machineId) ||
+          candidate
+      )
+    ),
+    predictiveOverview: overview,
+    suggestedQuestions: [
+      "Which machine needs maintenance first?",
+      "Generate maintenance schedule",
+      "Show critical alerts",
+      "Explain top risk machine",
     ],
     generatedAt: new Date().toISOString(),
   };
@@ -197,8 +316,37 @@ const buildMaintenanceReportResponse = (message, machines) => {
   };
 };
 
-const getLocalCopilotResponse = (message, machines) => {
+const getLocalCopilotResponse = (message, contextOrMachines) => {
+  const machines = getContextMachines(contextOrMachines);
+  const context = Array.isArray(contextOrMachines) ? { machines } : contextOrMachines;
   const normalized = String(message || "").trim().toLowerCase();
+
+  if (
+    includesAny(normalized, [
+      "critical alerts",
+      "show alerts",
+      "active alerts",
+      "alert summary",
+    ])
+  ) {
+    return buildCriticalAlertsResponse(machines, context);
+  }
+
+  if (includesAny(normalized, ["explain oee", "what is oee", "oee"])) {
+    return buildOeeExplanationResponse(machines, context);
+  }
+
+  if (
+    includesAny(normalized, [
+      "this week",
+      "next week",
+      "predict failures",
+      "failures this week",
+      "failure this week",
+    ])
+  ) {
+    return buildWeeklyFailureResponse(machines, context);
+  }
 
   if (
     includesAny(normalized, [
@@ -241,40 +389,51 @@ const getLocalCopilotResponse = (message, machines) => {
   return buildCopilotResponse(message, machines);
 };
 
-export const buildAiProviderPayload = (message, machines) => ({
-  provider: process.env.OPENAI_API_KEY
-    ? "openai"
-    : process.env.AI_PROVIDER || "local-rule-engine",
-  model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-  messages: [
-    {
-      role: "system",
-      content:
-        "You are KAVACH, an industrial maintenance copilot. Use only supplied machine telemetry and format responses for plant operations teams.",
-    },
-    {
-      role: "user",
-      content: message,
-    },
-  ],
-  context: {
-    machineCount: machines.length,
-    machines: machines.map((machine) => ({
-      machineId: machine.machineId,
-      name: machine.name,
-      department: machine.department,
-      status: machine.status,
-      health: machine.health,
-      temperature: machine.temperature,
-      vibration: machine.vibration,
-      pressure: machine.pressure,
-      energyConsumed: getEnergy(machine),
-    })),
-  },
-});
+export const buildAiProviderPayload = (message, contextOrMachines) => {
+  const machines = getContextMachines(contextOrMachines);
+  const context = Array.isArray(contextOrMachines)
+    ? { machines }
+    : contextOrMachines;
 
-const buildOpenAiPrompt = (message, machines) => {
-  const payload = buildAiProviderPayload(message, machines);
+  return {
+    provider: process.env.OPENAI_API_KEY
+      ? "openai"
+      : process.env.AI_PROVIDER || "local-rule-engine",
+    model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are KAVACH, an industrial maintenance copilot. Use only supplied machine telemetry and format responses for plant operations teams.",
+      },
+      {
+        role: "user",
+        content: message,
+      },
+    ],
+    context: {
+      machineCount: machines.length,
+      machines: machines.map((machine) => ({
+        machineId: machine.machineId,
+        name: machine.name,
+        department: machine.department,
+        status: machine.status,
+        health: machine.health,
+        temperature: machine.temperature,
+        vibration: machine.vibration,
+        pressure: machine.pressure,
+        energyConsumed: getEnergy(machine),
+      })),
+      alerts: (context.notifications || []).slice(0, 20),
+      workOrders: (context.workOrders || []).slice(0, 20),
+      predictiveSummary: context.predictiveOverview?.summary || null,
+      executiveKpis: context.executiveDashboard?.kpis || null,
+    },
+  };
+};
+
+const buildOpenAiPrompt = (message, context) => {
+  const payload = buildAiProviderPayload(message, context);
 
   return [
     payload.messages[0],
@@ -290,7 +449,7 @@ const buildOpenAiPrompt = (message, machines) => {
   ];
 };
 
-const callOpenAiCopilot = async (message, machines) => {
+const callOpenAiCopilot = async (message, context) => {
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -300,7 +459,7 @@ const callOpenAiCopilot = async (message, machines) => {
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL || "gpt-4o-mini",
       temperature: 0.2,
-      messages: buildOpenAiPrompt(message, machines),
+      messages: buildOpenAiPrompt(message, context),
     }),
   });
 
@@ -312,13 +471,13 @@ const callOpenAiCopilot = async (message, machines) => {
   return body.choices?.[0]?.message?.content?.trim();
 };
 
-export const buildAiCopilotResponse = async (message, machines) => {
-  const response = getLocalCopilotResponse(message, machines);
-  const providerPayload = buildAiProviderPayload(message, machines);
+export const buildAiCopilotResponse = async (message, contextOrMachines) => {
+  const response = getLocalCopilotResponse(message, contextOrMachines);
+  const providerPayload = buildAiProviderPayload(message, contextOrMachines);
 
   if (process.env.OPENAI_API_KEY) {
     try {
-      const openAiAnswer = await callOpenAiCopilot(message, machines);
+      const openAiAnswer = await callOpenAiCopilot(message, contextOrMachines);
 
       if (openAiAnswer) {
         return {

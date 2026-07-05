@@ -11,6 +11,7 @@ import {
 } from "../services/workOrderService.js";
 
 const getIo = (req) => req.app.get("io");
+const ACTIVE_STATUSES = ["OPEN", "ASSIGNED", "IN_PROGRESS", "WAITING_PARTS"];
 
 const buildQuery = (query) => {
   const filters = {};
@@ -69,6 +70,66 @@ export const getWorkOrders = async (req, res) => {
   } catch (error) {
     console.error("Failed to fetch work orders:", error);
     res.status(500).json({ message: "Failed to fetch work orders" });
+  }
+};
+
+export const getWorkOrderStats = async (req, res) => {
+  try {
+    const [statusSummary, prioritySummary, overdueCount] = await Promise.all([
+      WorkOrder.aggregate([
+        {
+          $group: {
+            _id: "$status",
+            count: { $sum: 1 },
+            estimatedDurationHours: { $sum: "$estimatedDowntimeHours" },
+          },
+        },
+      ]),
+      WorkOrder.aggregate([
+        {
+          $group: {
+            _id: "$priority",
+            count: { $sum: 1 },
+          },
+        },
+      ]),
+      WorkOrder.countDocuments({
+        dueDate: { $lt: new Date() },
+        status: { $in: ACTIVE_STATUSES },
+      }),
+    ]);
+    const statusCounts = Object.fromEntries(
+      statusSummary.map((item) => [item._id, item.count])
+    );
+    const priorityCounts = Object.fromEntries(
+      prioritySummary.map((item) => [item._id, item.count])
+    );
+    const active = ACTIVE_STATUSES.reduce(
+      (sum, status) => sum + Number(statusCounts[status] || 0),
+      0
+    );
+
+    res.json({
+      success: true,
+      stats: {
+        pending:
+          Number(statusCounts.OPEN || 0) + Number(statusCounts.ASSIGNED || 0),
+        active,
+        completed: Number(statusCounts.COMPLETED || 0),
+        overdue: overdueCount,
+        highPriority:
+          Number(priorityCounts.HIGH || 0) + Number(priorityCounts.CRITICAL || 0),
+        estimatedDurationHours: statusSummary.reduce(
+          (sum, item) => sum + Number(item.estimatedDurationHours || 0),
+          0
+        ),
+        byStatus: statusCounts,
+        byPriority: priorityCounts,
+      },
+    });
+  } catch (error) {
+    console.error("Failed to fetch work order stats:", error);
+    res.status(500).json({ message: "Failed to fetch work order statistics" });
   }
 };
 

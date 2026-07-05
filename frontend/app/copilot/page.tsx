@@ -22,7 +22,7 @@ import CopilotMessage, {
 import CopilotRightPanel from "@/components/copilot/CopilotRightPanel";
 import TypingIndicator from "@/components/copilot/TypingIndicator";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { fetchCopilotReport, sendCopilotMessage } from "@/lib/copilot";
+import { fetchCopilotReport, streamCopilotMessage } from "@/lib/copilot";
 import { fetchMachines } from "@/lib/machines";
 import { downloadReportPdf } from "@/lib/reports";
 import socket from "@/lib/socket";
@@ -30,13 +30,13 @@ import type { CopilotReport } from "@/types/copilot";
 import type { MachineData } from "@/types/machine";
 
 const starterPrompts = [
-  "Why is Machine-03 overheating?",
-  "Which machines need maintenance?",
+  "Why is Machine M-203 overheating?",
+  "Show critical alerts.",
+  "Predict failures this week.",
+  "Which machine needs maintenance first?",
+  "Explain OEE.",
   "Show unhealthy machines.",
-  "Predict failures in next 24 hours.",
-  "Explain vibration anomaly.",
-  "Generate maintenance plan.",
-  "Summarize plant status.",
+  "Energy optimization suggestions.",
 ];
 
 const createId = () =>
@@ -115,6 +115,7 @@ export default function CopilotPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isReportLoading, setIsReportLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const messageEndRef = useRef<HTMLDivElement>(null);
   const typingTimersRef = useRef<number[]>([]);
   const machineSnapshotRef = useRef<Map<string, { critical: boolean; status: string }>>(
@@ -178,7 +179,7 @@ export default function CopilotPage() {
   );
 
   const addCriticalEventMessage = useCallback((machine: MachineData) => {
-    const content = `⚠ ${getMachineLabel(machine)} has entered Critical condition.`;
+    const content = `Critical: ${getMachineLabel(machine)} has entered Critical condition.`;
     const message: CopilotChatMessage = {
       id: createId(),
       role: "assistant",
@@ -209,32 +210,135 @@ export default function CopilotPage() {
         content: question,
         createdAt: new Date().toISOString(),
       };
+      const assistantId = createId();
+      const assistantMessage: CopilotChatMessage = {
+        id: assistantId,
+        role: "assistant",
+        content: "",
+        createdAt: new Date().toISOString(),
+      };
+      const history = messages
+        .filter((message) => message.id !== "welcome")
+        .slice(-12)
+        .map((message) => ({
+          content: message.content,
+          role: message.role,
+        }));
 
-      setMessages((current) => [...current, userMessage]);
+      setMessages((current) => [...current, userMessage, assistantMessage]);
       setInput("");
       setIsLoading(true);
 
       try {
-        const response = await sendCopilotMessage(question);
-        addAssistantMessage(response.answer, {
-          metadata: response,
-          variant:
-            response.recommendation.riskLevel === "Critical"
-              ? "critical"
-              : "normal",
-        });
+        await streamCopilotMessage(question, (event) => {
+          if (event.type === "token") {
+            setMessages((current) =>
+              current.map((message) =>
+                message.id === assistantId
+                  ? {
+                      ...message,
+                      content: `${message.content}${event.token}`,
+                    }
+                  : message
+              )
+            );
+          }
+
+          if (event.type === "done") {
+            setMessages((current) =>
+              current.map((message) =>
+                message.id === assistantId
+                  ? {
+                      ...message,
+                      content: event.response.answer,
+                      metadata: event.response,
+                      variant:
+                        event.response.recommendation.riskLevel === "Critical"
+                          ? "critical"
+                          : "normal",
+                    }
+                  : message
+              )
+            );
+          }
+        }, history);
       } catch (error) {
-        addAssistantMessage(
-          `I could not reach the copilot service. ${
-            error instanceof Error ? error.message : "Please try again."
-          }`
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === assistantId
+              ? {
+                  ...message,
+                  content: `I could not reach the copilot service. ${
+                    error instanceof Error ? error.message : "Please try again."
+                  }`,
+                }
+              : message
+          )
         );
       } finally {
         setIsLoading(false);
       }
     },
-    [addAssistantMessage, isLoading]
+    [isLoading, messages]
   );
+
+  useEffect(() => {
+    const loadTimer = window.setTimeout(() => {
+      try {
+        const rawHistory = localStorage.getItem("kavach:copilot-history");
+
+        if (rawHistory) {
+          const parsedHistory = JSON.parse(rawHistory) as CopilotChatMessage[];
+          setMessages(parsedHistory);
+        }
+      } catch {
+        localStorage.removeItem("kavach:copilot-history");
+      } finally {
+        setHistoryLoaded(true);
+      }
+    }, 0);
+
+    return () => {
+      window.clearTimeout(loadTimer);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!historyLoaded) {
+      return;
+    }
+
+    localStorage.setItem(
+      "kavach:copilot-history",
+      JSON.stringify(messages.slice(-60))
+    );
+  }, [historyLoaded, messages]);
+
+  const messageGroups = useMemo(() => {
+    const groups: { dateLabel: string; messages: CopilotChatMessage[] }[] = [];
+
+    for (const message of messages) {
+      const date = message.createdAt ? new Date(message.createdAt) : new Date();
+      const dateLabel = Number.isNaN(date.getTime())
+        ? "Today"
+        : date.toLocaleDateString(undefined, {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          });
+
+      if (groups.at(-1)?.dateLabel !== dateLabel) {
+        groups.push({
+          dateLabel,
+          messages: [],
+        });
+      }
+
+      groups.at(-1)?.messages.push(message);
+    }
+
+    return groups;
+  }, [messages]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -403,12 +507,21 @@ export default function CopilotPage() {
             </div>
 
             <div className="flex-1 space-y-5 overflow-y-auto scroll-smooth bg-slate-950 p-5">
-              {messages.map((message) => (
-                <CopilotMessage
-                  key={message.id}
-                  message={message}
-                  visibleContent={typedContent[message.id] ?? message.content}
-                />
+              {messageGroups.map((group) => (
+                <div key={group.dateLabel} className="space-y-5">
+                  <div className="flex items-center justify-center">
+                    <span className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-semibold text-slate-400">
+                      {group.dateLabel}
+                    </span>
+                  </div>
+                  {group.messages.map((message) => (
+                    <CopilotMessage
+                      key={message.id}
+                      message={message}
+                      visibleContent={typedContent[message.id] ?? message.content}
+                    />
+                  ))}
+                </div>
               ))}
 
               {isLoading ? <TypingIndicator /> : null}

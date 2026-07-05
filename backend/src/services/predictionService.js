@@ -261,6 +261,15 @@ const buildMachineTrend = (prediction, key, baseline) => {
   });
 };
 
+const buildPredictionTimeline = (prediction, trends) =>
+  trends.failureProbability.map((point, index) => ({
+    time: point.time,
+    failureProbability: point.value,
+    riskScore: point.value,
+    health: trends.health[index]?.value || prediction.machineHealth,
+    confidence: prediction.aiConfidence,
+  }));
+
 const normalizePredictionHistory = (machine, prediction, trends) => {
   const existingHistory = Array.isArray(machine.predictionHistory)
     ? machine.predictionHistory
@@ -359,11 +368,22 @@ export const createMachinePrediction = (machine) => {
     ),
     energy: buildMachineTrend(prediction, "energy", prediction.telemetry.energy),
   };
+  const predictionTimeline = buildPredictionTimeline(prediction, trends);
 
   return {
     ...prediction,
+    riskScore: prediction.failureProbability,
     rootCause: prediction.probableCause,
     confidenceScore: prediction.aiConfidence,
+    maintenanceUrgency: prediction.maintenancePriority,
+    recommendationEngine: {
+      recommendedAction: prediction.recommendation,
+      probableCause: prediction.probableCause,
+      priority: prediction.maintenancePriority,
+      riskLevel: prediction.riskLevel,
+    },
+    predictionTimeline,
+    healthTrend: trends.health,
     riskTrend: prediction.trendDirection,
     predictionHistory: normalizePredictionHistory(machine, prediction, trends),
     historicalTrend: {
@@ -448,10 +468,12 @@ export const buildPredictiveOverview = (machines) => {
       totalMachines: predictions.length,
       machineHealth: averageMachineHealth,
       failureProbability: averageFailureProbability,
+      riskScore: averageFailureProbability,
       remainingUsefulLifeHours: averageRemainingUsefulLifeHours,
       aiConfidence: averageAiConfidence,
       riskLevel: plantRiskLevel,
       maintenancePriority: getMaintenancePriority(plantRiskLevel),
+      maintenanceUrgency: getMaintenancePriority(plantRiskLevel),
       highRiskMachines: highRiskMachines.length,
       riskDistribution,
     },
@@ -464,6 +486,12 @@ export const buildPredictiveOverview = (machines) => {
       },
       {
         label: "Failure Probability",
+        value: averageFailureProbability,
+        unit: "%",
+        riskLevel: plantRiskLevel,
+      },
+      {
+        label: "Risk Score",
         value: averageFailureProbability,
         unit: "%",
         riskLevel: plantRiskLevel,
@@ -494,6 +522,15 @@ export const buildPredictiveOverview = (machines) => {
       failureProbability: buildPlantTrend(predictions, "failureProbability"),
       energy: buildPlantTrend(predictions, "energy"),
     },
+    predictionTimeline: buildPlantTrend(predictions, "failureProbability").map(
+      (point, index) => ({
+        time: point.time,
+        failureProbability: point.value,
+        riskScore: point.value,
+        health: buildPlantTrend(predictions, "health")[index]?.value || 0,
+        confidence: averageAiConfidence,
+      })
+    ),
     predictions,
     ranking: predictions.map((prediction, index) => ({
       rank: index + 1,

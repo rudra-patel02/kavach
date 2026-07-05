@@ -5,16 +5,19 @@ import {
   Activity,
   AlertTriangle,
   Bell,
+  BellRing,
   Check,
   CheckCheck,
   Gauge,
   HeartPulse,
   Inbox,
   Loader2,
+  Search,
   Thermometer,
   Trash2,
   Wrench,
   X,
+  Zap,
 } from "lucide-react";
 import {
   clearNotifications,
@@ -27,6 +30,7 @@ import socket from "@/lib/socket";
 import type {
   NotificationItem,
   NotificationSeverity,
+  NotificationType,
 } from "@/types/notification";
 
 const severityClasses: Record<NotificationSeverity, string> = {
@@ -45,11 +49,25 @@ const iconClasses: Record<NotificationSeverity, string> = {
 
 const iconMap = {
   activity: Activity,
+  zap: Zap,
   "heart-pulse": HeartPulse,
   thermometer: Thermometer,
   gauge: Gauge,
   wrench: Wrench,
 };
+
+const categoryLabels: Record<NotificationType, string> = {
+  failure_probability: "Failure probability",
+  machine_health: "Machine health",
+  maintenance: "Maintenance",
+  power: "Power",
+  pressure: "Pressure",
+  temperature: "Temperature",
+  vibration: "Vibration",
+};
+
+const notificationTypes = Object.keys(categoryLabels) as NotificationType[];
+const severities: NotificationSeverity[] = ["Critical", "High", "Medium", "Low"];
 
 const formatTimestamp = (value: string) =>
   new Intl.DateTimeFormat(undefined, {
@@ -68,6 +86,28 @@ type NotificationDeletedPayload = {
   id: string;
 };
 
+type NotificationSocketPayload =
+  | NotificationItem
+  | { notification?: NotificationItem };
+
+type DesktopPermission = NotificationPermission | "unsupported";
+
+const isWrappedNotificationPayload = (
+  payload: NotificationSocketPayload
+): payload is { notification?: NotificationItem } =>
+  Object.prototype.hasOwnProperty.call(payload, "notification");
+
+const getSocketNotification = (payload: NotificationSocketPayload) =>
+  isWrappedNotificationPayload(payload) ? payload.notification : payload;
+
+const getDesktopPermission = (): DesktopPermission => {
+  if (typeof window === "undefined" || !("Notification" in window)) {
+    return "unsupported";
+  }
+
+  return window.Notification.permission;
+};
+
 export default function NotificationCenter() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -76,12 +116,54 @@ export default function NotificationCenter() {
   const [pendingIds, setPendingIds] = useState<Set<string>>(() => new Set());
   const [isMarkingAll, setIsMarkingAll] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [severityFilter, setSeverityFilter] = useState<
+    NotificationSeverity | "all"
+  >("all");
+  const [categoryFilter, setCategoryFilter] = useState<NotificationType | "all">(
+    "all"
+  );
+  const [toastNotification, setToastNotification] =
+    useState<NotificationItem | null>(null);
+  const [desktopPermission, setDesktopPermission] =
+    useState<DesktopPermission>("unsupported");
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
+  const liveToastIdsRef = useRef<Set<string>>(new Set());
 
   const unreadCount = useMemo(
     () => notifications.filter((notification) => !notification.read).length,
     [notifications]
   );
+
+  const filteredNotifications = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+
+    return notifications.filter((notification) => {
+      const matchesSeverity =
+        severityFilter === "all" || notification.severity === severityFilter;
+      const matchesCategory =
+        categoryFilter === "all" || notification.type === categoryFilter;
+      const searchable = [
+        notification.machineId,
+        notification.machineName,
+        notification.message,
+        notification.priority,
+        notification.severity,
+        notification.title,
+        notification.type,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return (
+        matchesSeverity &&
+        matchesCategory &&
+        (!query || searchable.includes(query))
+      );
+    });
+  }, [categoryFilter, notifications, searchTerm, severityFilter]);
 
   const loadNotifications = useCallback(async () => {
     try {
@@ -99,6 +181,43 @@ export default function NotificationCenter() {
     }
   }, []);
 
+  const showRealtimeNotification = useCallback(
+    (notification: NotificationItem) => {
+      if (liveToastIdsRef.current.has(notification.id)) {
+        return;
+      }
+
+      liveToastIdsRef.current.add(notification.id);
+
+      if (toastTimerRef.current) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+
+      setToastNotification(notification);
+      toastTimerRef.current = window.setTimeout(() => {
+        setToastNotification(null);
+      }, 5000);
+
+      if (desktopPermission === "granted" && "Notification" in window) {
+        new window.Notification(notification.title, {
+          body: notification.message,
+          tag: notification.id,
+        });
+      }
+    },
+    [desktopPermission]
+  );
+
+  useEffect(() => {
+    const permissionTimer = window.setTimeout(() => {
+      setDesktopPermission(getDesktopPermission());
+    }, 0);
+
+    return () => {
+      window.clearTimeout(permissionTimer);
+    };
+  }, []);
+
   useEffect(() => {
     const loadTimer = window.setTimeout(() => {
       void loadNotifications();
@@ -109,8 +228,23 @@ export default function NotificationCenter() {
     };
   }, [loadNotifications]);
 
+  useEffect(
+    () => () => {
+      if (toastTimerRef.current) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+    },
+    []
+  );
+
   useEffect(() => {
-    const handleNewNotification = (notification: NotificationItem) => {
+    const handleNewNotification = (payload: NotificationSocketPayload) => {
+      const notification = getSocketNotification(payload);
+
+      if (!notification?.id) {
+        return;
+      }
+
       setNotifications((currentNotifications) => {
         if (
           currentNotifications.some(
@@ -122,6 +256,7 @@ export default function NotificationCenter() {
 
         return [notification, ...currentNotifications].slice(0, 100);
       });
+      showRealtimeNotification(notification);
     };
 
     const handleNotificationRead = (payload: NotificationReadPayload) => {
@@ -166,6 +301,8 @@ export default function NotificationCenter() {
     };
 
     socket.on("notification:new", handleNewNotification);
+    socket.on("notification:created", handleNewNotification);
+    socket.on("alert:created", handleNewNotification);
     socket.on("notification:read", handleNotificationRead);
     socket.on("notifications:readAll", handleAllNotificationsRead);
     socket.on("notification:deleted", handleNotificationDeleted);
@@ -173,12 +310,14 @@ export default function NotificationCenter() {
 
     return () => {
       socket.off("notification:new", handleNewNotification);
+      socket.off("notification:created", handleNewNotification);
+      socket.off("alert:created", handleNewNotification);
       socket.off("notification:read", handleNotificationRead);
       socket.off("notifications:readAll", handleAllNotificationsRead);
       socket.off("notification:deleted", handleNotificationDeleted);
       socket.off("notifications:cleared", handleNotificationsCleared);
     };
-  }, []);
+  }, [showRealtimeNotification]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -334,8 +473,46 @@ export default function NotificationCenter() {
     }
   };
 
+  const handleRequestDesktopNotifications = async () => {
+    if (!("Notification" in window)) {
+      setDesktopPermission("unsupported");
+      setError("Desktop notifications are not supported by this browser");
+      return;
+    }
+
+    try {
+      const permission = await window.Notification.requestPermission();
+      setDesktopPermission(permission);
+      setError(null);
+    } catch {
+      setError("Could not update desktop notification permission");
+    }
+  };
+
   return (
     <div ref={panelRef} className="relative">
+      {toastNotification ? (
+        <div className="fixed right-4 top-20 z-[60] w-[calc(100vw-2rem)] max-w-sm rounded-2xl border border-cyan-400/30 bg-slate-950/95 p-4 text-slate-100 shadow-2xl shadow-black/40 backdrop-blur">
+          <div className="flex gap-3">
+            <span
+              className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ${
+                iconClasses[toastNotification.severity]
+              }`}
+            >
+              <BellRing size={19} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-white">
+                {toastNotification.title}
+              </p>
+              <p className="mt-1 text-sm text-slate-300">
+                {toastNotification.message}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <button
         type="button"
         onClick={() => setIsOpen((currentIsOpen) => !currentIsOpen)}
@@ -364,6 +541,9 @@ export default function NotificationCenter() {
                 </h3>
                 <p className="mt-1 text-sm text-slate-400">
                   {unreadCount} unread from {notifications.length} total
+                  {filteredNotifications.length !== notifications.length
+                    ? `, ${filteredNotifications.length} shown`
+                    : ""}
                 </p>
               </div>
 
@@ -377,12 +557,12 @@ export default function NotificationCenter() {
               </button>
             </div>
 
-            <div className="mt-4 flex gap-2">
+            <div className="mt-4 grid gap-2 sm:grid-cols-3">
               <button
                 type="button"
                 onClick={handleMarkAllRead}
                 disabled={unreadCount === 0 || isMarkingAll}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-sm font-semibold text-cyan-100 transition-colors hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-45"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-sm font-semibold text-cyan-100 transition-colors hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-45"
               >
                 {isMarkingAll ? (
                   <Loader2 size={16} className="animate-spin" />
@@ -396,7 +576,7 @@ export default function NotificationCenter() {
                 type="button"
                 onClick={handleClearAll}
                 disabled={notifications.length === 0 || isClearing}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-100 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-45"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-100 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-45"
               >
                 {isClearing ? (
                   <Loader2 size={16} className="animate-spin" />
@@ -405,6 +585,64 @@ export default function NotificationCenter() {
                 )}
                 Clear all
               </button>
+
+              <button
+                type="button"
+                onClick={() => void handleRequestDesktopNotifications()}
+                disabled={desktopPermission === "unsupported"}
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-100 transition-colors hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                <BellRing size={16} />
+                {desktopPermission === "granted" ? "Desktop on" : "Desktop"}
+              </button>
+            </div>
+
+            <div className="mt-4 grid gap-2">
+              <label className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-300 focus-within:border-cyan-400/50">
+                <Search size={16} className="shrink-0 text-slate-500" />
+                <input
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Search machine, title, priority..."
+                  className="min-w-0 flex-1 bg-transparent text-white outline-none placeholder:text-slate-500"
+                />
+              </label>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                <select
+                  value={severityFilter}
+                  onChange={(event) =>
+                    setSeverityFilter(
+                      event.target.value as NotificationSeverity | "all"
+                    )
+                  }
+                  className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 outline-none transition-colors focus:border-cyan-400/50"
+                  aria-label="Filter notifications by severity"
+                >
+                  <option value="all">All severities</option>
+                  {severities.map((severity) => (
+                    <option key={severity} value={severity}>
+                      {severity}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={categoryFilter}
+                  onChange={(event) =>
+                    setCategoryFilter(event.target.value as NotificationType | "all")
+                  }
+                  className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 outline-none transition-colors focus:border-cyan-400/50"
+                  aria-label="Filter notifications by category"
+                >
+                  <option value="all">All categories</option>
+                  {notificationTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {categoryLabels[type]}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -435,9 +673,23 @@ export default function NotificationCenter() {
                   </p>
                 </div>
               </div>
+            ) : filteredNotifications.length === 0 ? (
+              <div className="flex min-h-52 items-center justify-center text-center">
+                <div>
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-300 ring-1 ring-slate-700">
+                    <Search size={24} />
+                  </div>
+                  <p className="mt-4 font-semibold text-white">
+                    No matching notifications
+                  </p>
+                  <p className="mt-1 text-sm text-slate-400">
+                    Adjust filters or search another machine.
+                  </p>
+                </div>
+              </div>
             ) : (
               <div className="space-y-3">
-                {notifications.map((notification) => {
+                {filteredNotifications.map((notification) => {
                   const Icon =
                     iconMap[notification.icon as keyof typeof iconMap] ||
                     AlertTriangle;
@@ -482,14 +734,17 @@ export default function NotificationCenter() {
                           </div>
 
                           <h4 className="mt-2 text-sm font-bold text-white">
-                            {notification.machineName}
+                            {notification.title}
                           </h4>
                           <p className="mt-1 text-sm text-slate-300">
                             {notification.message}
                           </p>
-                          <p className="mt-2 text-xs text-slate-500">
-                            {formatTimestamp(notification.createdAt)}
-                          </p>
+                          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                            <span>{notification.machineName}</span>
+                            <span>{categoryLabels[notification.type]}</span>
+                            <span>{notification.priority}</span>
+                            <span>{formatTimestamp(notification.createdAt)}</span>
+                          </div>
                         </div>
 
                         <div className="flex shrink-0 flex-col gap-2">

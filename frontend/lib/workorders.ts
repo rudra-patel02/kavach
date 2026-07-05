@@ -2,6 +2,7 @@ import { fetchJson } from "./api";
 import type {
   WorkOrderDeleteResponse,
   WorkOrderResponse,
+  WorkOrderStatsResponse,
   WorkOrdersResponse,
   WorkOrderUpdatePayload,
 } from "@/types/workOrder";
@@ -11,6 +12,9 @@ export const fetchWorkOrders = () =>
 
 export const fetchWorkOrder = (id: string) =>
   fetchJson<WorkOrderResponse>(`/api/workorders/${encodeURIComponent(id)}`);
+
+export const fetchWorkOrderStats = () =>
+  fetchJson<WorkOrderStatsResponse>("/api/workorders/stats");
 
 export const createWorkOrder = (payload: WorkOrderUpdatePayload & { machineId: string }) =>
   fetchJson<WorkOrderResponse>("/api/workorders", {

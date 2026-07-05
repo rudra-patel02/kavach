@@ -4,6 +4,7 @@ import {
   createWorkOrder,
   getWorkOrder,
   getWorkOrders,
+  getWorkOrderStats,
   patchWorkOrder,
   removeWorkOrder,
 } from "../controllers/workOrderController.js";
@@ -28,6 +29,7 @@ const manageRoles = [
 ];
 
 router.get("/", authMiddleware, roleMiddleware(readRoles), getWorkOrders);
+router.get("/stats", authMiddleware, roleMiddleware(readRoles), getWorkOrderStats);
 router.get("/:id", authMiddleware, roleMiddleware(readRoles), getWorkOrder);
 router.post("/", authMiddleware, roleMiddleware(manageRoles), createWorkOrder);
 router.patch("/:id", authMiddleware, roleMiddleware(manageRoles), patchWorkOrder);

@@ -18,8 +18,22 @@ export interface PredictiveMachineTelemetry {
   temperature: number;
   vibration: number;
   pressure: number;
+  humidity?: number;
+  power?: number;
+  current?: number;
+  voltage?: number;
+  efficiency?: number;
+  oee?: number;
   energy: number;
   health: number;
+}
+
+export interface PredictionTimelinePoint {
+  time: string;
+  failureProbability: number;
+  riskScore: number;
+  health: number;
+  confidence: number;
 }
 
 export interface PredictiveMachine {
@@ -30,16 +44,26 @@ export interface PredictiveMachine {
   machineHealth: number;
   failureProbability: number;
   failureProbabilityPercent: number;
+  riskScore: number;
   remainingUsefulLifeHours: number;
   aiConfidence: number;
+  confidencePercent: number;
   confidenceScore: number;
   riskLevel: PredictiveRiskLevel;
   maintenancePriority: string;
+  maintenanceUrgency: string;
   trendDirection: string;
   riskTrend: string;
   probableCause: string;
   rootCause: string;
   recommendation: string;
+  recommendedAction: string;
+  recommendationEngine: {
+    recommendedAction: string;
+    probableCause: string;
+    priority: string;
+    riskLevel: PredictiveRiskLevel;
+  };
   estimatedDowntimeHours: number;
   inspectionDate: string;
   telemetry: PredictiveMachineTelemetry;
@@ -50,6 +74,8 @@ export interface PredictiveMachine {
     failureProbability: PredictiveTrendPoint[];
     energy: PredictiveTrendPoint[];
   };
+  predictionTimeline: PredictionTimelinePoint[];
+  healthTrend: PredictiveTrendPoint[];
   predictionHistory: {
     timestamp: string;
     failureProbability: number;
@@ -107,10 +133,12 @@ export interface PredictiveOverview {
     totalMachines: number;
     machineHealth: number;
     failureProbability: number;
+    riskScore: number;
     remainingUsefulLifeHours: number;
     aiConfidence: number;
     riskLevel: PredictiveRiskLevel;
     maintenancePriority: string;
+    maintenanceUrgency: string;
     highRiskMachines: number;
     riskDistribution: Record<PredictiveRiskLevel, number>;
   };
@@ -121,6 +149,7 @@ export interface PredictiveOverview {
     failureProbability: PredictiveTrendPoint[];
     energy: PredictiveTrendPoint[];
   };
+  predictionTimeline: PredictionTimelinePoint[];
   predictions: PredictiveMachine[];
   ranking: PredictiveRankingRow[];
   maintenanceCalendar: PredictiveCalendarItem[];

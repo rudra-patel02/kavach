@@ -17,6 +17,13 @@ export const SOCKET_EVENTS = {
   ALERT_CREATED: "alert:created",
   NOTIFICATION_CREATED: "notification:created",
   LEGACY_NOTIFICATION_CREATED: "notification:new",
+  NOTIFICATION_READ: "notification:read",
+  NOTIFICATIONS_READ_ALL: "notifications:readAll",
+  NOTIFICATION_DELETED: "notification:deleted",
+  NOTIFICATIONS_CLEARED: "notifications:cleared",
+  WORKORDER_CREATED: "workorder:new",
+  WORKORDER_UPDATED: "workorder:updated",
+  WORKORDER_DELETED: "workorder:deleted",
 };
 
 const socket = io(getSocketBaseUrl(), {

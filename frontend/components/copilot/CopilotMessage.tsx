@@ -1,5 +1,6 @@
 import { Bot, Clock, User } from "lucide-react";
 import type { CopilotChatResponse, CopilotRiskLevel } from "@/types/copilot";
+import MarkdownContent from "./MarkdownContent";
 
 export interface CopilotChatMessage {
   id: string;
@@ -69,9 +70,7 @@ export default function CopilotMessage({
           </div>
         </div>
 
-        <p className="whitespace-pre-line text-sm leading-6 md:text-[15px]">
-          {visibleContent}
-        </p>
+        <MarkdownContent content={visibleContent} />
 
         {!isUser && recommendation ? (
           <div className="mt-4 grid gap-3 border-t border-slate-700/70 pt-4">

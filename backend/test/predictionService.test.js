@@ -45,6 +45,13 @@ test("creates low-risk predictions for healthy machines", () => {
 
   assert.equal(prediction.riskLevel, "Low");
   assert.equal(prediction.maintenancePriority, "Monitor");
+  assert.equal(prediction.riskScore, prediction.failureProbability);
+  assert.equal(prediction.predictionTimeline.length, 6);
+  assert.equal(prediction.healthTrend.length, 6);
+  assert.equal(
+    prediction.recommendationEngine.recommendedAction,
+    prediction.recommendation
+  );
   assert.ok(prediction.remainingUsefulLifeHours > 120);
   assert.ok(prediction.aiConfidence >= 80);
 });
@@ -66,6 +73,7 @@ test("builds dashboard-ready predictive overview", () => {
   assert.equal(overview.predictions[0].machineId, "M003");
   assert.equal(overview.ranking[0].rank, 1);
   assert.equal(overview.trends.temperature.length, 6);
+  assert.equal(overview.predictionTimeline.length, 6);
   assert.equal(overview.maintenanceCalendar[0].machineId, "M003");
   assert.equal(overview.recommendations[0].machineId, "M003");
 });

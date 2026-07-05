@@ -19,6 +19,7 @@ interface PredictiveKpiCardsProps {
 const iconMap: Record<string, ComponentType<{ size?: number; className?: string }>> = {
   "Machine Health": Activity,
   "Failure Probability": TrendingUp,
+  "Risk Score": Gauge,
   "Remaining Useful Life": Timer,
   "AI Confidence": Brain,
 };
