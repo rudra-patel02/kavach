@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import connectDB from "./config/db.js";
 import Machine from "./models/machine.js";
+import Notification from "./models/notification.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,6 +17,7 @@ dotenv.config({
 await connectDB();
 
 await Machine.deleteMany({});
+await Notification.deleteMany({});
 
 await Machine.insertMany([
   {

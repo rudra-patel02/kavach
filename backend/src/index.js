@@ -11,8 +11,10 @@ import connectDB, { disconnectDB } from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import copilotRoutes from "./routes/copilotRoutes.js";
 import machineRoutes from "./routes/machineRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 import predictionRoutes from "./routes/predictionRoutes.js";
 import { startSensorSimulation } from "./services/SensorService.js";
+import { syncActiveMachineNotifications } from "./services/notificationService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -136,6 +138,7 @@ const start = async () => {
 
   app.disable("x-powered-by");
   app.set("trust proxy", 1);
+  app.set("io", io);
 
   app.use(cors(corsOptions));
   app.use(express.json({ limit: "1mb" }));
@@ -143,6 +146,7 @@ const start = async () => {
   app.use("/api/auth", authRoutes);
   app.use("/api/copilot", copilotRoutes);
   app.use("/api/machines", machineRoutes);
+  app.use("/api/notifications", notificationRoutes);
   app.use("/api/predictive", predictionRoutes);
 
   app.get("/api/health", (req, res) => {
@@ -204,6 +208,13 @@ const start = async () => {
   });
 
   console.log(`Server running on port ${port}`);
+
+  try {
+    await syncActiveMachineNotifications(io);
+  } catch (error) {
+    console.error("Initial notification sync failed:", error.message);
+  }
+
   const stopSensorSimulation = enableSensorSimulation
     ? startSensorSimulation(io, sensorIntervalMs)
     : () => {};

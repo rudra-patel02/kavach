@@ -1,6 +1,7 @@
 "use client";
 
-import { Search, Bell, UserCircle } from "lucide-react";
+import { Search, UserCircle } from "lucide-react";
+import NotificationCenter from "./NotificationCenter";
 
 export default function Navbar() {
   return (
@@ -29,7 +30,7 @@ export default function Navbar() {
 
         </div>
 
-        <Bell className="text-slate-300 cursor-pointer" />
+        <NotificationCenter />
 
         <UserCircle size={36} className="text-cyan-400 cursor-pointer" />
 
