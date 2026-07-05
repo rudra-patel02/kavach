@@ -2,6 +2,8 @@ const DEV_BACKEND_URL = "http://localhost:5000";
 const API_PREFIX = "/api";
 
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
+const stripApiPrefix = (value: string) =>
+  trimTrailingSlash(value).replace(/\/api$/i, "");
 
 const isLocalHostname = (hostname: string) =>
   hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
@@ -48,7 +50,18 @@ export const getApiBaseUrl = () => {
 
 export const getSocketBaseUrl = () => {
   const configuredUrl = process.env.NEXT_PUBLIC_SOCKET_URL?.trim();
-  return configuredUrl ? trimTrailingSlash(configuredUrl) : getApiBaseUrl();
+
+  if (configuredUrl) {
+    return stripApiPrefix(configuredUrl);
+  }
+
+  const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+
+  if (configuredApiUrl) {
+    return stripApiPrefix(configuredApiUrl);
+  }
+
+  return DEV_BACKEND_URL;
 };
 
 export const apiUrl = (path: string) => {

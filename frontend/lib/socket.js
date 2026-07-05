@@ -2,6 +2,7 @@ import { io } from "socket.io-client";
 import { getSocketBaseUrl } from "./api";
 
 const socket = io(getSocketBaseUrl(), {
+  path: "/socket.io",
   transports: ["websocket", "polling"],
   autoConnect: false,
   reconnection: true,
