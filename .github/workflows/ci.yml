@@ -1,0 +1,30 @@
+name: KAVACH CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install root dependencies
+        run: npm ci
+      - name: Install backend dependencies
+        run: npm ci --prefix backend
+      - name: Install frontend dependencies
+        run: npm ci --prefix frontend
+      - name: Backend tests
+        run: npm run backend:test
+      - name: Frontend typecheck
+        run: npm run frontend:typecheck
+      - name: Frontend lint
+        run: npm run frontend:lint
+      - name: Frontend build
+        run: npm run frontend:build

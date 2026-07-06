@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 import User from "../models/user.js";
+import { createAuditLog } from "../services/auditService.js";
 
 const normalizeEmail = (email = "") => email.trim().toLowerCase();
 
@@ -33,6 +34,9 @@ const createAccessToken = (user) =>
       email: user.email,
       role: user.role,
       department: user.department,
+      organizationId: user.organizationId,
+      plantIds: user.plantIds || [],
+      activePlantId: user.activePlantId || "",
     },
     getJwtSecret(),
     {
@@ -104,6 +108,17 @@ export const register = async (req, res) => {
       department,
       employeeId,
       phone,
+      organizationId: req.body.organizationId || "",
+      plantIds: Array.isArray(req.body.plantIds) ? req.body.plantIds : [],
+      activePlantId: req.body.activePlantId || "",
+    });
+
+    await createAuditLog({
+      action: "USER_REGISTERED",
+      newValue: toSafeUser(user),
+      req,
+      resourceId: user._id,
+      resourceType: "user",
     });
 
     res.status(201).json({
@@ -170,6 +185,24 @@ export const login = async (req, res) => {
     user.refreshToken = refreshToken;
     await user.save();
 
+    await createAuditLog({
+      action: "LOGIN_SUCCESS",
+      req: {
+        headers: req.headers,
+        id: req.id,
+        ip: req.ip,
+        user: {
+          activePlantId: user.activePlantId,
+          email: user.email,
+          id: String(user._id),
+          organizationId: user.organizationId,
+          role: user.role,
+        },
+      },
+      resourceId: user._id,
+      resourceType: "auth",
+    });
+
     res.status(200).json({
       success: true,
       message: "Login Successful",
@@ -235,6 +268,12 @@ export const logout = async (req, res) => {
     if (refreshToken) {
       await User.updateOne({ refreshToken }, { $set: { refreshToken: "" } });
     }
+
+    await createAuditLog({
+      action: "LOGOUT",
+      req,
+      resourceType: "auth",
+    });
 
     res.json({
       success: true,

@@ -27,6 +27,9 @@ export default function MachineLabel({
   const prediction = Array.isArray(machine.aiPrediction)
     ? machine.aiPrediction[0] || {}
     : machine.aiPrediction || {};
+  const ai = machine.aiIntelligence;
+  const anomalySeverity =
+    machine.aiAnomalySeverity || ai?.anomaly?.severity || "Low";
 
   const color =
     machine.status === "Running"
@@ -73,15 +76,48 @@ export default function MachineLabel({
         <hr style={{ borderColor: "#334155", margin: "6px 0" }} />
 
         <div>
-          AI Risk: <b>{prediction.failureRisk || "Unknown"}</b>
+          AI Risk:{" "}
+          <b>
+            {formatMetric(
+              machine.aiFailureProbability || ai?.failureProbability,
+              "%"
+            )}
+          </b>
         </div>
 
         <div>
-          Priority: <b>{prediction.maintenancePriority || "Unknown"}</b>
+          RUL:{" "}
+          <b>
+            {formatMetric(
+              machine.aiRemainingUsefulLifeHours ||
+                ai?.remainingUsefulLifeHours,
+              "h"
+            )}
+          </b>
         </div>
 
         <div>
-          Risk Score: <b>{riskScore?.toFixed(1) ?? "--"}</b>
+          Anomaly: <b>{anomalySeverity}</b>
+        </div>
+
+        <div
+          style={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Cause:{" "}
+          <b>
+            {machine.aiRootCauseSummary ||
+              ai?.rootCauseSummary ||
+              prediction.failureRisk ||
+              "Normal"}
+          </b>
+        </div>
+
+        <div>
+          Score: <b>{riskScore?.toFixed(1) ?? "--"}</b>
         </div>
       </div>
     </Html>

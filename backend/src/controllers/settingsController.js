@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 
 import User from "../models/user.js";
+import { createAuditLog } from "../services/auditService.js";
 
 const toSafeUser = (user) => {
   const value = user && typeof user.toObject === "function" ? user.toObject() : user;
@@ -53,6 +54,7 @@ export const updateProfile = async (req, res) => {
       }
     }
 
+    const oldUser = await User.findById(req.user.id).select("-password -refreshToken").lean();
     const user = await User.findByIdAndUpdate(req.user.id, updates, {
       new: true,
       runValidators: true,
@@ -63,6 +65,15 @@ export const updateProfile = async (req, res) => {
         message: "User not found",
       });
     }
+
+    await createAuditLog({
+      action: "PROFILE_UPDATED",
+      newValue: toSafeUser(user),
+      oldValue: oldUser,
+      req,
+      resourceId: user._id,
+      resourceType: "configuration",
+    });
 
     res.json({
       success: true,
@@ -113,6 +124,13 @@ export const updatePassword = async (req, res) => {
     user.refreshToken = "";
     await user.save();
 
+    await createAuditLog({
+      action: "PASSWORD_UPDATED",
+      req,
+      resourceId: user._id,
+      resourceType: "configuration",
+    });
+
     res.json({
       success: true,
       message: "Password updated. Please sign in again.",
@@ -141,6 +159,7 @@ export const updatePreferences = async (req, res) => {
       };
     }
 
+    const oldUser = await User.findById(req.user.id).select("-password -refreshToken").lean();
     const user = await User.findByIdAndUpdate(req.user.id, updates, {
       new: true,
       runValidators: true,
@@ -151,6 +170,21 @@ export const updatePreferences = async (req, res) => {
         message: "User not found",
       });
     }
+
+    await createAuditLog({
+      action: "PREFERENCES_UPDATED",
+      newValue: {
+        notifications: user.notificationPreferences,
+        theme: user.themePreference,
+      },
+      oldValue: {
+        notifications: oldUser?.notificationPreferences,
+        theme: oldUser?.themePreference,
+      },
+      req,
+      resourceId: user._id,
+      resourceType: "configuration",
+    });
 
     res.json({
       success: true,

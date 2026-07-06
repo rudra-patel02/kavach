@@ -27,7 +27,10 @@ const userSchema = new mongoose.Schema(
       enum: [
         "Admin",
         "Super Admin",
+        "Plant Admin",
         "Plant Manager",
+        "Maintenance Manager",
+        "Engineer",
         "Maintenance Engineer",
         "Operator",
         "Viewer",
@@ -49,6 +52,24 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       default: "",
+    },
+
+    organizationId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+
+    plantIds: {
+      type: [String],
+      default: [],
+      index: true,
+    },
+
+    activePlantId: {
+      type: String,
+      default: "",
+      index: true,
     },
 
     status: {

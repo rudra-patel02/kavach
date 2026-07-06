@@ -123,6 +123,68 @@ export const createMachineGateway = (io) => {
       emit(SOCKET_EVENTS.NOTIFICATIONS_CLEARED);
     },
 
+    broadcastTelemetryUpdate(payload, { plantId = DEFAULT_PLANT_ID } = {}) {
+      emit(SOCKET_EVENTS.TELEMETRY_UPDATE, payload);
+      emitPlant(plantId, SOCKET_EVENTS.TELEMETRY_UPDATE, payload);
+      emitToMachineRoom(
+        io,
+        payload?.machine?.machineId || payload?.machineId,
+        SOCKET_EVENTS.TELEMETRY_UPDATE,
+        payload
+      );
+    },
+
+    broadcastDeviceOnline(device, { plantId = DEFAULT_PLANT_ID } = {}) {
+      emit(SOCKET_EVENTS.DEVICE_ONLINE, device);
+      emitPlant(plantId, SOCKET_EVENTS.DEVICE_ONLINE, device);
+    },
+
+    broadcastDeviceOffline(device, { plantId = DEFAULT_PLANT_ID } = {}) {
+      emit(SOCKET_EVENTS.DEVICE_OFFLINE, device);
+      emitPlant(plantId, SOCKET_EVENTS.DEVICE_OFFLINE, device);
+    },
+
+    broadcastDeviceHeartbeat(payload, { plantId = DEFAULT_PLANT_ID } = {}) {
+      emit(SOCKET_EVENTS.DEVICE_HEARTBEAT, payload);
+      emitPlant(plantId, SOCKET_EVENTS.DEVICE_HEARTBEAT, payload);
+    },
+
+    broadcastPredictionUpdate(payload, { plantId = DEFAULT_PLANT_ID } = {}) {
+      emit(SOCKET_EVENTS.PREDICTION_UPDATE, payload);
+      emitPlant(plantId, SOCKET_EVENTS.PREDICTION_UPDATE, payload);
+    },
+
+    broadcastAIIntelligence(payload, { plantId = DEFAULT_PLANT_ID } = {}) {
+      emit(SOCKET_EVENTS.AI_INTELLIGENCE_UPDATE, payload);
+      emitPlant(plantId, SOCKET_EVENTS.AI_INTELLIGENCE_UPDATE, payload);
+      emitToMachineRoom(
+        io,
+        payload?.machineId || payload?.intelligence?.machine?.machineId,
+        SOCKET_EVENTS.AI_INTELLIGENCE_UPDATE,
+        payload
+      );
+
+      if (payload?.intelligence?.anomaly?.anomaly) {
+        emit(SOCKET_EVENTS.AI_ANOMALY, payload);
+        emitPlant(plantId, SOCKET_EVENTS.AI_ANOMALY, payload);
+      }
+
+      if (payload?.intelligence?.forecast) {
+        emit(SOCKET_EVENTS.AI_FORECAST_UPDATE, payload);
+        emitPlant(plantId, SOCKET_EVENTS.AI_FORECAST_UPDATE, payload);
+      }
+
+      if (payload?.intelligence?.maintenancePlan) {
+        emit(SOCKET_EVENTS.AI_MAINTENANCE_PLAN, payload);
+        emitPlant(plantId, SOCKET_EVENTS.AI_MAINTENANCE_PLAN, payload);
+      }
+    },
+
+    broadcastSensorAlert(payload, { plantId = DEFAULT_PLANT_ID } = {}) {
+      emit(SOCKET_EVENTS.SENSOR_ALERT, payload);
+      emitPlant(plantId, SOCKET_EVENTS.SENSOR_ALERT, payload);
+    },
+
     broadcastWorkOrderCreated(workOrder) {
       emit(SOCKET_EVENTS.WORKORDER_CREATED, workOrder);
     },

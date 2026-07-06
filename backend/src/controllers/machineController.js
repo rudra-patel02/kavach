@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 import Machine from "../models/machine.js";
+import { createAuditLog } from "../services/auditService.js";
+import { normalizeRole } from "../security/rbac.js";
 
 const getMachineLookup = (id) => {
   const identifier = String(id || "").trim();
@@ -16,10 +18,26 @@ const getMachineLookup = (id) => {
   };
 };
 
+const getPlantScope = (req) => {
+  if (req.query.plantId) {
+    return { plantId: String(req.query.plantId) };
+  }
+
+  if (
+    normalizeRole(req.user?.role) !== "Super Admin" &&
+    Array.isArray(req.user?.plantIds) &&
+    req.user.plantIds.length > 0
+  ) {
+    return { plantId: { $in: req.user.plantIds } };
+  }
+
+  return {};
+};
+
 // Get all machines
 export const getMachines = async (req, res) => {
   try {
-    const machines = await Machine.find().sort({ machineId: 1 }).lean();
+    const machines = await Machine.find(getPlantScope(req)).sort({ machineId: 1 }).lean();
     res.status(200).json(machines);
   } catch (err) {
     console.error(err);
@@ -60,6 +78,11 @@ export const createMachine = async (req, res) => {
       machineId: req.body.machineId,
       name: req.body.name,
       department: req.body.department,
+      organizationId: req.body.organizationId || req.user?.organizationId || "",
+      plantId: req.body.plantId || req.user?.activePlantId || "",
+      departmentId: req.body.departmentId || "",
+      productionLineId: req.body.productionLineId || "",
+      machineGroupId: req.body.machineGroupId || "",
       status: req.body.status,
 
       health: 100,
@@ -86,6 +109,14 @@ export const createMachine = async (req, res) => {
       },
     });
 
+    await createAuditLog({
+      action: "MACHINE_CREATED",
+      newValue: machine,
+      req,
+      resourceId: machine.machineId,
+      resourceType: "machine",
+    });
+
     res.status(201).json(machine);
   } catch (err) {
     console.error(err);
@@ -100,6 +131,7 @@ export const updateMachine = async (req, res) => {
   try {
     const { query } = getMachineLookup(req.params.id);
 
+    const oldMachine = await Machine.findOne(query).lean();
     const machine = await Machine.findOneAndUpdate(
       query,
       req.body,
@@ -114,6 +146,15 @@ export const updateMachine = async (req, res) => {
         message: "Machine not found",
       });
     }
+
+    await createAuditLog({
+      action: "MACHINE_UPDATED",
+      newValue: machine,
+      oldValue: oldMachine,
+      req,
+      resourceId: machine.machineId,
+      resourceType: "machine",
+    });
 
     res.json(machine);
   } catch (err) {
@@ -136,6 +177,14 @@ export const deleteMachine = async (req, res) => {
         message: "Machine not found",
       });
     }
+
+    await createAuditLog({
+      action: "MACHINE_DELETED",
+      oldValue: machine,
+      req,
+      resourceId: machine.machineId,
+      resourceType: "machine",
+    });
 
     res.json({
       success: true,

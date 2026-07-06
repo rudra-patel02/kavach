@@ -1,9 +1,4 @@
-const roleAliases = {
-  Admin: "Super Admin",
-  "Super Admin": "Super Admin",
-};
-
-const normalizeRole = (role) => roleAliases[role] || role;
+import { hasAnyRole } from "../security/rbac.js";
 
 const roleMiddleware = (allowedRoles = []) => {
   return (req, res, next) => {
@@ -15,10 +10,7 @@ const roleMiddleware = (allowedRoles = []) => {
         });
       }
 
-      const normalizedAllowedRoles = allowedRoles.map(normalizeRole);
-      const normalizedUserRole = normalizeRole(req.user.role);
-
-      if (!normalizedAllowedRoles.includes(normalizedUserRole)) {
+      if (!hasAnyRole(req.user.role, allowedRoles)) {
         return res.status(403).json({
           success: false,
           message: "Access Denied",

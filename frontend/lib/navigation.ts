@@ -1,5 +1,8 @@
 export type NavigationRole =
   | "Super Admin"
+  | "Plant Admin"
+  | "Maintenance Manager"
+  | "Engineer"
   | "Admin"
   | "Plant Manager"
   | "Maintenance Engineer"
@@ -11,11 +14,16 @@ export type NavigationIcon =
   | "barChart"
   | "bell"
   | "brain"
+  | "building"
   | "clipboard"
   | "cpu"
+  | "fileText"
   | "factory"
   | "gauge"
   | "layout"
+  | "radio"
+  | "shield"
+  | "server"
   | "settings"
   | "users";
 
@@ -34,7 +42,10 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [
       "Super Admin",
       "Admin",
+      "Plant Admin",
       "Plant Manager",
+      "Maintenance Manager",
+      "Engineer",
       "Maintenance Engineer",
       "Operator",
       "Viewer",
@@ -44,7 +55,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     name: "Executive",
     icon: "gauge",
     href: "/dashboard/executive",
-    roles: ["Super Admin", "Admin", "Plant Manager"],
+    roles: ["Super Admin", "Admin", "Plant Admin", "Plant Manager"],
   },
   {
     name: "Machines",
@@ -53,7 +64,10 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [
       "Super Admin",
       "Admin",
+      "Plant Admin",
       "Plant Manager",
+      "Maintenance Manager",
+      "Engineer",
       "Maintenance Engineer",
       "Operator",
       "Viewer",
@@ -66,11 +80,70 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [
       "Super Admin",
       "Admin",
+      "Plant Admin",
       "Plant Manager",
+      "Maintenance Manager",
+      "Engineer",
       "Maintenance Engineer",
       "Operator",
       "Viewer",
     ],
+  },
+  {
+    name: "IoT Devices",
+    icon: "radio",
+    href: "/iot",
+    roles: [
+      "Super Admin",
+      "Admin",
+      "Plant Admin",
+      "Plant Manager",
+      "Maintenance Manager",
+      "Engineer",
+      "Maintenance Engineer",
+      "Operator",
+      "Viewer",
+    ],
+  },
+  {
+    name: "Admin Portal",
+    icon: "building",
+    href: "/admin",
+    roles: ["Super Admin", "Admin", "Plant Admin", "Plant Manager"],
+  },
+  {
+    name: "Reports",
+    icon: "fileText",
+    href: "/reports",
+    roles: [
+      "Super Admin",
+      "Admin",
+      "Plant Admin",
+      "Plant Manager",
+      "Maintenance Manager",
+      "Engineer",
+      "Maintenance Engineer",
+      "Operator",
+      "Viewer",
+    ],
+  },
+  {
+    name: "Audit",
+    icon: "shield",
+    href: "/audit",
+    roles: [
+      "Super Admin",
+      "Admin",
+      "Plant Admin",
+      "Plant Manager",
+      "Maintenance Manager",
+    ],
+  },
+  {
+    name: "System",
+    icon: "server",
+    href: "/system",
+    roles: ["Super Admin", "Admin", "Plant Admin", "Plant Manager"],
   },
   {
     name: "Analytics",
@@ -79,7 +152,10 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [
       "Super Admin",
       "Admin",
+      "Plant Admin",
       "Plant Manager",
+      "Maintenance Manager",
+      "Engineer",
       "Maintenance Engineer",
       "Operator",
     ],
@@ -91,7 +167,10 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [
       "Super Admin",
       "Admin",
+      "Plant Admin",
       "Plant Manager",
+      "Maintenance Manager",
+      "Engineer",
       "Maintenance Engineer",
       "Operator",
     ],
@@ -103,7 +182,25 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [
       "Super Admin",
       "Admin",
+      "Plant Admin",
       "Plant Manager",
+      "Maintenance Manager",
+      "Engineer",
+      "Maintenance Engineer",
+      "Operator",
+    ],
+  },
+  {
+    name: "AI Intelligence",
+    icon: "brain",
+    href: "/ai",
+    roles: [
+      "Super Admin",
+      "Admin",
+      "Plant Admin",
+      "Plant Manager",
+      "Maintenance Manager",
+      "Engineer",
       "Maintenance Engineer",
       "Operator",
     ],
@@ -115,7 +212,10 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [
       "Super Admin",
       "Admin",
+      "Plant Admin",
       "Plant Manager",
+      "Maintenance Manager",
+      "Engineer",
       "Maintenance Engineer",
       "Operator",
       "Viewer",
@@ -128,7 +228,10 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [
       "Super Admin",
       "Admin",
+      "Plant Admin",
       "Plant Manager",
+      "Maintenance Manager",
+      "Engineer",
       "Maintenance Engineer",
       "Operator",
       "Viewer",
@@ -138,7 +241,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     name: "Users",
     icon: "users",
     href: "/users",
-    roles: ["Super Admin", "Admin", "Plant Manager"],
+    roles: ["Super Admin", "Admin", "Plant Admin", "Plant Manager"],
   },
   {
     name: "Settings",
@@ -147,7 +250,10 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     roles: [
       "Super Admin",
       "Admin",
+      "Plant Admin",
       "Plant Manager",
+      "Maintenance Manager",
+      "Engineer",
       "Maintenance Engineer",
       "Operator",
       "Viewer",

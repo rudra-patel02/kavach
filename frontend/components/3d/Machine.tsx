@@ -42,9 +42,15 @@ export default function Machine({
   });
 
   const bodyColor =
+    machine?.aiAnomalySeverity === "Critical" ||
+    Number(machine?.aiFailureProbability || 0) >= 80 ||
     machine?.status === "Critical"
       ? "#ef4444"
-      : machine?.status === "Warning"
+      : machine?.aiAnomalySeverity === "High" ||
+        Number(machine?.aiFailureProbability || 0) >= 60 ||
+        machine?.status === "Warning"
+      ? "#f97316"
+      : machine?.aiAnomalySeverity === "Medium"
       ? "#facc15"
       : machine?.status === "Maintenance"
       ? "#f97316"
@@ -53,9 +59,13 @@ export default function Machine({
       : "#06b6d4";
 
   const lightColor =
+    machine?.aiAnomalySeverity === "Critical" ||
+    Number(machine?.aiFailureProbability || 0) >= 80 ||
     machine?.status === "Critical"
       ? "#ff0000"
-      : machine?.status === "Warning"
+      : machine?.aiAnomalySeverity === "High" ||
+        machine?.aiAnomalySeverity === "Medium" ||
+        machine?.status === "Warning"
       ? "#ffff00"
       : machine?.status === "Maintenance"
       ? "#fb923c"

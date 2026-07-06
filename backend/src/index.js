@@ -8,17 +8,24 @@ import { fileURLToPath } from "url";
 
 import aiRoutes from "./routes/aiRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
+import auditRoutes from "./routes/auditRoutes.js";
+import backupRoutes from "./routes/backupRoutes.js";
 import connectDB, { disconnectDB } from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import copilotRoutes from "./routes/copilotRoutes.js";
+import docsRoutes from "./routes/docsRoutes.js";
 import executiveRoutes from "./routes/executiveRoutes.js";
 import machineRoutes from "./routes/machineRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import predictionRoutes from "./routes/predictionRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
+import iotRoutes from "./routes/iotRoutes.js";
 import searchRoutes from "./routes/searchRoutes.js";
 import settingsRoutes from "./routes/settingsRoutes.js";
+import systemRoutes from "./routes/systemRoutes.js";
+import tenantRoutes from "./routes/tenantRoutes.js";
 import workOrderRoutes from "./routes/workOrderRoutes.js";
+import { createIoTConnectionManager } from "./iot/connectionManager.js";
 import { startSensorSimulation } from "./services/SensorService.js";
 import { syncActiveMachineNotifications } from "./services/notificationService.js";
 import { syncActiveMachineWorkOrders } from "./services/workOrderService.js";
@@ -29,6 +36,10 @@ import {
   sanitizeRequest,
   securityHeaders,
 } from "./middleware/securityMiddleware.js";
+import {
+  requestContext,
+  requestMetrics,
+} from "./middleware/observabilityMiddleware.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -145,23 +156,33 @@ const start = async () => {
   const corsOptions = buildCorsOptions(allowedOrigins);
   const socketServer = createSocketServer(server, corsOptions);
   const { io, gateway: machineGateway } = socketServer;
+  const iotConnectionManager = createIoTConnectionManager({
+    gateway: machineGateway,
+  });
 
   app.disable("x-powered-by");
   app.set("trust proxy", 1);
   app.set("io", io);
   app.set("machineGateway", machineGateway);
+  app.set("iotConnectionManager", iotConnectionManager);
 
+  app.use(requestContext);
   app.use(securityHeaders);
   app.use(rateLimit());
   app.use(cors(corsOptions));
   app.use(express.json({ limit: "1mb" }));
   app.use(sanitizeRequest);
+  app.use(requestMetrics);
 
   app.use("/api/auth", authRoutes);
   app.use("/api/ai", aiRoutes);
   app.use("/api/analytics", analyticsRoutes);
+  app.use("/api/audit", auditRoutes);
+  app.use("/api/backup", backupRoutes);
   app.use("/api/copilot", copilotRoutes);
+  app.use("/api/docs", docsRoutes);
   app.use("/api/executive", executiveRoutes);
+  app.use("/api/iot", iotRoutes);
   app.use("/api/machines", machineRoutes);
   app.use("/api/users", userRoutes);
   app.use("/api/notifications", notificationRoutes);
@@ -169,6 +190,8 @@ const start = async () => {
   app.use("/api/reports", reportRoutes);
   app.use("/api/search", searchRoutes);
   app.use("/api/settings", settingsRoutes);
+  app.use("/api/system", systemRoutes);
+  app.use("/api/tenants", tenantRoutes);
   app.use("/api/workorders", workOrderRoutes);
 
   app.get("/api/health", (req, res) => {
@@ -219,6 +242,8 @@ const start = async () => {
 
   console.log(`Server running on port ${port}`);
 
+  await iotConnectionManager.start();
+
   try {
     await syncActiveMachineNotifications(machineGateway);
     await syncActiveMachineWorkOrders(machineGateway);
@@ -244,6 +269,7 @@ const start = async () => {
     shuttingDown = true;
     console.log(`${signal} received; shutting down`);
     stopSensorSimulation();
+    await iotConnectionManager.stop();
 
     await new Promise((resolve) => {
       socketServer.close(() => {

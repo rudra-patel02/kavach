@@ -1,4 +1,5 @@
 import Machine from "../models/machine.js";
+import { runRealtimeAI } from "./AIEngine.js";
 import { createNotificationsForMachines } from "./notificationService.js";
 import {
   buildPredictiveOverview,
@@ -56,7 +57,7 @@ const getStatus = ({ health, failureProbability }) => {
   return "Running";
 };
 
-const toLegacyAiPrediction = (prediction) => ({
+export const toLegacyAiPrediction = (prediction) => ({
   failureRisk:
     prediction.riskLevel === "Critical" || prediction.riskLevel === "High"
       ? "High"
@@ -219,7 +220,7 @@ export const simulateMachineTelemetry = (
   };
 };
 
-const appendPredictionHistory = (machine, prediction) => {
+export const appendPredictionHistory = (machine, prediction) => {
   machine.predictionHistory = [
     ...(Array.isArray(machine.predictionHistory) ? machine.predictionHistory : []),
     {
@@ -243,6 +244,15 @@ const buildAiInsights = (predictiveOverview) => ({
   })),
 });
 
+const hasFreshLiveTelemetry = (machine) => {
+  if (!machine.liveTelemetryEnabled || !machine.lastLiveTelemetryAt) {
+    return false;
+  }
+
+  const staleAfterMs = Number(process.env.LIVE_TELEMETRY_STALE_MS || 30000);
+  return Date.now() - new Date(machine.lastLiveTelemetryAt).getTime() < staleAfterMs;
+};
+
 export const startSensorSimulation = (gateway, intervalMs = 2000) => {
   let stopped = false;
   let timer;
@@ -252,11 +262,17 @@ export const startSensorSimulation = (gateway, intervalMs = 2000) => {
       const machines = await Machine.find();
 
       for (const machine of machines) {
+        if (hasFreshLiveTelemetry(machine)) {
+          continue;
+        }
+
         Object.assign(
           machine,
           simulateMachineTelemetry(machine.toObject(), { intervalMs })
         );
         machine.lastHeartbeat = new Date();
+        machine.liveTelemetryEnabled = false;
+        machine.telemetrySource = "simulator";
         const prediction = createMachinePrediction(machine.toObject());
         machine.aiPrediction = toLegacyAiPrediction(prediction);
         machine.remainingUsefulLifeHours = prediction.remainingUsefulLifeHours;
@@ -264,6 +280,17 @@ export const startSensorSimulation = (gateway, intervalMs = 2000) => {
         appendPredictionHistory(machine, prediction);
 
         await machine.save();
+
+        try {
+          await runRealtimeAI(machine.toObject(), {
+            gateway,
+            metrics: machine.toObject(),
+            source: "simulator",
+            timestamp: machine.lastHeartbeat,
+          });
+        } catch (error) {
+          console.error("Simulator AI analysis failed:", error.message);
+        }
       }
 
       const updatedMachines = await Machine.find();

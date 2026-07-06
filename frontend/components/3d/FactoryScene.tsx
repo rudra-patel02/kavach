@@ -68,6 +68,19 @@ const getSceneMachine = (machine: MachineType): MachineDisplayData => ({
   health: machine.health,
   temperature: machine.temperature,
   aiPrediction: machine.profile?.machine.aiPrediction,
+  aiIntelligence: machine.profile?.ai || machine.profile?.machine.aiIntelligence,
+  aiFailureProbability:
+    machine.profile?.ai?.failureProbability ||
+    machine.profile?.machine.aiFailureProbability,
+  aiRemainingUsefulLifeHours:
+    machine.profile?.ai?.remainingUsefulLifeHours ||
+    machine.profile?.machine.aiRemainingUsefulLifeHours,
+  aiRootCauseSummary:
+    machine.profile?.ai?.rootCauseSummary ||
+    machine.profile?.machine.aiRootCauseSummary,
+  aiAnomalySeverity:
+    machine.profile?.ai?.anomaly?.severity ||
+    machine.profile?.machine.aiAnomalySeverity,
 });
 
 const formatMachineMetric = (
@@ -215,12 +228,26 @@ export default function FactoryScene({
                     {machine.machineId} - {machine.department || "Production"}
                   </div>
                   <div className="mt-2 grid grid-cols-2 gap-2">
-                    <span>Health {formatMachineMetric(machine.health, "%")}</span>
+                    <span>
+                      Health {formatMachineMetric(machine.profile?.ai?.healthPercent || machine.health, "%")}
+                    </span>
                     <span>Temp {formatMachineMetric(machine.temperature, " C")}</span>
                     <span>Vib {formatMachineMetric(machine.vibration)}</span>
                     <span>
-                      Risk {machine.profile?.riskScore.toFixed(1) ?? "--"}
+                      AI Risk {formatMachineMetric(machine.profile?.ai?.riskPercent || machine.profile?.riskScore, "%")}
                     </span>
+                    <span>
+                      RUL {formatMachineMetric(machine.profile?.ai?.remainingUsefulLifeHours || machine.profile?.remainingUsefulLifeHours, "h")}
+                    </span>
+                    <span>
+                      Fail {formatMachineMetric(machine.profile?.ai?.failureProbability || machine.profile?.failureProbability, "%")}
+                    </span>
+                  </div>
+                  <div className="mt-2 text-cyan-200">
+                    {machine.profile?.ai?.anomaly?.severity || "Low"} anomaly
+                  </div>
+                  <div className="mt-1 line-clamp-2 text-slate-400">
+                    {machine.profile?.ai?.rootCauseSummary || "No root cause active"}
                   </div>
                 </div>
               </Html>

@@ -183,7 +183,18 @@ export default function PlantPage() {
                     Risk {selectedProfile.riskScore.toFixed(1)}
                   </span>
                   <span className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-xs font-bold text-cyan-100">
-                    RUL {selectedProfile.remainingUsefulLifeHours || "--"} hrs
+                    RUL {selectedProfile.ai?.remainingUsefulLifeHours || selectedProfile.remainingUsefulLifeHours || "--"} hrs
+                  </span>
+                  <span className="rounded-full border border-orange-400/30 bg-orange-500/10 px-3 py-1 text-xs font-bold text-orange-100">
+                    Failure {formatNumber(selectedProfile.ai?.failureProbability || selectedProfile.failureProbability)}%
+                  </span>
+                  <span className="rounded-full border border-violet-400/30 bg-violet-500/10 px-3 py-1 text-xs font-bold text-violet-100">
+                    AI {selectedProfile.ai?.anomaly.severity || selectedProfile.machine.aiAnomalySeverity || "Low"}
+                  </span>
+                  <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-100">
+                    {selectedProfile.machine.liveTelemetryEnabled
+                      ? "Live IoT"
+                      : "Simulator"}
                   </span>
                 </div>
               </div>
@@ -192,11 +203,19 @@ export default function PlantPage() {
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                   {[
                     ["Temperature", `${formatNumber(selectedProfile.machine.temperature)} C`],
+                    ["Humidity", `${formatNumber(selectedProfile.machine.humidity)}%`],
                     ["Pressure", `${formatNumber(selectedProfile.machine.pressure, 2)} bar`],
                     ["Vibration", formatNumber(selectedProfile.machine.vibration, 2)],
-                    ["Health", `${formatNumber(selectedProfile.machine.health)}%`],
+                    ["Current", `${formatNumber(selectedProfile.machine.current)} A`],
+                    ["Voltage", `${formatNumber(selectedProfile.machine.voltage)} V`],
+                    ["RPM", formatNumber(selectedProfile.machine.rpm, 0)],
+                    ["Oil Level", `${formatNumber(selectedProfile.machine.oilLevel)}%`],
+                    ["Noise", `${formatNumber(selectedProfile.machine.noise)} dB`],
+                    ["Flow Rate", `${formatNumber(selectedProfile.machine.flowRate)} L/min`],
+                    ["AI Health", `${formatNumber(selectedProfile.ai?.healthPercent || selectedProfile.machine.aiHealthPercent || selectedProfile.machine.health)}%`],
                     ["Energy", `${formatNumber(selectedProfile.machine.energyConsumed || selectedProfile.machine.power)} kWh`],
-                    ["Failure Probability", `${formatNumber(selectedProfile.failureProbability)}%`],
+                    ["Failure Probability", `${formatNumber(selectedProfile.ai?.failureProbability || selectedProfile.failureProbability)}%`],
+                    ["AI Risk", `${formatNumber(selectedProfile.ai?.riskPercent || selectedProfile.riskScore)}%`],
                   ].map(([label, value]) => (
                     <div
                       key={label}
@@ -207,6 +226,74 @@ export default function PlantPage() {
                     </div>
                   ))}
                 </div>
+
+                <section className="mt-5 rounded-xl border border-slate-800 bg-slate-900/75 p-5">
+                  <h3 className="flex items-center gap-2 font-bold text-white">
+                    <Bot size={18} className="text-cyan-300" />
+                    AI Decision Intelligence
+                  </h3>
+                  <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                    {[
+                      ["Root Cause", selectedProfile.ai?.rootCauseSummary || selectedProfile.machine.aiRootCauseSummary || "No root cause active"],
+                      ["Confidence", `${formatNumber(selectedProfile.ai?.confidencePercent || selectedProfile.machine.aiConfidencePercent)}%`],
+                      ["Last AI Run", formatDate(selectedProfile.machine.aiLastAnalyzedAt || selectedProfile.ai?.generatedAt)],
+                    ].map(([label, value]) => (
+                      <div
+                        key={label}
+                        className="rounded-lg border border-slate-800 bg-slate-950/60 p-3"
+                      >
+                        <p className="text-xs uppercase text-slate-500">{label}</p>
+                        <p className="mt-2 text-sm font-semibold text-slate-200">
+                          {value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {selectedProfile.ai?.topRootCauses?.length ? (
+                    <div className="mt-4 space-y-3">
+                      {selectedProfile.ai.topRootCauses.slice(0, 3).map((cause) => (
+                        <div
+                          key={cause.cause}
+                          className="rounded-lg border border-slate-800 bg-slate-950/60 p-3"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="font-semibold text-white">
+                              {cause.cause}
+                            </span>
+                            <span className="text-sm font-bold text-cyan-200">
+                              {formatNumber(cause.probability)}%
+                            </span>
+                          </div>
+                          <p className="mt-2 text-sm leading-6 text-slate-400">
+                            {cause.explanation}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </section>
+
+                <section className="mt-5 rounded-xl border border-slate-800 bg-slate-900/75 p-5">
+                  <h3 className="font-bold text-white">Telemetry Sync</h3>
+                  <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                    {[
+                      ["Source", selectedProfile.machine.telemetrySource || "simulator"],
+                      ["Linked Device", selectedProfile.machine.linkedDeviceId || "Not mapped"],
+                      ["Last Live Packet", formatDate(selectedProfile.machine.lastLiveTelemetryAt)],
+                    ].map(([label, value]) => (
+                      <div
+                        key={label}
+                        className="rounded-lg border border-slate-800 bg-slate-950/60 p-3"
+                      >
+                        <p className="text-xs uppercase text-slate-500">{label}</p>
+                        <p className="mt-2 text-sm font-semibold text-slate-200">
+                          {value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
 
                 <section className="mt-5 rounded-xl border border-slate-800 bg-slate-900/75 p-5">
                   <h3 className="flex items-center gap-2 font-bold text-white">

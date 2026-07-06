@@ -1,0 +1,36 @@
+{
+  "deviceId": "edge-gateway-001",
+  "machineId": "M-104",
+  "deviceType": "Industrial Edge Gateway",
+  "protocol": "MQTT",
+  "mqtt": {
+    "brokerUrl": "mqtt://localhost:1883",
+    "registerTopic": "kavach/device/register",
+    "heartbeatTopic": "kavach/device/edge-gateway-001/heartbeat",
+    "telemetryTopic": "kavach/device/edge-gateway-001/telemetry",
+    "commandTopic": "kavach/device/edge-gateway-001/command",
+    "qos": 1,
+    "retainRegistration": true,
+    "keepalive": 60
+  },
+  "modbusTcp": {
+    "host": "192.168.1.40",
+    "port": 502,
+    "pollIntervalMs": 2000
+  },
+  "sensors": [
+    "temperature",
+    "humidity",
+    "pressure",
+    "current",
+    "voltage",
+    "rpm",
+    "power",
+    "energy",
+    "oilLevel",
+    "vibration",
+    "noise",
+    "flowRate",
+    "gasSensor"
+  ]
+}

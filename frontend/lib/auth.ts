@@ -7,10 +7,19 @@ export interface StoredUser {
   email?: string;
   role?: string;
   department?: string;
+  organizationId?: string;
+  plantIds?: string[];
+  activePlantId?: string;
 }
 
+const roleAliases: Record<string, string> = {
+  Admin: "Super Admin",
+  "Maintenance Engineer": "Engineer",
+  "Plant Manager": "Plant Admin",
+};
+
 export const normalizeRole = (role?: string) =>
-  role === "Admin" ? "Super Admin" : role || "Viewer";
+  role ? roleAliases[role] || role : "Viewer";
 
 export const getStoredUser = (): StoredUser | null => {
   if (typeof window === "undefined") {
@@ -34,7 +43,11 @@ export const hasAnyRole = (role: string | undefined, allowedRoles: string[]) => 
   const normalizedRole = normalizeRole(role);
   const normalizedAllowedRoles = allowedRoles.map(normalizeRole);
 
-  return normalizedAllowedRoles.includes(normalizedRole);
+  return (
+    normalizedAllowedRoles.includes(normalizedRole) ||
+    (normalizedRole === "Maintenance Manager" &&
+      normalizedAllowedRoles.includes("Engineer"))
+  );
 };
 
 export const hasToken = () =>
@@ -57,8 +70,10 @@ const subscribeToAuthStorage = (onStoreChange: () => void) => {
   };
 
   window.addEventListener("storage", handleStorage);
+  window.addEventListener("kavach:auth-changed", onStoreChange);
   return () => {
     window.removeEventListener("storage", handleStorage);
+    window.removeEventListener("kavach:auth-changed", onStoreChange);
   };
 };
 

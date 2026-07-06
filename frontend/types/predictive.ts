@@ -22,6 +22,10 @@ export interface PredictiveMachineTelemetry {
   power?: number;
   current?: number;
   voltage?: number;
+  oilLevel?: number;
+  noise?: number;
+  flowRate?: number;
+  gasSensor?: number;
   efficiency?: number;
   oee?: number;
   energy: number;

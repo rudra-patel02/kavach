@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Loader2, Search, UserCircle, X } from "lucide-react";
+import { useStoredUser } from "@/lib/auth";
 import { globalSearch } from "@/lib/search";
 import type { GlobalSearchResult } from "@/types/search";
 import NotificationCenter from "./NotificationCenter";
@@ -12,6 +13,7 @@ export default function Navbar() {
   const [results, setResults] = useState<GlobalSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const user = useStoredUser();
   const searchRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -157,6 +159,12 @@ export default function Navbar() {
         </div>
 
         <NotificationCenter />
+
+        {user?.activePlantId ? (
+          <div className="hidden rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-300 xl:block">
+            Plant: <span className="font-semibold text-cyan-200">{user.activePlantId}</span>
+          </div>
+        ) : null}
 
         <UserCircle size={36} className="text-cyan-400 cursor-pointer" />
 

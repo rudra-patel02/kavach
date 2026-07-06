@@ -151,6 +151,15 @@ export function useEnterpriseTelemetry() {
       }
     };
 
+    const handleTelemetryUpdate = (payload: { machine?: MachineData }) => {
+      if (payload?.machine) {
+        setMachines((currentMachines) =>
+          upsertMachine(currentMachines, payload.machine as MachineData)
+        );
+        refreshPredictiveOverview();
+      }
+    };
+
     const handlePredictiveOverview = (nextOverview: PredictiveOverview) => {
       setOverview(nextOverview);
     };
@@ -231,6 +240,7 @@ export function useEnterpriseTelemetry() {
     socket.on(SOCKET_EVENTS.LEGACY_MACHINE_UPDATE, handleMachineUpdate);
     socket.on(SOCKET_EVENTS.MACHINES_UPDATE, handleMachinesUpdate);
     socket.on(SOCKET_EVENTS.MACHINE_UPDATE, handleSingleMachineUpdate);
+    socket.on(SOCKET_EVENTS.TELEMETRY_UPDATE, handleTelemetryUpdate);
     socket.on(SOCKET_EVENTS.PREDICTIVE_OVERVIEW, handlePredictiveOverview);
     socket.on(SOCKET_EVENTS.LEGACY_NOTIFICATION_CREATED, handleNewNotification);
     socket.on(SOCKET_EVENTS.NOTIFICATION_CREATED, handleNewNotification);
@@ -247,6 +257,7 @@ export function useEnterpriseTelemetry() {
       socket.off(SOCKET_EVENTS.LEGACY_MACHINE_UPDATE, handleMachineUpdate);
       socket.off(SOCKET_EVENTS.MACHINES_UPDATE, handleMachinesUpdate);
       socket.off(SOCKET_EVENTS.MACHINE_UPDATE, handleSingleMachineUpdate);
+      socket.off(SOCKET_EVENTS.TELEMETRY_UPDATE, handleTelemetryUpdate);
       socket.off(SOCKET_EVENTS.PREDICTIVE_OVERVIEW, handlePredictiveOverview);
       socket.off(SOCKET_EVENTS.LEGACY_NOTIFICATION_CREATED, handleNewNotification);
       socket.off(SOCKET_EVENTS.NOTIFICATION_CREATED, handleNewNotification);

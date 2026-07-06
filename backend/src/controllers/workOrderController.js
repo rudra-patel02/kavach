@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 import WorkOrder from "../models/workOrder.js";
+import { createAuditLog } from "../services/auditService.js";
 import {
   createManualWorkOrder,
   deleteWorkOrder,
@@ -178,6 +179,14 @@ export const createWorkOrder = async (req, res) => {
   try {
     const workOrder = await createManualWorkOrder(req.body, getIo(req));
 
+    await createAuditLog({
+      action: "WORK_ORDER_CREATED",
+      newValue: workOrder,
+      req,
+      resourceId: workOrder.workOrderId,
+      resourceType: "workOrder",
+    });
+
     res.status(201).json({
       success: true,
       workOrder,
@@ -204,11 +213,22 @@ export const patchWorkOrder = async (req, res) => {
       return res.status(404).json({ message: "Work order not found" });
     }
 
+    const oldValue =
+      typeof workOrder.toObject === "function" ? workOrder.toObject() : workOrder;
     const updatedWorkOrder = await updateWorkOrder(
       workOrder,
       req.body,
       getIo(req)
     );
+
+    await createAuditLog({
+      action: "WORK_ORDER_UPDATED",
+      newValue: updatedWorkOrder,
+      oldValue,
+      req,
+      resourceId: updatedWorkOrder.workOrderId,
+      resourceType: "workOrder",
+    });
 
     res.json({
       success: true,
@@ -235,6 +255,14 @@ export const removeWorkOrder = async (req, res) => {
     }
 
     const deletedWorkOrder = await deleteWorkOrder(workOrder, getIo(req));
+
+    await createAuditLog({
+      action: "WORK_ORDER_DELETED",
+      oldValue: workOrder,
+      req,
+      resourceId: deletedWorkOrder.workOrderId,
+      resourceType: "workOrder",
+    });
 
     res.json({
       success: true,

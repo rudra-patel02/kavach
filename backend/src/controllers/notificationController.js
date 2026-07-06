@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 import Notification from "../models/notification.js";
 import { serializeNotification } from "../services/notificationService.js";
+import { createAuditLog } from "../services/auditService.js";
 
 const getRealtime = (req) => req.app.get("machineGateway") || req.app.get("io");
 
@@ -59,6 +60,14 @@ export const markNotificationRead = async (req, res) => {
       realtime?.emit("notification:read", eventPayload);
     }
 
+    await createAuditLog({
+      action: "ALERT_ACKNOWLEDGED",
+      newValue: serializedNotification,
+      req,
+      resourceId: serializedNotification.id,
+      resourceType: "notification",
+    });
+
     res.json({
       success: true,
       notification: serializedNotification,
@@ -90,6 +99,13 @@ export const markAllNotificationsRead = async (req, res) => {
     } else {
       realtime?.emit("notifications:readAll", eventPayload);
     }
+
+    await createAuditLog({
+      action: "ALERTS_ACKNOWLEDGED_ALL",
+      metadata: { modifiedCount: result.modifiedCount },
+      req,
+      resourceType: "notification",
+    });
 
     res.json({
       success: true,

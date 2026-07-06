@@ -1,4 +1,5 @@
 import type { MachineData, MachineStatus } from "@/types/machine";
+import type { AIMachineSummary } from "@/types/ai";
 import type { NotificationItem, NotificationSeverity } from "@/types/notification";
 import type { PredictiveMachine, PredictiveOverview } from "@/types/predictive";
 import type { WorkOrder } from "@/types/workOrder";
@@ -6,6 +7,7 @@ import type { WorkOrder } from "@/types/workOrder";
 export interface EnterpriseMachineProfile {
   machine: MachineData;
   prediction: PredictiveMachine | null;
+  ai: AIMachineSummary | null;
   openWorkOrders: WorkOrder[];
   criticalAlerts: NotificationItem[];
   alerts: NotificationItem[];
@@ -122,10 +124,15 @@ const getEscalationLevel = (alert: NotificationItem, workOrder?: WorkOrder) => {
 const getRecommendedActions = (
   machine: MachineData,
   prediction: PredictiveMachine | null,
+  ai: AIMachineSummary | null,
   openWorkOrders: WorkOrder[],
   criticalAlerts: NotificationItem[]
 ) => {
   const actions = new Set<string>();
+
+  for (const recommendation of ai?.recommendations || []) {
+    actions.add(recommendation.recommendation);
+  }
 
   if (prediction?.recommendation) {
     actions.add(prediction.recommendation);
@@ -169,6 +176,17 @@ export const buildMachineProfiles = (
       overview?.predictions.find(
         (item) => item.machineId === machine.machineId
       ) || null;
+    const ai = machine.aiIntelligence
+      ? ({
+          ...machine.aiIntelligence,
+          machine: {
+            machineId: machine.machineId,
+            name: machine.name,
+            department: machine.department,
+            status: machine.status,
+          },
+        } as AIMachineSummary)
+      : null;
     const alerts = notifications.filter(
       (notification) => notification.machineId === machine.machineId
     );
@@ -180,10 +198,12 @@ export const buildMachineProfiles = (
         workOrder.machineId === machine.machineId &&
         activeStatuses.includes(workOrder.status)
     );
-    const failureProbability = prediction?.failureProbability || 0;
-    const remainingUsefulLifeHours = prediction?.remainingUsefulLifeHours || 0;
+    const failureProbability =
+      ai?.failureProbability || prediction?.failureProbability || 0;
+    const remainingUsefulLifeHours =
+      ai?.remainingUsefulLifeHours || prediction?.remainingUsefulLifeHours || 0;
     const riskScore = round(
-      failureProbability * 0.62 +
+      (ai?.riskPercent || failureProbability) * 0.62 +
         (100 - Number(machine.health || 0)) * 0.28 +
         criticalAlerts.length * 6 +
         openWorkOrders.length * 4,
@@ -193,6 +213,7 @@ export const buildMachineProfiles = (
     return {
       machine,
       prediction,
+      ai,
       openWorkOrders,
       criticalAlerts,
       alerts,
@@ -202,6 +223,7 @@ export const buildMachineProfiles = (
       recommendedActions: getRecommendedActions(
         machine,
         prediction,
+        ai,
         openWorkOrders,
         criticalAlerts
       ),

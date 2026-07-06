@@ -1,3 +1,5 @@
+import type { AIMachineSummary } from "@/types/ai";
+
 export type MachineStatus =
   | "Running"
   | "Warning"
@@ -24,6 +26,11 @@ export interface MachineDisplayData {
   health?: number;
   temperature?: number;
   aiPrediction?: MachinePrediction;
+  aiIntelligence?: AIMachineSummary | MachineData["aiIntelligence"];
+  aiFailureProbability?: number;
+  aiRemainingUsefulLifeHours?: number;
+  aiRootCauseSummary?: string;
+  aiAnomalySeverity?: "Low" | "Medium" | "High" | "Critical";
 }
 
 export interface MachineData {
@@ -42,11 +49,48 @@ export interface MachineData {
   rpm?: number;
   humidity?: number;
   pressure?: number;
+  oilLevel?: number;
+  noise?: number;
+  flowRate?: number;
+  gasSensor?: number;
   energyConsumed?: number;
   downtime?: number;
   oee?: number;
   remainingUsefulLifeHours?: number;
   predictedFailureProbability?: number;
+  aiHealthPercent?: number;
+  aiRiskPercent?: number;
+  aiFailureProbability?: number;
+  aiRemainingUsefulLifeHours?: number;
+  aiRootCauseSummary?: string;
+  aiAnomalySeverity?: "Low" | "Medium" | "High" | "Critical";
+  aiConfidencePercent?: number;
+  aiLastAnalyzedAt?: string;
+  aiIntelligence?: {
+    generatedAt?: string | null;
+    anomaly?: {
+      detected?: boolean;
+      severity?: "Low" | "Medium" | "High" | "Critical";
+      confidence?: number;
+      severityScore?: number;
+      reason?: string;
+    };
+    healthPercent?: number;
+    riskPercent?: number;
+    confidencePercent?: number;
+    remainingUsefulLifeHours?: number;
+    remainingUsefulLifeDays?: number;
+    failureProbability?: number;
+    rootCauseSummary?: string;
+    topRootCauses?: unknown[];
+    forecast?: unknown;
+    maintenancePlan?: unknown;
+    recommendations?: unknown[];
+  };
+  telemetrySource?: "simulator" | "iot" | "manual";
+  liveTelemetryEnabled?: boolean;
+  linkedDeviceId?: string;
+  lastLiveTelemetryAt?: string;
   lastHeartbeat?: string;
   aiPrediction?: MachinePrediction;
   maintenanceHistory?: {

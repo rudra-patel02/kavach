@@ -37,6 +37,60 @@ const predictionHistorySchema = new mongoose.Schema(
   { _id: false }
 );
 
+const aiRecommendationSummarySchema = new mongoose.Schema(
+  {
+    recommendation: String,
+    confidence: Number,
+    priority: String,
+    rationale: String,
+    expectedImpact: String,
+  },
+  { _id: false }
+);
+
+const aiIntelligenceSchema = new mongoose.Schema(
+  {
+    generatedAt: Date,
+    anomaly: {
+      detected: {
+        type: Boolean,
+        default: false,
+      },
+      severity: {
+        type: String,
+        default: "Low",
+      },
+      confidence: Number,
+      severityScore: Number,
+      reason: String,
+    },
+    healthPercent: Number,
+    riskPercent: Number,
+    confidencePercent: Number,
+    remainingUsefulLifeHours: Number,
+    remainingUsefulLifeDays: Number,
+    failureProbability: Number,
+    rootCauseSummary: String,
+    topRootCauses: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
+    forecast: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+    maintenancePlan: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+    recommendations: {
+      type: [aiRecommendationSummarySchema],
+      default: [],
+    },
+  },
+  { _id: false }
+);
+
 const machineSchema = new mongoose.Schema(
   {
     machineId: {
@@ -53,6 +107,36 @@ const machineSchema = new mongoose.Schema(
     department: {
       type: String,
       default: "Production",
+    },
+
+    organizationId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+
+    plantId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+
+    departmentId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+
+    productionLineId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+
+    machineGroupId: {
+      type: String,
+      default: "",
+      index: true,
     },
 
     status: {
@@ -111,6 +195,26 @@ const machineSchema = new mongoose.Schema(
       default: 1.0,
     },
 
+    oilLevel: {
+      type: Number,
+      default: 100,
+    },
+
+    noise: {
+      type: Number,
+      default: 60,
+    },
+
+    flowRate: {
+      type: Number,
+      default: 0,
+    },
+
+    gasSensor: {
+      type: Number,
+      default: 0,
+    },
+
     energyConsumed: {
       type: Number,
       default: 0,
@@ -136,6 +240,27 @@ const machineSchema = new mongoose.Schema(
       default: 2,
     },
 
+    telemetrySource: {
+      type: String,
+      enum: ["simulator", "iot", "manual"],
+      default: "simulator",
+      index: true,
+    },
+
+    liveTelemetryEnabled: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+
+    linkedDeviceId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+
+    lastLiveTelemetryAt: Date,
+
     lastHeartbeat: {
       type: Date,
       default: Date.now,
@@ -152,6 +277,50 @@ const machineSchema = new mongoose.Schema(
       type: [maintenanceHistorySchema],
       default: [],
     },
+
+    aiIntelligence: aiIntelligenceSchema,
+
+    aiHealthPercent: {
+      type: Number,
+      default: 100,
+      index: true,
+    },
+
+    aiRiskPercent: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
+
+    aiFailureProbability: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
+
+    aiRemainingUsefulLifeHours: {
+      type: Number,
+      default: 720,
+    },
+
+    aiRootCauseSummary: {
+      type: String,
+      default: "",
+    },
+
+    aiAnomalySeverity: {
+      type: String,
+      enum: ["Low", "Medium", "High", "Critical"],
+      default: "Low",
+      index: true,
+    },
+
+    aiConfidencePercent: {
+      type: Number,
+      default: 0,
+    },
+
+    aiLastAnalyzedAt: Date,
   },
   {
     timestamps: true,

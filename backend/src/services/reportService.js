@@ -3,11 +3,16 @@ import { buildExecutiveDashboard } from "./executiveAnalyticsService.js";
 import { buildPredictiveOverview } from "./predictionService.js";
 
 export const REPORT_TYPES = {
-  maintenance: "Maintenance Report",
-  "plant-health": "Plant Health Report",
-  energy: "Energy Report",
+  daily: "Daily Operations Report",
   weekly: "Weekly Report",
   monthly: "Monthly Report",
+  quarterly: "Quarterly Report",
+  machine: "Machine Report",
+  maintenance: "Maintenance Report",
+  energy: "Energy Report",
+  prediction: "Prediction Report",
+  executive: "Executive Report",
+  "plant-health": "Plant Health Report",
 };
 
 const round = (value, digits = 1) => {
@@ -267,3 +272,32 @@ export const buildReport = ({ type, machines, notifications, workOrders }) => {
     pdf: generatePdfBuffer(lines),
   };
 };
+
+const escapeCsv = (value) => {
+  const text = String(value ?? "");
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+};
+
+export const reportToCsv = (report) =>
+  ["Section,Value", ...report.lines.map((line, index) => `${index + 1},${escapeCsv(line)}`)].join("\n");
+
+export const reportToExcelHtml = (report) => `<!doctype html>
+<html>
+<head><meta charset="utf-8" /></head>
+<body>
+<table>
+<thead><tr><th>Line</th><th>Value</th></tr></thead>
+<tbody>
+${report.lines
+  .map(
+    (line, index) =>
+      `<tr><td>${index + 1}</td><td>${String(line)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")}</td></tr>`
+  )
+  .join("")}
+</tbody>
+</table>
+</body>
+</html>`;
