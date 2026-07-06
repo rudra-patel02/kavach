@@ -1,5 +1,6 @@
 export type NavigationRole =
   | "Super Admin"
+  | "Organization Admin"
   | "Plant Admin"
   | "Maintenance Manager"
   | "Engineer"
@@ -56,6 +57,23 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     icon: "gauge",
     href: "/dashboard/executive",
     roles: ["Super Admin", "Admin", "Plant Admin", "Plant Manager"],
+  },
+  {
+    name: "Enterprise Ops",
+    icon: "building",
+    href: "/enterprise",
+    roles: [
+      "Super Admin",
+      "Admin",
+      "Organization Admin",
+      "Plant Admin",
+      "Plant Manager",
+      "Maintenance Manager",
+      "Engineer",
+      "Maintenance Engineer",
+      "Operator",
+      "Viewer",
+    ],
   },
   {
     name: "Machines",

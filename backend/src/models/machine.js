@@ -115,6 +115,18 @@ const machineSchema = new mongoose.Schema(
       index: true,
     },
 
+    tenantId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+
+    regionId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+
     plantId: {
       type: String,
       default: "",
@@ -136,6 +148,97 @@ const machineSchema = new mongoose.Schema(
     machineGroupId: {
       type: String,
       default: "",
+      index: true,
+    },
+
+    areaId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+
+    assetId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+
+    serialNumber: {
+      type: String,
+      default: "",
+      index: true,
+    },
+
+    manufacturer: {
+      type: String,
+      default: "",
+      index: true,
+    },
+
+    model: {
+      type: String,
+      default: "",
+    },
+
+    installationDate: Date,
+
+    warrantyExpiry: Date,
+
+    criticality: {
+      type: String,
+      enum: ["Low", "Medium", "High", "Critical"],
+      default: "Medium",
+      index: true,
+    },
+
+    expectedLifeYears: {
+      type: Number,
+      default: 10,
+    },
+
+    assetValue: {
+      type: Number,
+      default: 0,
+    },
+
+    maintenanceCost: {
+      type: Number,
+      default: 0,
+    },
+
+    replacementCost: {
+      type: Number,
+      default: 0,
+    },
+
+    assetImage: {
+      type: String,
+      default: "",
+    },
+
+    qrCode: {
+      type: String,
+      default: "",
+    },
+
+    barcode: {
+      type: String,
+      default: "",
+    },
+
+    lifecycleState: {
+      type: String,
+      enum: [
+        "Installed",
+        "Commissioned",
+        "Operational",
+        "Maintenance",
+        "Repair",
+        "Upgrade",
+        "Retirement",
+        "Replacement",
+      ],
+      default: "Operational",
       index: true,
     },
 
@@ -328,6 +431,8 @@ const machineSchema = new mongoose.Schema(
 );
 
 machineSchema.index({ department: 1, status: 1 });
+machineSchema.index({ organizationId: 1, plantId: 1, status: 1 });
+machineSchema.index({ plantId: 1, criticality: 1, lifecycleState: 1 });
 machineSchema.index({ health: 1 });
 machineSchema.index({ updatedAt: -1 });
 

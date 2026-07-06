@@ -9,6 +9,7 @@ import {
 
 test("normalizes legacy roles to enterprise RBAC roles", () => {
   assert.equal(normalizeRole("Admin"), "Super Admin");
+  assert.equal(normalizeRole("Organization Admin"), "Organization Admin");
   assert.equal(normalizeRole("Plant Manager"), "Plant Admin");
   assert.equal(normalizeRole("Maintenance Engineer"), "Engineer");
 });
@@ -20,4 +21,6 @@ test("supports permission checks and manager inheritance", () => {
     hasAnyRole("Maintenance Manager", ["Maintenance Engineer"]),
     true
   );
+  assert.equal(hasPermission("Organization Admin", "enterprise:manage"), true);
+  assert.equal(hasAnyRole("Organization Admin", ["Plant Admin"]), true);
 });

@@ -61,6 +61,9 @@ test("broadcasts machine snapshots to legacy, plant, and machine channels", () =
   assert.ok(
     io.calls.some((call) => call.event === SOCKET_EVENTS.PREDICTIVE_OVERVIEW)
   );
+  assert.ok(
+    io.calls.some((call) => call.event === SOCKET_EVENTS.ENTERPRISE_REFRESH)
+  );
 });
 
 test("broadcasts alerts across notification and alert event channels", () => {
@@ -87,6 +90,33 @@ test("broadcasts alerts across notification and alert event channels", () => {
       (call) =>
         call.room === getMachineRoom("M001") &&
         call.event === SOCKET_EVENTS.ALERT_CREATED
+    )
+  );
+});
+
+test("broadcasts enterprise refresh and maintenance status updates", () => {
+  const io = createFakeIo();
+  const gateway = createMachineGateway(io);
+
+  gateway.broadcastEnterpriseRefresh({ reason: "test" }, { plantId: "west" });
+  gateway.broadcastWorkOrderUpdated({
+    workOrderId: "WO-1",
+    status: "IN_PROGRESS",
+  });
+
+  assert.ok(
+    io.calls.some((call) => call.event === SOCKET_EVENTS.ENTERPRISE_REFRESH)
+  );
+  assert.ok(
+    io.calls.some(
+      (call) =>
+        call.room === getPlantRoom("west") &&
+        call.event === SOCKET_EVENTS.FLEET_HEALTH_UPDATE
+    )
+  );
+  assert.ok(
+    io.calls.some(
+      (call) => call.event === SOCKET_EVENTS.MAINTENANCE_STATUS_UPDATE
     )
   );
 });

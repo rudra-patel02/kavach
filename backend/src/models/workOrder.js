@@ -81,6 +81,26 @@ const workOrderSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    tenantId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    organizationId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    plantId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    assetId: {
+      type: String,
+      default: "",
+      index: true,
+    },
     machineId: {
       type: String,
       required: true,
@@ -137,6 +157,56 @@ const workOrderSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    actualCost: {
+      type: Number,
+      default: 0,
+    },
+    requiredParts: {
+      type: [
+        {
+          partNumber: String,
+          name: String,
+          quantity: Number,
+          status: {
+            type: String,
+            enum: ["Required", "Reserved", "Issued", "Consumed"],
+            default: "Required",
+          },
+          estimatedCost: Number,
+        },
+      ],
+      default: [],
+    },
+    approvalWorkflow: {
+      requestedBy: String,
+      approvedBy: String,
+      approvedAt: Date,
+      status: {
+        type: String,
+        enum: ["Not Required", "Pending", "Approved", "Rejected"],
+        default: "Not Required",
+        index: true,
+      },
+      comments: String,
+    },
+    maintenanceChecklist: {
+      type: [
+        {
+          label: String,
+          completed: {
+            type: Boolean,
+            default: false,
+          },
+          completedBy: String,
+          completedAt: Date,
+        },
+      ],
+      default: [],
+    },
+    completionNotes: {
+      type: String,
+      default: "",
+    },
     dueDate: Date,
     completedAt: Date,
     notes: {
@@ -172,5 +242,6 @@ workOrderSchema.index(
 );
 workOrderSchema.index({ createdAt: -1 });
 workOrderSchema.index({ dueDate: 1 });
+workOrderSchema.index({ organizationId: 1, plantId: 1, status: 1 });
 
 export default mongoose.model("WorkOrder", workOrderSchema);

@@ -34,6 +34,9 @@ export const SOCKET_EVENTS = {
   WORKORDER_CREATED: "workorder:new",
   WORKORDER_UPDATED: "workorder:updated",
   WORKORDER_DELETED: "workorder:deleted",
+  ENTERPRISE_REFRESH: "enterprise:dashboard:refresh",
+  FLEET_HEALTH_UPDATE: "enterprise:fleet:update",
+  MAINTENANCE_STATUS_UPDATE: "enterprise:maintenance:update",
 };
 
 const socket = io(getSocketBaseUrl(), {

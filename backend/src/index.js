@@ -15,6 +15,7 @@ import authRoutes from "./routes/authRoutes.js";
 import copilotRoutes from "./routes/copilotRoutes.js";
 import docsRoutes from "./routes/docsRoutes.js";
 import executiveRoutes from "./routes/executiveRoutes.js";
+import enterpriseRoutes from "./routes/enterpriseRoutes.js";
 import machineRoutes from "./routes/machineRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import predictionRoutes from "./routes/predictionRoutes.js";
@@ -181,6 +182,7 @@ const start = async () => {
   app.use("/api/backup", backupRoutes);
   app.use("/api/copilot", copilotRoutes);
   app.use("/api/docs", docsRoutes);
+  app.use("/api/enterprise", enterpriseRoutes);
   app.use("/api/executive", executiveRoutes);
   app.use("/api/iot", iotRoutes);
   app.use("/api/machines", machineRoutes);

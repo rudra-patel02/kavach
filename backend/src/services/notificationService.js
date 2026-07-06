@@ -61,6 +61,14 @@ export const serializeNotification = (notification) => {
     priority: value.priority || "P4",
     failureProbability: round(value.failureProbability, 1),
     suggestedAction: value.suggestedAction || "",
+    assetId: value.assetId || "",
+    organizationId: value.organizationId || "",
+    plantId: value.plantId || "",
+    tenantId: value.tenantId || "",
+    owner: value.owner || "",
+    escalationLevel: value.escalationLevel || 0,
+    escalationStatus: value.escalationStatus || "Open",
+    channels: value.channels || ["push"],
     estimatedDowntimeHours: round(value.estimatedDowntimeHours, 1),
     recommendedEngineer: value.recommendedEngineer || "",
     machineLocation: value.machineLocation || "",
@@ -75,6 +83,17 @@ export const serializeNotification = (notification) => {
       at: new Date(item.at).toISOString(),
       actor: item.actor,
       message: item.message,
+    })),
+    comments: (value.comments || []).map((comment) => ({
+      author: comment.author,
+      createdAt: new Date(comment.createdAt).toISOString(),
+      text: comment.text,
+    })),
+    deliveryAttempts: (value.deliveryAttempts || []).map((attempt) => ({
+      attemptedAt: new Date(attempt.attemptedAt).toISOString(),
+      channel: attempt.channel,
+      error: attempt.error,
+      status: attempt.status,
     })),
     read: Boolean(value.read),
     readAt: value.readAt ? new Date(value.readAt).toISOString() : null,
@@ -152,6 +171,10 @@ const buildNotification = ({
     type,
     severity,
     priority: getPriority(severity),
+    assetId: machine.assetId || "",
+    organizationId: machine.organizationId || "",
+    plantId: machine.plantId || "",
+    tenantId: machine.tenantId || "",
     machineId: machine.machineId,
     machineName: machine.name,
     title,
@@ -169,7 +192,13 @@ const buildNotification = ({
       `${machine.department || "Production"} line`,
     alertTimeline: [timelineEvent],
     alertHistory: [timelineEvent],
+    channels:
+      severity === "Critical"
+        ? ["push", "email", "sms", "teams"]
+        : ["push", "email"],
     dedupeKey: `${machine.machineId}:${type}:${severity}`,
+    escalationLevel: severity === "Critical" ? 1 : 0,
+    owner: getRecommendedEngineer(machine),
   };
 };
 

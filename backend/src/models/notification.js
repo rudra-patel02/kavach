@@ -42,6 +42,26 @@ const notificationSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    tenantId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    organizationId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    plantId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    assetId: {
+      type: String,
+      default: "",
+      index: true,
+    },
     machineName: {
       type: String,
       required: true,
@@ -99,6 +119,53 @@ const notificationSchema = new mongoose.Schema(
       type: [alertTimelineSchema],
       default: [],
     },
+    owner: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    escalationLevel: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
+    escalationStatus: {
+      type: String,
+      enum: ["Open", "Escalated", "Resolved", "Muted"],
+      default: "Open",
+      index: true,
+    },
+    comments: {
+      type: [
+        {
+          text: String,
+          author: String,
+          createdAt: {
+            type: Date,
+            default: Date.now,
+          },
+        },
+      ],
+      default: [],
+    },
+    channels: {
+      type: [String],
+      default: ["push"],
+    },
+    deliveryAttempts: {
+      type: [
+        {
+          channel: String,
+          status: String,
+          attemptedAt: {
+            type: Date,
+            default: Date.now,
+          },
+          error: String,
+        },
+      ],
+      default: [],
+    },
     dedupeKey: {
       type: String,
       required: true,
@@ -119,5 +186,6 @@ const notificationSchema = new mongoose.Schema(
 notificationSchema.index({ createdAt: -1 });
 notificationSchema.index({ dedupeKey: 1, createdAt: -1 });
 notificationSchema.index({ machineId: 1, severity: 1, createdAt: -1 });
+notificationSchema.index({ organizationId: 1, plantId: 1, read: 1, severity: 1 });
 
 export default mongoose.model("Notification", notificationSchema);

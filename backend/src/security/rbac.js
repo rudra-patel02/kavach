@@ -3,6 +3,7 @@ export const ROLE_ALIASES = {
   Engineer: "Engineer",
   "Maintenance Engineer": "Engineer",
   "Maintenance Manager": "Maintenance Manager",
+  "Organization Admin": "Organization Admin",
   "Plant Admin": "Plant Admin",
   "Plant Manager": "Plant Admin",
   "Super Admin": "Super Admin",
@@ -12,6 +13,7 @@ export const ROLE_ALIASES = {
 
 export const ENTERPRISE_ROLES = [
   "Super Admin",
+  "Organization Admin",
   "Plant Admin",
   "Maintenance Manager",
   "Engineer",
@@ -28,6 +30,21 @@ export const ROLE_PERMISSIONS = {
     "config:write",
     "devices:manage",
     "machines:manage",
+    "plants:manage",
+    "reports:read",
+    "system:read",
+    "users:manage",
+    "workorders:manage",
+  ],
+  "Organization Admin": [
+    "analytics:read",
+    "audit:read",
+    "backup:read",
+    "config:write",
+    "devices:manage",
+    "enterprise:manage",
+    "machines:manage",
+    "notifications:manage",
     "plants:manage",
     "reports:read",
     "system:read",
@@ -88,6 +105,13 @@ export const hasAnyRole = (role, allowedRoles = []) => {
   if (
     normalizedRole === "Maintenance Manager" &&
     normalizedAllowedRoles.includes("Engineer")
+  ) {
+    return true;
+  }
+
+  if (
+    normalizedRole === "Organization Admin" &&
+    normalizedAllowedRoles.includes("Plant Admin")
   ) {
     return true;
   }

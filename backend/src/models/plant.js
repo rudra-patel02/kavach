@@ -7,6 +7,21 @@ const plantSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    tenantId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    regionId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    country: {
+      type: String,
+      default: "India",
+      index: true,
+    },
     plantId: {
       type: String,
       required: true,
@@ -21,6 +36,20 @@ const plantSchema = new mongoose.Schema(
     location: {
       type: String,
       default: "",
+    },
+    address: {
+      type: String,
+      default: "",
+    },
+    latitude: Number,
+    longitude: Number,
+    plantManager: {
+      type: String,
+      default: "",
+    },
+    capacityUnitsPerDay: {
+      type: Number,
+      default: 0,
     },
     timezone: {
       type: String,
@@ -37,5 +66,6 @@ const plantSchema = new mongoose.Schema(
 );
 
 plantSchema.index({ organizationId: 1, status: 1 });
+plantSchema.index({ regionId: 1, country: 1, status: 1 });
 
 export default mongoose.model("Plant", plantSchema);

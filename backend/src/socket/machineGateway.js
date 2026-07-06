@@ -82,6 +82,11 @@ export const createMachineGateway = (io) => {
         emitPlant(plantId, SOCKET_EVENTS.AI_INSIGHTS, aiInsights);
       }
 
+      this?.broadcastEnterpriseRefresh?.({
+        machineCount: normalizedMachines.length,
+        reason: "machine_snapshot",
+      }, { plantId });
+
       return payload;
     },
 
@@ -187,14 +192,42 @@ export const createMachineGateway = (io) => {
 
     broadcastWorkOrderCreated(workOrder) {
       emit(SOCKET_EVENTS.WORKORDER_CREATED, workOrder);
+      this.broadcastEnterpriseRefresh({
+        reason: "workorder_created",
+        workOrderId: workOrder?.workOrderId,
+      });
     },
 
     broadcastWorkOrderUpdated(workOrder) {
       emit(SOCKET_EVENTS.WORKORDER_UPDATED, workOrder);
+      emit(SOCKET_EVENTS.MAINTENANCE_STATUS_UPDATE, workOrder);
+      this.broadcastEnterpriseRefresh({
+        reason: "workorder_updated",
+        workOrderId: workOrder?.workOrderId,
+      });
     },
 
     broadcastWorkOrderDeleted(payload) {
       emit(SOCKET_EVENTS.WORKORDER_DELETED, payload);
+      this.broadcastEnterpriseRefresh({
+        reason: "workorder_deleted",
+        workOrderId: payload?.workOrderId,
+      });
+    },
+
+    broadcastEnterpriseRefresh(payload = {}, { plantId = DEFAULT_PLANT_ID } = {}) {
+      const eventPayload = {
+        generatedAt: new Date().toISOString(),
+        plantId: normalizeRoomId(plantId),
+        ...payload,
+      };
+
+      emit(SOCKET_EVENTS.ENTERPRISE_REFRESH, eventPayload);
+      emitPlant(plantId, SOCKET_EVENTS.ENTERPRISE_REFRESH, eventPayload);
+      emit(SOCKET_EVENTS.FLEET_HEALTH_UPDATE, eventPayload);
+      emitPlant(plantId, SOCKET_EVENTS.FLEET_HEALTH_UPDATE, eventPayload);
+
+      return eventPayload;
     },
   };
 };

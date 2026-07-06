@@ -156,6 +156,10 @@ const buildWorkOrderPayload = async ({
 
   return {
     workOrderId: await createWorkOrderId(),
+    assetId: overrides.assetId || machine.assetId || "",
+    organizationId: overrides.organizationId || machine.organizationId || "",
+    plantId: overrides.plantId || machine.plantId || "",
+    tenantId: overrides.tenantId || machine.tenantId || "",
     machineId: machine.machineId,
     machineName: machine.name,
     department: overrides.department || machine.department || "Production",
@@ -176,6 +180,33 @@ const buildWorkOrderPayload = async ({
     estimatedRepairCost:
       Number(overrides.estimatedRepairCost) ||
       estimateRepairCost(prediction, priority),
+    actualCost: Number(overrides.actualCost) || 0,
+    approvalWorkflow: overrides.approvalWorkflow || {
+      requestedBy: overrides.actor || "System",
+      status: priority === "CRITICAL" ? "Pending" : "Not Required",
+    },
+    requiredParts:
+      overrides.requiredParts ||
+      [
+        {
+          estimatedCost: priority === "CRITICAL" ? 4500 : 1800,
+          name:
+            priority === "CRITICAL"
+              ? "Critical maintenance kit"
+              : "Preventive maintenance kit",
+          partNumber: `${machine.machineId}-KIT`,
+          quantity: 1,
+          status: "Required",
+        },
+      ],
+    maintenanceChecklist:
+      overrides.maintenanceChecklist ||
+      [
+        { completed: false, label: "Validate lockout/tagout readiness" },
+        { completed: false, label: "Capture pre-maintenance telemetry snapshot" },
+        { completed: false, label: "Inspect root-cause fault area" },
+        { completed: false, label: "Record post-maintenance test result" },
+      ],
     dueDate,
     notes: overrides.notes || [],
     attachments: overrides.attachments || [],
@@ -200,6 +231,10 @@ export const serializeWorkOrder = (workOrder) => {
   return {
     id: String(value._id),
     workOrderId: value.workOrderId,
+    assetId: value.assetId || "",
+    organizationId: value.organizationId || "",
+    plantId: value.plantId || "",
+    tenantId: value.tenantId || "",
     machineId: value.machineId,
     machineName: value.machineName,
     department: value.department,
@@ -212,6 +247,11 @@ export const serializeWorkOrder = (workOrder) => {
     aiRecommendation: value.aiRecommendation,
     estimatedDowntimeHours: value.estimatedDowntimeHours,
     estimatedRepairCost: value.estimatedRepairCost,
+    actualCost: value.actualCost || 0,
+    approvalWorkflow: value.approvalWorkflow || null,
+    requiredParts: value.requiredParts || [],
+    maintenanceChecklist: value.maintenanceChecklist || [],
+    completionNotes: value.completionNotes || "",
     dueDate: value.dueDate ? new Date(value.dueDate).toISOString() : null,
     completedAt: value.completedAt
       ? new Date(value.completedAt).toISOString()
@@ -535,6 +575,29 @@ export const updateWorkOrder = async (workOrder, payload, io) => {
 
   if (payload.estimatedRepairCost !== undefined) {
     workOrder.estimatedRepairCost = Number(payload.estimatedRepairCost) || 0;
+  }
+
+  if (payload.actualCost !== undefined) {
+    workOrder.actualCost = Number(payload.actualCost) || 0;
+  }
+
+  if (payload.completionNotes !== undefined) {
+    workOrder.completionNotes = String(payload.completionNotes || "");
+  }
+
+  if (Array.isArray(payload.requiredParts)) {
+    workOrder.requiredParts = payload.requiredParts;
+  }
+
+  if (Array.isArray(payload.maintenanceChecklist)) {
+    workOrder.maintenanceChecklist = payload.maintenanceChecklist;
+  }
+
+  if (payload.approvalWorkflow) {
+    workOrder.approvalWorkflow = {
+      ...(workOrder.approvalWorkflow || {}),
+      ...payload.approvalWorkflow,
+    };
   }
 
   if (payload.dueDate !== undefined) {
