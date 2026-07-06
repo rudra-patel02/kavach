@@ -4,6 +4,7 @@ export type NavigationRole =
   | "Plant Admin"
   | "Maintenance Manager"
   | "Engineer"
+  | "Quality Engineer"
   | "Admin"
   | "Plant Manager"
   | "Maintenance Engineer"
@@ -47,6 +48,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
       "Plant Manager",
       "Maintenance Manager",
       "Engineer",
+      "Quality Engineer",
       "Maintenance Engineer",
       "Operator",
       "Viewer",
@@ -70,6 +72,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
       "Plant Manager",
       "Maintenance Manager",
       "Engineer",
+      "Quality Engineer",
       "Maintenance Engineer",
       "Operator",
       "Viewer",
@@ -86,6 +89,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
       "Plant Manager",
       "Maintenance Manager",
       "Engineer",
+      "Quality Engineer",
       "Maintenance Engineer",
       "Operator",
       "Viewer",
@@ -102,6 +106,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
       "Plant Manager",
       "Maintenance Manager",
       "Engineer",
+      "Quality Engineer",
       "Maintenance Engineer",
       "Operator",
       "Viewer",
@@ -118,6 +123,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
       "Plant Manager",
       "Maintenance Manager",
       "Engineer",
+      "Quality Engineer",
       "Maintenance Engineer",
       "Operator",
       "Viewer",
@@ -140,6 +146,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
       "Plant Manager",
       "Maintenance Manager",
       "Engineer",
+      "Quality Engineer",
       "Maintenance Engineer",
       "Operator",
       "Viewer",
@@ -174,6 +181,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
       "Plant Manager",
       "Maintenance Manager",
       "Engineer",
+      "Quality Engineer",
       "Maintenance Engineer",
       "Operator",
     ],
@@ -189,6 +197,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
       "Plant Manager",
       "Maintenance Manager",
       "Engineer",
+      "Quality Engineer",
       "Maintenance Engineer",
       "Operator",
     ],
@@ -204,6 +213,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
       "Plant Manager",
       "Maintenance Manager",
       "Engineer",
+      "Quality Engineer",
       "Maintenance Engineer",
       "Operator",
     ],
@@ -219,6 +229,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
       "Plant Manager",
       "Maintenance Manager",
       "Engineer",
+      "Quality Engineer",
       "Maintenance Engineer",
       "Operator",
     ],
@@ -234,6 +245,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
       "Plant Manager",
       "Maintenance Manager",
       "Engineer",
+      "Quality Engineer",
       "Maintenance Engineer",
       "Operator",
       "Viewer",
@@ -250,6 +262,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
       "Plant Manager",
       "Maintenance Manager",
       "Engineer",
+      "Quality Engineer",
       "Maintenance Engineer",
       "Operator",
       "Viewer",

@@ -28,8 +28,10 @@ export interface TenantOverviewResponse {
 export interface AuditLog {
   id: string;
   action: string;
+  browser: string;
   createdAt: string | null;
   ip: string;
+  location: string;
   metadata: Record<string, unknown>;
   newValue: unknown;
   oldValue: unknown;
@@ -38,6 +40,8 @@ export interface AuditLog {
   resourceId: string;
   resourceType: string;
   role: string;
+  sessionId: string;
+  severity: "Info" | "Warning" | "Critical";
   userEmail: string;
   userId: string;
 }

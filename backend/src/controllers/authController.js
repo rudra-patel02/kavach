@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 
 import User from "../models/user.js";
 import { createAuditLog } from "../services/auditService.js";
+import { getPermissionsForRole } from "../security/rbac.js";
 
 const normalizeEmail = (email = "") => email.trim().toLowerCase();
 
@@ -37,6 +38,9 @@ const createAccessToken = (user) =>
       organizationId: user.organizationId,
       plantIds: user.plantIds || [],
       activePlantId: user.activePlantId || "",
+      permissions: Array.from(
+        new Set([...(getPermissionsForRole(user.role) || []), ...(user.permissions || [])])
+      ),
     },
     getJwtSecret(),
     {

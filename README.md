@@ -1,5 +1,8 @@
 # KAVACH Industrial Decision Intelligence Platform
 
+Phase 15-18 enterprise completion notes are available in
+[PHASE15_18_ENTERPRISE.md](PHASE15_18_ENTERPRISE.md).
+
 KAVACH is a production-style Industrial AI Platform for plant monitoring, predictive maintenance, alerting, digital twin operations, work orders, executive analytics, AI copilot workflows, PDF reporting, and role-based operations.
 
 ## Architecture

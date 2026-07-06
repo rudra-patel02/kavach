@@ -58,6 +58,32 @@ const normalizeSeverity = (severity = "Medium") => {
   return severityMap[normalizedSeverity] || "Medium";
 };
 
+const normalizeMaintenanceType = (maintenanceType = "Predictive") => {
+  const normalizedType = String(maintenanceType).trim().toLowerCase();
+  const typeMap = {
+    corrective: "Corrective",
+    emergency: "Emergency",
+    inspection: "Inspection",
+    predictive: "Predictive",
+    preventive: "Preventive",
+  };
+
+  return typeMap[normalizedType] || "Predictive";
+};
+
+const normalizeApprovalStatus = (approvalStatus = "Not Required") => {
+  const normalizedStatus = String(approvalStatus).trim().toLowerCase();
+  const statusMap = {
+    approved: "Approved",
+    pending: "Pending",
+    rejected: "Rejected",
+    "not required": "Not Required",
+    not_required: "Not Required",
+  };
+
+  return statusMap[normalizedStatus] || "Not Required";
+};
+
 const getDueDate = (priority) => {
   const date = new Date();
   const offsetHours =
@@ -151,8 +177,18 @@ const buildWorkOrderPayload = async ({
   const dueDate = overrides.dueDate ? new Date(overrides.dueDate) : getDueDate(priority);
   const estimatedDowntimeHours =
     Number(overrides.estimatedDowntimeHours) ||
+    Number(overrides.estimatedHours) ||
     Number(prediction.estimatedDowntimeHours) ||
     0;
+  const estimatedRepairCost =
+    Number(overrides.estimatedRepairCost) ||
+    Number(overrides.costEstimate) ||
+    estimateRepairCost(prediction, priority);
+  const approvalStatus = normalizeApprovalStatus(
+    overrides.approvalStatus ||
+      overrides.approvalWorkflow?.status ||
+      (priority === "CRITICAL" ? "Pending" : "Not Required")
+  );
 
   return {
     workOrderId: await createWorkOrderId(),
@@ -167,24 +203,31 @@ const buildWorkOrderPayload = async ({
     severity,
     status: normalizeStatus(overrides.status || "OPEN"),
     assignedEngineer: overrides.assignedEngineer || "",
+    createdBy: overrides.createdBy || overrides.actor || "System",
     description:
       overrides.description ||
       notification?.message ||
       `${machine.name} requires maintenance based on predictive telemetry.`,
+    maintenanceType: normalizeMaintenanceType(
+      overrides.maintenanceType ||
+        (priority === "CRITICAL" ? "Emergency" : "Predictive")
+    ),
     probableCause: overrides.probableCause || prediction.probableCause,
     aiRecommendation:
       overrides.aiRecommendation ||
       machine.aiPrediction?.recommendation ||
       prediction.recommendation,
     estimatedDowntimeHours,
-    estimatedRepairCost:
-      Number(overrides.estimatedRepairCost) ||
-      estimateRepairCost(prediction, priority),
+    estimatedHours: estimatedDowntimeHours,
+    actualHours: Number(overrides.actualHours) || 0,
+    estimatedRepairCost,
+    costEstimate: estimatedRepairCost,
     actualCost: Number(overrides.actualCost) || 0,
     approvalWorkflow: overrides.approvalWorkflow || {
       requestedBy: overrides.actor || "System",
-      status: priority === "CRITICAL" ? "Pending" : "Not Required",
+      status: approvalStatus,
     },
+    approvalStatus,
     requiredParts:
       overrides.requiredParts ||
       [
@@ -208,6 +251,12 @@ const buildWorkOrderPayload = async ({
         { completed: false, label: "Record post-maintenance test result" },
       ],
     dueDate,
+    scheduledDate: overrides.scheduledDate
+      ? new Date(overrides.scheduledDate)
+      : dueDate,
+    completedDate: overrides.completedDate
+      ? new Date(overrides.completedDate)
+      : undefined,
     notes: overrides.notes || [],
     attachments: overrides.attachments || [],
     history: [
@@ -242,20 +291,38 @@ export const serializeWorkOrder = (workOrder) => {
     severity: value.severity,
     status: value.status,
     assignedEngineer: value.assignedEngineer,
+    createdBy: value.createdBy || "System",
     description: value.description,
+    maintenanceType: value.maintenanceType || "Predictive",
     probableCause: value.probableCause,
     aiRecommendation: value.aiRecommendation,
     estimatedDowntimeHours: value.estimatedDowntimeHours,
+    estimatedHours: value.estimatedHours || value.estimatedDowntimeHours || 0,
+    actualHours: value.actualHours || 0,
     estimatedRepairCost: value.estimatedRepairCost,
+    costEstimate: value.costEstimate || value.estimatedRepairCost || 0,
     actualCost: value.actualCost || 0,
     approvalWorkflow: value.approvalWorkflow || null,
+    approvalStatus:
+      value.approvalStatus || value.approvalWorkflow?.status || "Not Required",
     requiredParts: value.requiredParts || [],
     maintenanceChecklist: value.maintenanceChecklist || [],
+    checklist: value.maintenanceChecklist || [],
     completionNotes: value.completionNotes || "",
     dueDate: value.dueDate ? new Date(value.dueDate).toISOString() : null,
+    scheduledDate: value.scheduledDate
+      ? new Date(value.scheduledDate).toISOString()
+      : value.dueDate
+        ? new Date(value.dueDate).toISOString()
+        : null,
     completedAt: value.completedAt
       ? new Date(value.completedAt).toISOString()
       : null,
+    completedDate: value.completedDate
+      ? new Date(value.completedDate).toISOString()
+      : value.completedAt
+        ? new Date(value.completedAt).toISOString()
+        : null,
     createdAt: value.createdAt ? new Date(value.createdAt).toISOString() : null,
     updatedAt: value.updatedAt ? new Date(value.updatedAt).toISOString() : null,
     notes: (value.notes || []).map((note) => ({
@@ -546,6 +613,10 @@ export const updateWorkOrder = async (workOrder, payload, io) => {
     workOrder.severity = normalizeSeverity(payload.severity);
   }
 
+  if (payload.maintenanceType !== undefined) {
+    workOrder.maintenanceType = normalizeMaintenanceType(payload.maintenanceType);
+  }
+
   if (payload.status !== undefined) {
     workOrder.status = normalizeStatus(payload.status);
   }
@@ -559,6 +630,7 @@ export const updateWorkOrder = async (workOrder, payload, io) => {
   }
 
   for (const field of [
+    "createdBy",
     "description",
     "probableCause",
     "aiRecommendation",
@@ -571,10 +643,26 @@ export const updateWorkOrder = async (workOrder, payload, io) => {
 
   if (payload.estimatedDowntimeHours !== undefined) {
     workOrder.estimatedDowntimeHours = Number(payload.estimatedDowntimeHours) || 0;
+    workOrder.estimatedHours = workOrder.estimatedDowntimeHours;
+  }
+
+  if (payload.estimatedHours !== undefined) {
+    workOrder.estimatedHours = Number(payload.estimatedHours) || 0;
+    workOrder.estimatedDowntimeHours = workOrder.estimatedHours;
+  }
+
+  if (payload.actualHours !== undefined) {
+    workOrder.actualHours = Number(payload.actualHours) || 0;
   }
 
   if (payload.estimatedRepairCost !== undefined) {
     workOrder.estimatedRepairCost = Number(payload.estimatedRepairCost) || 0;
+    workOrder.costEstimate = workOrder.estimatedRepairCost;
+  }
+
+  if (payload.costEstimate !== undefined) {
+    workOrder.costEstimate = Number(payload.costEstimate) || 0;
+    workOrder.estimatedRepairCost = workOrder.costEstimate;
   }
 
   if (payload.actualCost !== undefined) {
@@ -593,15 +681,48 @@ export const updateWorkOrder = async (workOrder, payload, io) => {
     workOrder.maintenanceChecklist = payload.maintenanceChecklist;
   }
 
+  if (Array.isArray(payload.checklist)) {
+    workOrder.maintenanceChecklist = payload.checklist;
+  }
+
   if (payload.approvalWorkflow) {
     workOrder.approvalWorkflow = {
       ...(workOrder.approvalWorkflow || {}),
       ...payload.approvalWorkflow,
     };
+
+    if (payload.approvalWorkflow.status) {
+      workOrder.approvalStatus = normalizeApprovalStatus(
+        payload.approvalWorkflow.status
+      );
+    }
+  }
+
+  if (payload.approvalStatus !== undefined) {
+    workOrder.approvalStatus = normalizeApprovalStatus(payload.approvalStatus);
+    workOrder.approvalWorkflow = {
+      ...(workOrder.approvalWorkflow || {}),
+      status: workOrder.approvalStatus,
+    };
   }
 
   if (payload.dueDate !== undefined) {
     workOrder.dueDate = payload.dueDate ? new Date(payload.dueDate) : null;
+    workOrder.scheduledDate = workOrder.dueDate;
+  }
+
+  if (payload.scheduledDate !== undefined) {
+    workOrder.scheduledDate = payload.scheduledDate
+      ? new Date(payload.scheduledDate)
+      : null;
+    workOrder.dueDate = workOrder.scheduledDate;
+  }
+
+  if (payload.completedDate !== undefined) {
+    workOrder.completedDate = payload.completedDate
+      ? new Date(payload.completedDate)
+      : null;
+    workOrder.completedAt = workOrder.completedDate;
   }
 
   if (payload.note) {
@@ -650,6 +771,7 @@ export const updateWorkOrder = async (workOrder, payload, io) => {
 
   if (workOrder.status === "COMPLETED" && !workOrder.completedAt) {
     workOrder.completedAt = new Date();
+    workOrder.completedDate = workOrder.completedAt;
     workOrder.history.push(
       buildHistoryEvent({
         event: "COMPLETED",
@@ -660,6 +782,7 @@ export const updateWorkOrder = async (workOrder, payload, io) => {
     );
   } else if (workOrder.status !== "COMPLETED") {
     workOrder.completedAt = null;
+    workOrder.completedDate = null;
   }
 
   await workOrder.save();

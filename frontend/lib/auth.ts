@@ -46,7 +46,9 @@ export const hasAnyRole = (role: string | undefined, allowedRoles: string[]) => 
   return (
     normalizedAllowedRoles.includes(normalizedRole) ||
     (normalizedRole === "Maintenance Manager" &&
-      normalizedAllowedRoles.includes("Engineer"))
+      normalizedAllowedRoles.includes("Engineer")) ||
+    (normalizedRole === "Quality Engineer" &&
+      normalizedAllowedRoles.includes("Viewer"))
   );
 };
 

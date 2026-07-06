@@ -21,8 +21,17 @@ const notificationSchema = new mongoose.Schema(
     type: {
       type: String,
       enum: [
+        "critical_alert",
         "failure_probability",
+        "machine_failure",
         "machine_health",
+        "maintenance_due",
+        "ai_recommendation",
+        "production_delay",
+        "energy_spike",
+        "safety_warning",
+        "quality_issue",
+        "inventory_alert",
         "temperature",
         "vibration",
         "pressure",
@@ -39,7 +48,7 @@ const notificationSchema = new mongoose.Schema(
     },
     machineId: {
       type: String,
-      required: true,
+      default: "",
       index: true,
     },
     tenantId: {
@@ -64,7 +73,7 @@ const notificationSchema = new mongoose.Schema(
     },
     machineName: {
       type: String,
-      required: true,
+      default: "Plant-wide",
     },
     title: {
       type: String,
@@ -80,7 +89,12 @@ const notificationSchema = new mongoose.Schema(
     },
     icon: {
       type: String,
-      required: true,
+      default: "bell",
+    },
+    category: {
+      type: String,
+      default: "",
+      index: true,
     },
     value: Number,
     threshold: Number,
@@ -168,7 +182,7 @@ const notificationSchema = new mongoose.Schema(
     },
     dedupeKey: {
       type: String,
-      required: true,
+      default: "",
       index: true,
     },
     read: {
@@ -177,6 +191,12 @@ const notificationSchema = new mongoose.Schema(
       index: true,
     },
     readAt: Date,
+    archived: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    archivedAt: Date,
   },
   {
     timestamps: true,

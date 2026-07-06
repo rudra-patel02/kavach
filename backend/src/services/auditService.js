@@ -18,11 +18,28 @@ export const createAuditLog = async ({
   req,
   resourceId = "",
   resourceType,
+  severity,
 }) => {
   try {
+    const retentionDays = Number(process.env.AUDIT_RETENTION_DAYS || 365);
+    const retentionExpiresAt = Number.isFinite(retentionDays)
+      ? new Date(Date.now() + retentionDays * 24 * 60 * 60 * 1000)
+      : undefined;
+    const actionSeverity =
+      severity ||
+      (/(DELETE|FAILED|CRITICAL|ROLE|PERMISSION|SECURITY)/i.test(action)
+        ? "Warning"
+        : "Info");
+
     await AuditLog.create({
       action,
+      browser: req?.headers?.["user-agent"] || "",
       ip: req?.ip || req?.headers?.["x-forwarded-for"] || "",
+      location:
+        req?.headers?.["x-location"] ||
+        req?.headers?.["cf-ipcountry"] ||
+        req?.body?.location ||
+        "",
       metadata: safeClone(metadata),
       newValue: safeClone(newValue),
       oldValue: safeClone(oldValue),
@@ -36,6 +53,13 @@ export const createAuditLog = async ({
       resourceId: String(resourceId || ""),
       resourceType,
       role: req?.user?.role || "",
+      sessionId:
+        req?.headers?.["x-session-id"] ||
+        req?.headers?.["x-request-id"] ||
+        req?.id ||
+        "",
+      severity: actionSeverity,
+      retentionExpiresAt,
       userEmail: req?.user?.email || "",
       userId: req?.user?.id || "",
     });
@@ -44,11 +68,59 @@ export const createAuditLog = async ({
   }
 };
 
-export const listAuditLogs = async ({ action, limit = 200, resourceType } = {}) => {
+export const listAuditLogs = async ({
+  action,
+  from,
+  limit = 200,
+  plantId,
+  query,
+  resourceType,
+  severity,
+  to,
+  userEmail,
+} = {}) => {
   const filters = {};
 
   if (action) filters.action = action;
   if (resourceType) filters.resourceType = resourceType;
+  if (severity) filters.severity = severity;
+  if (plantId) filters.plantId = plantId;
+  if (userEmail) filters.userEmail = new RegExp(String(userEmail), "i");
+
+  if (from || to) {
+    filters.createdAt = {};
+
+    if (from) {
+      const fromDate = new Date(from);
+
+      if (!Number.isNaN(fromDate.getTime())) {
+        filters.createdAt.$gte = fromDate;
+      }
+    }
+
+    if (to) {
+      const toDate = new Date(to);
+
+      if (!Number.isNaN(toDate.getTime())) {
+        filters.createdAt.$lte = toDate;
+      }
+    }
+  }
+
+  if (query) {
+    const search = String(query).trim();
+    filters.$or = [
+      { action: new RegExp(search, "i") },
+      { browser: new RegExp(search, "i") },
+      { ip: new RegExp(search, "i") },
+      { resourceId: new RegExp(search, "i") },
+      { resourceType: new RegExp(search, "i") },
+      { role: new RegExp(search, "i") },
+      { sessionId: new RegExp(search, "i") },
+      { userEmail: new RegExp(search, "i") },
+      { userId: new RegExp(search, "i") },
+    ];
+  }
 
   return AuditLog.find(filters)
     .sort({ createdAt: -1 })

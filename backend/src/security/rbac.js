@@ -6,6 +6,7 @@ export const ROLE_ALIASES = {
   "Organization Admin": "Organization Admin",
   "Plant Admin": "Plant Admin",
   "Plant Manager": "Plant Admin",
+  "Quality Engineer": "Quality Engineer",
   "Super Admin": "Super Admin",
   Operator: "Operator",
   Viewer: "Viewer",
@@ -17,8 +18,23 @@ export const ENTERPRISE_ROLES = [
   "Plant Admin",
   "Maintenance Manager",
   "Engineer",
+  "Quality Engineer",
   "Operator",
   "Viewer",
+];
+
+export const PERMISSION_MODULES = [
+  "dashboard",
+  "machines",
+  "analytics",
+  "copilot",
+  "digitalTwin",
+  "workorders",
+  "reports",
+  "notifications",
+  "users",
+  "settings",
+  "audit",
 ];
 
 export const ROLE_PERMISSIONS = {
@@ -53,30 +69,54 @@ export const ROLE_PERMISSIONS = {
   ],
   "Maintenance Manager": [
     "analytics:read",
+    "copilot:read",
+    "dashboard:read",
     "audit:read",
     "devices:read",
+    "digitalTwin:read",
     "machines:manage",
+    "notifications:manage",
     "reports:read",
+    "settings:read",
     "workorders:manage",
   ],
   Engineer: [
     "analytics:read",
+    "copilot:read",
+    "dashboard:read",
     "devices:read",
+    "digitalTwin:read",
     "machines:manage",
+    "notifications:read",
     "reports:read",
     "workorders:manage",
   ],
+  "Quality Engineer": [
+    "analytics:read",
+    "dashboard:read",
+    "digitalTwin:read",
+    "machines:read",
+    "notifications:read",
+    "reports:read",
+    "workorders:read",
+  ],
   Operator: [
     "analytics:read",
+    "dashboard:read",
     "devices:read",
+    "digitalTwin:read",
     "machines:read",
+    "notifications:read",
     "reports:read",
     "workorders:read",
   ],
   Viewer: [
     "analytics:read",
+    "dashboard:read",
     "devices:read",
+    "digitalTwin:read",
     "machines:read",
+    "notifications:read",
     "reports:read",
     "workorders:read",
   ],
@@ -105,6 +145,13 @@ export const hasAnyRole = (role, allowedRoles = []) => {
   if (
     normalizedRole === "Maintenance Manager" &&
     normalizedAllowedRoles.includes("Engineer")
+  ) {
+    return true;
+  }
+
+  if (
+    normalizedRole === "Quality Engineer" &&
+    normalizedAllowedRoles.includes("Viewer")
   ) {
     return true;
   }

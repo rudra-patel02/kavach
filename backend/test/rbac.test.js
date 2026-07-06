@@ -23,4 +23,7 @@ test("supports permission checks and manager inheritance", () => {
   );
   assert.equal(hasPermission("Organization Admin", "enterprise:manage"), true);
   assert.equal(hasAnyRole("Organization Admin", ["Plant Admin"]), true);
+  assert.equal(hasPermission("Quality Engineer", "reports:read"), true);
+  assert.equal(hasPermission("Quality Engineer", "users:manage"), false);
+  assert.equal(hasAnyRole("Quality Engineer", ["Viewer"]), true);
 });

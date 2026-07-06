@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
+  Archive,
   AlertTriangle,
   Bell,
   BellRing,
@@ -20,8 +21,10 @@ import {
   Zap,
 } from "lucide-react";
 import {
+  archiveNotification,
   clearNotifications,
   deleteNotification,
+  fetchNotificationPreferences,
   fetchNotifications,
   markAllNotificationsRead,
   markNotificationRead,
@@ -49,6 +52,7 @@ const iconClasses: Record<NotificationSeverity, string> = {
 
 const iconMap = {
   activity: Activity,
+  bell: Bell,
   zap: Zap,
   "heart-pulse": HeartPulse,
   thermometer: Thermometer,
@@ -57,11 +61,20 @@ const iconMap = {
 };
 
 const categoryLabels: Record<NotificationType, string> = {
+  ai_recommendation: "AI recommendation",
+  critical_alert: "Critical alert",
+  energy_spike: "Energy spike",
   failure_probability: "Failure probability",
+  inventory_alert: "Inventory alert",
+  machine_failure: "Machine failure",
   machine_health: "Machine health",
   maintenance: "Maintenance",
+  maintenance_due: "Maintenance due",
   power: "Power",
   pressure: "Pressure",
+  production_delay: "Production delay",
+  quality_issue: "Quality issue",
+  safety_warning: "Safety warning",
   temperature: "Temperature",
   vibration: "Vibration",
 };
@@ -127,6 +140,9 @@ export default function NotificationCenter() {
     useState<NotificationItem | null>(null);
   const [desktopPermission, setDesktopPermission] =
     useState<DesktopPermission>("unsupported");
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const toastTimerRef = useRef<number | null>(null);
   const liveToastIdsRef = useRef<Set<string>>(new Set());
@@ -169,6 +185,7 @@ export default function NotificationCenter() {
     try {
       const response = await fetchNotifications();
       setNotifications(response.notifications);
+      setNextCursor(response.nextCursor || null);
       setError(null);
     } catch (requestError) {
       setError(
@@ -204,8 +221,35 @@ export default function NotificationCenter() {
           tag: notification.id,
         });
       }
+
+      if (soundEnabled && typeof window !== "undefined") {
+        try {
+          const AudioContextConstructor =
+            window.AudioContext ||
+            (window as typeof window & {
+              webkitAudioContext?: typeof AudioContext;
+            }).webkitAudioContext;
+          const audioContext = AudioContextConstructor
+            ? new AudioContextConstructor()
+            : null;
+
+          if (audioContext) {
+            const oscillator = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            oscillator.frequency.value =
+              notification.severity === "Critical" ? 880 : 540;
+            gain.gain.value = 0.025;
+            oscillator.connect(gain);
+            gain.connect(audioContext.destination);
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.18);
+          }
+        } catch {
+          // Browsers can block audio before a user gesture; the visual alert remains.
+        }
+      }
     },
-    [desktopPermission]
+    [desktopPermission, soundEnabled]
   );
 
   useEffect(() => {
@@ -227,6 +271,18 @@ export default function NotificationCenter() {
       window.clearTimeout(loadTimer);
     };
   }, [loadNotifications]);
+
+  useEffect(() => {
+    const preferenceTimer = window.setTimeout(() => {
+      fetchNotificationPreferences()
+        .then((response) => setSoundEnabled(response.preferences.sound))
+        .catch(() => setSoundEnabled(true));
+    }, 0);
+
+    return () => {
+      window.clearTimeout(preferenceTimer);
+    };
+  }, []);
 
   useEffect(
     () => () => {
@@ -296,6 +352,14 @@ export default function NotificationCenter() {
       );
     };
 
+    const handleNotificationArchived = (payload: NotificationDeletedPayload) => {
+      setNotifications((currentNotifications) =>
+        currentNotifications.filter(
+          (notification) => notification.id !== payload.id
+        )
+      );
+    };
+
     const handleNotificationsCleared = () => {
       setNotifications([]);
     };
@@ -306,6 +370,7 @@ export default function NotificationCenter() {
     socket.on("notification:read", handleNotificationRead);
     socket.on("notifications:readAll", handleAllNotificationsRead);
     socket.on("notification:deleted", handleNotificationDeleted);
+    socket.on("notification:archived", handleNotificationArchived);
     socket.on("notifications:cleared", handleNotificationsCleared);
 
     return () => {
@@ -315,6 +380,7 @@ export default function NotificationCenter() {
       socket.off("notification:read", handleNotificationRead);
       socket.off("notifications:readAll", handleAllNotificationsRead);
       socket.off("notification:deleted", handleNotificationDeleted);
+      socket.off("notification:archived", handleNotificationArchived);
       socket.off("notifications:cleared", handleNotificationsCleared);
     };
   }, [showRealtimeNotification]);
@@ -446,6 +512,58 @@ export default function NotificationCenter() {
       );
     } finally {
       setNotificationPending(id, false);
+    }
+  };
+
+  const handleArchiveNotification = async (id: string) => {
+    const previousNotifications = notifications;
+    setNotificationPending(id, true);
+    setNotifications((currentNotifications) =>
+      currentNotifications.filter((notification) => notification.id !== id)
+    );
+
+    try {
+      await archiveNotification(id);
+      setError(null);
+    } catch (requestError) {
+      setNotifications(previousNotifications);
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Failed to archive notification"
+      );
+    } finally {
+      setNotificationPending(id, false);
+    }
+  };
+
+  const handleLoadMore = async () => {
+    if (!nextCursor) {
+      return;
+    }
+
+    setIsLoadingMore(true);
+
+    try {
+      const response = await fetchNotifications({ cursor: nextCursor });
+      setNotifications((currentNotifications) => {
+        const seenIds = new Set(currentNotifications.map((item) => item.id));
+        const nextNotifications = response.notifications.filter(
+          (notification) => !seenIds.has(notification.id)
+        );
+
+        return [...currentNotifications, ...nextNotifications];
+      });
+      setNextCursor(response.nextCursor || null);
+      setError(null);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Failed to load more notifications"
+      );
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
@@ -766,6 +884,23 @@ export default function NotificationCenter() {
                           <button
                             type="button"
                             onClick={() =>
+                              void handleArchiveNotification(notification.id)
+                            }
+                            disabled={isPending}
+                            title="Archive notification"
+                            aria-label="Archive notification"
+                            className="rounded-lg border border-slate-700 p-2 text-slate-300 transition-colors hover:border-amber-400/40 hover:bg-amber-500/10 hover:text-amber-100 disabled:cursor-not-allowed disabled:opacity-35"
+                          >
+                            {isPending ? (
+                              <Loader2 size={15} className="animate-spin" />
+                            ) : (
+                              <Archive size={15} />
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
                               void handleDeleteNotification(notification.id)
                             }
                             disabled={isPending}
@@ -786,6 +921,20 @@ export default function NotificationCenter() {
                 })}
               </div>
             )}
+
+            {nextCursor && filteredNotifications.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => void handleLoadMore()}
+                disabled={isLoadingMore}
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-200 transition-colors hover:border-cyan-400/40 hover:bg-cyan-500/10 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                {isLoadingMore ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : null}
+                Load more
+              </button>
+            ) : null}
 
             {error ? (
               <div className="mt-3 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-100">

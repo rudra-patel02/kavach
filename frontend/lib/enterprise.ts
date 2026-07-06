@@ -34,7 +34,33 @@ export const switchPlant = (plantId: string) =>
     method: "POST",
   });
 
-export const fetchAuditLogs = () => fetchJson<AuditLogsResponse>("/api/audit");
+export const fetchAuditLogs = (params: Record<string, string> = {}) => {
+  const query = new URLSearchParams(params).toString();
+  return fetchJson<AuditLogsResponse>(`/api/audit${query ? `?${query}` : ""}`);
+};
+
+export const downloadAuditExport = async (format: "csv" | "excel" | "pdf") => {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const response = await fetch(apiUrl(`/api/audit/export/${format}`), {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  if (!response.ok) {
+    throw new Error(`Audit export failed with status ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `kavach-audit-${Date.now()}.${
+    format === "pdf" ? "pdf" : "csv"
+  }`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+};
 
 export const fetchSystemHealth = () =>
   fetchJson<SystemHealthResponse>("/api/system/health");

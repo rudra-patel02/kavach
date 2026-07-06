@@ -122,6 +122,8 @@ const refreshAccessToken = async () => {
 };
 
 export const fetchJson = async <T>(path: string, init: RequestInit = {}) => {
+  const method = String(init.method || "GET").toUpperCase();
+  const canRetry = method === "GET";
   const makeRequest = (token: string | null) =>
     fetch(apiUrl(path), {
       cache: "no-store",
@@ -132,7 +134,18 @@ export const fetchJson = async <T>(path: string, init: RequestInit = {}) => {
       },
     });
 
-  let response = await makeRequest(getToken());
+  let response: Response;
+
+  try {
+    response = await makeRequest(getToken());
+  } catch (error) {
+    if (!canRetry) {
+      throw error;
+    }
+
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 300));
+    response = await makeRequest(getToken());
+  }
 
   if (response.status === 401) {
     const refreshedToken = await refreshAccessToken();
@@ -140,6 +153,11 @@ export const fetchJson = async <T>(path: string, init: RequestInit = {}) => {
     if (refreshedToken) {
       response = await makeRequest(refreshedToken);
     }
+  }
+
+  if (canRetry && response.status >= 500) {
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 300));
+    response = await makeRequest(getToken());
   }
 
   const contentType = response.headers.get("content-type") || "";

@@ -25,6 +25,19 @@ const auditLogSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    browser: {
+      type: String,
+      default: "",
+    },
+    location: {
+      type: String,
+      default: "",
+    },
+    sessionId: {
+      type: String,
+      default: "",
+      index: true,
+    },
     action: {
       type: String,
       required: true,
@@ -62,10 +75,21 @@ const auditLogSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.Mixed,
       default: {},
     },
+    severity: {
+      type: String,
+      enum: ["Info", "Warning", "Critical"],
+      default: "Info",
+      index: true,
+    },
+    retentionExpiresAt: {
+      type: Date,
+      index: true,
+    },
   },
   { timestamps: true }
 );
 
 auditLogSchema.index({ createdAt: -1 });
+auditLogSchema.index({ retentionExpiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export default mongoose.model("AuditLog", auditLogSchema);

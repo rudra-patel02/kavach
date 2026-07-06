@@ -1,13 +1,28 @@
 import { fetchJson } from "./api";
 import type {
   NotificationBulkResponse,
+  NotificationCreatePayload,
   NotificationDeleteResponse,
+  NotificationPreferencesResponse,
   NotificationResponse,
   NotificationsResponse,
 } from "@/types/notification";
 
-export const fetchNotifications = () =>
-  fetchJson<NotificationsResponse>("/api/notifications");
+export const fetchNotifications = (params: Record<string, string> = {}) => {
+  const query = new URLSearchParams(params).toString();
+  return fetchJson<NotificationsResponse>(
+    `/api/notifications${query ? `?${query}` : ""}`
+  );
+};
+
+export const createNotification = (payload: NotificationCreatePayload) =>
+  fetchJson<NotificationResponse>("/api/notifications", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
 
 export const markNotificationRead = (id: string) =>
   fetchJson<NotificationResponse>(
@@ -16,6 +31,41 @@ export const markNotificationRead = (id: string) =>
       method: "PATCH",
     }
   );
+
+export const archiveNotification = (id: string, archived = true) =>
+  fetchJson<NotificationResponse>(
+    `/api/notifications/${encodeURIComponent(id)}/archive`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ archived }),
+    }
+  );
+
+export const archiveNotifications = (ids?: string[]) =>
+  fetchJson<NotificationBulkResponse>("/api/notifications/archive", {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(ids ? { ids } : {}),
+  });
+
+export const fetchNotificationPreferences = () =>
+  fetchJson<NotificationPreferencesResponse>("/api/notifications/preferences");
+
+export const updateNotificationPreferences = (
+  payload: Partial<NotificationPreferencesResponse["preferences"]>
+) =>
+  fetchJson<NotificationPreferencesResponse>("/api/notifications/preferences", {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
 
 export const markAllNotificationsRead = () =>
   fetchJson<NotificationBulkResponse>("/api/notifications/read", {

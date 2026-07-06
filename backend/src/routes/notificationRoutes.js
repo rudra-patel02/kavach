@@ -1,11 +1,16 @@
 import express from "express";
 
 import {
+  archiveNotification,
+  archiveNotifications,
   clearNotifications,
+  createNotification,
   deleteNotification,
   getNotifications,
+  getNotificationPreferences,
   markAllNotificationsRead,
   markNotificationRead,
+  updateNotificationPreferences,
 } from "../controllers/notificationController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import roleMiddleware from "../middleware/roleMiddleware.js";
@@ -28,8 +33,13 @@ const manageRoles = [
 ];
 
 router.get("/", authMiddleware, roleMiddleware(alertRoles), getNotifications);
+router.post("/", authMiddleware, roleMiddleware(manageRoles), createNotification);
+router.get("/preferences", authMiddleware, roleMiddleware(alertRoles), getNotificationPreferences);
+router.patch("/preferences", authMiddleware, roleMiddleware(alertRoles), updateNotificationPreferences);
 router.patch("/read", authMiddleware, roleMiddleware(manageRoles), markAllNotificationsRead);
+router.patch("/archive", authMiddleware, roleMiddleware(manageRoles), archiveNotifications);
 router.patch("/:id/read", authMiddleware, roleMiddleware(manageRoles), markNotificationRead);
+router.patch("/:id/archive", authMiddleware, roleMiddleware(manageRoles), archiveNotification);
 router.delete("/", authMiddleware, roleMiddleware(["Super Admin", "Admin"]), clearNotifications);
 router.delete("/:id", authMiddleware, roleMiddleware(manageRoles), deleteNotification);
 

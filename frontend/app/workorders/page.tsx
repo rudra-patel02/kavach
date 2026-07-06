@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   ClipboardList,
   Clock,
+  Download,
   Eye,
   FileText,
   Filter,
@@ -13,6 +14,7 @@ import {
   Loader2,
   MessageSquare,
   Paperclip,
+  Printer,
   RefreshCcw,
   Save,
   Search,
@@ -22,8 +24,11 @@ import {
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
+  createWorkOrder,
+  downloadWorkOrderExport,
   fetchWorkOrder,
   fetchWorkOrders,
+  printWorkOrder,
   updateWorkOrder,
 } from "@/lib/workorders";
 import socket from "@/lib/socket";
@@ -113,6 +118,19 @@ const upsertWorkOrder = (items: WorkOrder[], workOrder: WorkOrder) => {
   return items.map((item) => (item.id === workOrder.id ? workOrder : item));
 };
 
+type WorkOrderView = "dashboard" | "create" | "engineer" | "completed";
+
+const emptyCreateDraft = {
+  assignedEngineer: "",
+  costEstimate: 0,
+  description: "",
+  estimatedHours: 2,
+  machineId: "",
+  maintenanceType: "Preventive" as WorkOrder["maintenanceType"],
+  priority: "MEDIUM" as WorkOrderPriority,
+  scheduledDate: "",
+};
+
 export default function WorkOrdersPage() {
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrder | null>(
@@ -133,6 +151,9 @@ export default function WorkOrdersPage() {
   const [engineerDraft, setEngineerDraft] = useState("");
   const [statusDraft, setStatusDraft] = useState<WorkOrderStatus>("OPEN");
   const [noteDraft, setNoteDraft] = useState("");
+  const [activeView, setActiveView] = useState<WorkOrderView>("dashboard");
+  const [createDraft, setCreateDraft] = useState(emptyCreateDraft);
+  const [isCreating, setIsCreating] = useState(false);
 
   const loadWorkOrders = useCallback(async () => {
     try {
@@ -271,11 +292,53 @@ export default function WorkOrdersPage() {
     }
   };
 
+  const createManualWorkOrder = async () => {
+    setIsCreating(true);
+
+    try {
+      const response = await createWorkOrder({
+        assignedEngineer: createDraft.assignedEngineer,
+        costEstimate: Number(createDraft.costEstimate) || 0,
+        description: createDraft.description,
+        estimatedHours: Number(createDraft.estimatedHours) || 0,
+        machineId: createDraft.machineId,
+        maintenanceType: createDraft.maintenanceType,
+        priority: createDraft.priority,
+        scheduledDate: createDraft.scheduledDate || null,
+      });
+      setWorkOrders((currentWorkOrders) =>
+        upsertWorkOrder(currentWorkOrders, response.workOrder)
+      );
+      setCreateDraft(emptyCreateDraft);
+      setActiveView("dashboard");
+      setError(null);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Failed to create work order"
+      );
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   const filteredWorkOrders = useMemo(() => {
     const searchText = search.trim().toLowerCase();
 
     return workOrders
       .filter((workOrder) => {
+        if (
+          activeView === "engineer" &&
+          (workOrder.status === "COMPLETED" || !workOrder.assignedEngineer)
+        ) {
+          return false;
+        }
+
+        if (activeView === "completed" && workOrder.status !== "COMPLETED") {
+          return false;
+        }
+
         if (statusFilter !== "ALL" && workOrder.status !== statusFilter) {
           return false;
         }
@@ -326,7 +389,7 @@ export default function WorkOrdersPage() {
           new Date(a.createdAt || 0).getTime()
         );
       });
-  }, [priorityFilter, search, sortBy, statusFilter, workOrders]);
+  }, [activeView, priorityFilter, search, sortBy, statusFilter, workOrders]);
 
   const stats = useMemo(
     () => ({
@@ -374,19 +437,197 @@ export default function WorkOrdersPage() {
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                setIsLoading(true);
-                void loadWorkOrders();
-              }}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition-colors hover:bg-cyan-500/20"
-            >
-              <RefreshCcw size={16} />
-              Refresh
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveView("create")}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-100 transition-colors hover:bg-emerald-500/20"
+              >
+                <UserPlus size={16} />
+                New
+              </button>
+              <button
+                type="button"
+                onClick={() => void downloadWorkOrderExport("pdf")}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-2 text-sm font-semibold text-slate-100 transition-colors hover:border-cyan-400/40 hover:bg-cyan-500/10"
+              >
+                <Download size={16} />
+                PDF
+              </button>
+              <button
+                type="button"
+                onClick={() => void downloadWorkOrderExport("excel")}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-2 text-sm font-semibold text-slate-100 transition-colors hover:border-cyan-400/40 hover:bg-cyan-500/10"
+              >
+                <Download size={16} />
+                Excel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsLoading(true);
+                  void loadWorkOrders();
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition-colors hover:bg-cyan-500/20"
+              >
+                <RefreshCcw size={16} />
+                Refresh
+              </button>
+            </div>
           </div>
         </section>
+
+        <section className="flex flex-wrap gap-2">
+          {[
+            ["dashboard", "Dashboard"],
+            ["create", "Create Work Order"],
+            ["engineer", "Engineer Queue"],
+            ["completed", "Completed Jobs"],
+          ].map(([view, label]) => (
+            <button
+              key={view}
+              type="button"
+              onClick={() => setActiveView(view as WorkOrderView)}
+              className={`rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${
+                activeView === view
+                  ? "border-cyan-400/40 bg-cyan-500/15 text-cyan-100"
+                  : "border-slate-800 bg-slate-900/75 text-slate-300 hover:border-cyan-400/30 hover:text-cyan-100"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </section>
+
+        {activeView === "create" ? (
+          <section className="rounded-2xl border border-slate-800 bg-slate-900/75 p-5">
+            <div className="grid gap-3 lg:grid-cols-[150px_150px_160px_160px_1fr]">
+              <input
+                value={createDraft.machineId}
+                onChange={(event) =>
+                  setCreateDraft({
+                    ...createDraft,
+                    machineId: event.target.value,
+                  })
+                }
+                placeholder="Machine ID"
+                className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/50"
+              />
+              <select
+                value={createDraft.priority}
+                onChange={(event) =>
+                  setCreateDraft({
+                    ...createDraft,
+                    priority: event.target.value as WorkOrderPriority,
+                  })
+                }
+                className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/50"
+              >
+                {priorityOptions.map((priority) => (
+                  <option key={priority} value={priority}>
+                    {priority}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={createDraft.maintenanceType}
+                onChange={(event) =>
+                  setCreateDraft({
+                    ...createDraft,
+                    maintenanceType: event.target.value as WorkOrder["maintenanceType"],
+                  })
+                }
+                className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/50"
+              >
+                {["Preventive", "Corrective", "Predictive", "Emergency", "Inspection"].map(
+                  (type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  )
+                )}
+              </select>
+              <input
+                value={createDraft.scheduledDate}
+                onChange={(event) =>
+                  setCreateDraft({
+                    ...createDraft,
+                    scheduledDate: event.target.value,
+                  })
+                }
+                type="datetime-local"
+                className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/50"
+              />
+              <input
+                value={createDraft.assignedEngineer}
+                onChange={(event) =>
+                  setCreateDraft({
+                    ...createDraft,
+                    assignedEngineer: event.target.value,
+                  })
+                }
+                placeholder="Assigned engineer"
+                className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/50"
+              />
+            </div>
+            <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_140px_140px_auto]">
+              <textarea
+                value={createDraft.description}
+                onChange={(event) =>
+                  setCreateDraft({
+                    ...createDraft,
+                    description: event.target.value,
+                  })
+                }
+                placeholder="Maintenance description"
+                rows={3}
+                className="resize-none rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/50"
+              />
+              <input
+                value={createDraft.estimatedHours}
+                onChange={(event) =>
+                  setCreateDraft({
+                    ...createDraft,
+                    estimatedHours: Number(event.target.value),
+                  })
+                }
+                min={0}
+                step={0.5}
+                type="number"
+                className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/50"
+              />
+              <input
+                value={createDraft.costEstimate}
+                onChange={(event) =>
+                  setCreateDraft({
+                    ...createDraft,
+                    costEstimate: Number(event.target.value),
+                  })
+                }
+                min={0}
+                type="number"
+                className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/50"
+              />
+              <button
+                type="button"
+                onClick={() => void createManualWorkOrder()}
+                disabled={
+                  isCreating ||
+                  !createDraft.machineId.trim() ||
+                  !createDraft.description.trim()
+                }
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-100 transition-colors hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isCreating ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Save size={16} />
+                )}
+                Create
+              </button>
+            </div>
+          </section>
+        ) : null}
 
         <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
           {statCards.map((item) => {
@@ -582,10 +823,10 @@ export default function WorkOrdersPage() {
                         {workOrder.assignedEngineer || "Unassigned"}
                       </td>
                       <td className="px-5 py-4 text-slate-300">
-                        {formatDate(workOrder.dueDate)}
+                        {formatDate(workOrder.scheduledDate || workOrder.dueDate)}
                       </td>
                       <td className="px-5 py-4 text-slate-300">
-                        {workOrder.estimatedDowntimeHours} hrs
+                        {workOrder.estimatedHours || workOrder.estimatedDowntimeHours} hrs
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex flex-wrap gap-2">
@@ -629,6 +870,14 @@ export default function WorkOrdersPage() {
                           >
                             <CheckCircle2 size={14} />
                             Close
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void printWorkOrder(workOrder.id)}
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-200 transition-colors hover:border-cyan-400/40 hover:bg-cyan-500/10 hover:text-cyan-100"
+                          >
+                            <Printer size={14} />
+                            Print
                           </button>
                         </div>
                       </td>
@@ -711,6 +960,32 @@ export default function WorkOrdersPage() {
                         </p>
                         <p className="mt-2 font-semibold text-white">
                           {formatCurrency(selectedWorkOrder.estimatedRepairCost)}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-slate-800 bg-slate-900/75 p-4">
+                        <p className="text-xs uppercase text-slate-500">
+                          Type
+                        </p>
+                        <p className="mt-2 font-semibold text-white">
+                          {selectedWorkOrder.maintenanceType}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-slate-800 bg-slate-900/75 p-4">
+                        <p className="text-xs uppercase text-slate-500">
+                          Approval
+                        </p>
+                        <p className="mt-2 font-semibold text-white">
+                          {selectedWorkOrder.approvalStatus}
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-slate-800 bg-slate-900/75 p-4">
+                        <p className="text-xs uppercase text-slate-500">
+                          Hours
+                        </p>
+                        <p className="mt-2 font-semibold text-white">
+                          {selectedWorkOrder.actualHours || 0} /{" "}
+                          {selectedWorkOrder.estimatedHours ||
+                            selectedWorkOrder.estimatedDowntimeHours}
                         </p>
                       </div>
                     </section>
@@ -813,15 +1088,66 @@ export default function WorkOrdersPage() {
                         </button>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => void closeWorkOrder(selectedWorkOrder)}
-                        disabled={selectedWorkOrder.status === "COMPLETED"}
-                        className="mt-4 inline-flex items-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-100 transition-colors hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <CheckCircle2 size={16} />
-                        Close Work Order
-                      </button>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void closeWorkOrder(selectedWorkOrder)}
+                          disabled={selectedWorkOrder.status === "COMPLETED"}
+                          className="inline-flex items-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-100 transition-colors hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <CheckCircle2 size={16} />
+                          Close Work Order
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void printWorkOrder(selectedWorkOrder.id)}
+                          className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-950/60 px-4 py-2 text-sm font-semibold text-slate-100 transition-colors hover:border-cyan-400/40 hover:bg-cyan-500/10"
+                        >
+                          <Printer size={16} />
+                          Print Work Order
+                        </button>
+                      </div>
+                    </section>
+
+                    <section className="rounded-xl border border-slate-800 bg-slate-900/75 p-5">
+                      <h3 className="flex items-center gap-2 font-bold text-white">
+                        <CheckCircle2 size={18} className="text-emerald-300" />
+                        Maintenance Checklist
+                      </h3>
+                      <div className="mt-4 space-y-2">
+                        {selectedWorkOrder.checklist.length === 0 ? (
+                          <p className="text-sm text-slate-400">
+                            No checklist items.
+                          </p>
+                        ) : (
+                          selectedWorkOrder.checklist.map((item, index) => (
+                            <label
+                              key={`${item.label}-${index}`}
+                              className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2 text-sm text-slate-200"
+                            >
+                              <input
+                                checked={item.completed}
+                                onChange={(event) => {
+                                  const checklist = selectedWorkOrder.checklist.map(
+                                    (currentItem, currentIndex) =>
+                                      currentIndex === index
+                                        ? {
+                                            ...currentItem,
+                                            completed: event.target.checked,
+                                          }
+                                        : currentItem
+                                  );
+
+                                  void saveSelectedWorkOrder({ checklist });
+                                }}
+                                type="checkbox"
+                                className="h-4 w-4 accent-cyan-400"
+                              />
+                              <span>{item.label}</span>
+                            </label>
+                          ))
+                        )}
+                      </div>
                     </section>
 
                     <section className="rounded-xl border border-slate-800 bg-slate-900/75 p-5">

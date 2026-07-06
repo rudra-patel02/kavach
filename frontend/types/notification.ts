@@ -1,8 +1,17 @@
 export type NotificationSeverity = "Critical" | "High" | "Medium" | "Low";
 
 export type NotificationType =
+  | "critical_alert"
   | "failure_probability"
+  | "machine_failure"
   | "machine_health"
+  | "maintenance_due"
+  | "ai_recommendation"
+  | "production_delay"
+  | "energy_spike"
+  | "safety_warning"
+  | "quality_issue"
+  | "inventory_alert"
   | "temperature"
   | "vibration"
   | "pressure"
@@ -12,6 +21,7 @@ export type NotificationType =
 export interface NotificationItem {
   id: string;
   type: NotificationType;
+  category?: string;
   severity: NotificationSeverity;
   displaySeverity?: "Critical" | "Warning" | "Information";
   machineId: string;
@@ -42,6 +52,8 @@ export interface NotificationItem {
   }[];
   read: boolean;
   readAt: string | null;
+  archived: boolean;
+  archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -49,6 +61,7 @@ export interface NotificationItem {
 export interface NotificationsResponse {
   success: boolean;
   unreadCount: number;
+  nextCursor?: string | null;
   notifications: NotificationItem[];
 }
 
@@ -67,4 +80,30 @@ export interface NotificationBulkResponse {
 export interface NotificationDeleteResponse {
   success: boolean;
   deletedId: string;
+}
+
+export interface NotificationPreferences {
+  categories: NotificationType[];
+  criticalAlerts: boolean;
+  desktop: boolean;
+  email: boolean;
+  push: boolean;
+  sound: boolean;
+  weeklyReports: boolean;
+}
+
+export interface NotificationPreferencesResponse {
+  success: boolean;
+  preferences: NotificationPreferences;
+}
+
+export interface NotificationCreatePayload {
+  type: NotificationType;
+  severity: NotificationSeverity;
+  title: string;
+  message: string;
+  machineId?: string;
+  machineName?: string;
+  priority?: "P1" | "P2" | "P3" | "P4";
+  suggestedAction?: string;
 }

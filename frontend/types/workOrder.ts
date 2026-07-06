@@ -52,13 +52,48 @@ export interface WorkOrder {
   severity: WorkOrderSeverity;
   status: WorkOrderStatus;
   assignedEngineer: string;
+  createdBy: string;
   description: string;
+  maintenanceType: "Preventive" | "Corrective" | "Predictive" | "Emergency" | "Inspection";
   probableCause: string;
   aiRecommendation: string;
   estimatedDowntimeHours: number;
+  estimatedHours: number;
+  actualHours: number;
   estimatedRepairCost: number;
+  costEstimate: number;
+  actualCost: number;
+  approvalStatus: "Not Required" | "Pending" | "Approved" | "Rejected";
+  approvalWorkflow?: {
+    requestedBy?: string;
+    approvedBy?: string;
+    approvedAt?: string;
+    status: "Not Required" | "Pending" | "Approved" | "Rejected";
+    comments?: string;
+  } | null;
+  requiredParts: {
+    partNumber?: string;
+    name: string;
+    quantity: number;
+    status?: "Required" | "Reserved" | "Issued" | "Consumed";
+    estimatedCost?: number;
+  }[];
+  maintenanceChecklist: {
+    label: string;
+    completed: boolean;
+    completedBy?: string;
+    completedAt?: string;
+  }[];
+  checklist: {
+    label: string;
+    completed: boolean;
+    completedBy?: string;
+    completedAt?: string;
+  }[];
   dueDate: string | null;
+  scheduledDate: string | null;
   completedAt: string | null;
+  completedDate: string | null;
   createdAt: string | null;
   updatedAt: string | null;
   notes: WorkOrderNote[];
@@ -106,13 +141,27 @@ export interface WorkOrderUpdatePayload {
   severity?: WorkOrderSeverity;
   status?: WorkOrderStatus;
   assignedEngineer?: string;
+  createdBy?: string;
   description?: string;
+  maintenanceType?: WorkOrder["maintenanceType"];
   probableCause?: string;
   aiRecommendation?: string;
   department?: string;
   estimatedDowntimeHours?: number;
+  estimatedHours?: number;
+  actualHours?: number;
   estimatedRepairCost?: number;
+  costEstimate?: number;
+  actualCost?: number;
   dueDate?: string | null;
+  scheduledDate?: string | null;
+  completedDate?: string | null;
+  requiredParts?: WorkOrder["requiredParts"];
+  maintenanceChecklist?: WorkOrder["maintenanceChecklist"];
+  checklist?: WorkOrder["checklist"];
+  approvalStatus?: WorkOrder["approvalStatus"];
+  approvalWorkflow?: WorkOrder["approvalWorkflow"];
+  completionNotes?: string;
   note?: string;
   author?: string;
 }

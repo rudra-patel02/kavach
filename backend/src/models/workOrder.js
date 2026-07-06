@@ -137,9 +137,20 @@ const workOrderSchema = new mongoose.Schema(
       default: "",
       index: true,
     },
+    createdBy: {
+      type: String,
+      default: "System",
+      index: true,
+    },
     description: {
       type: String,
       required: true,
+    },
+    maintenanceType: {
+      type: String,
+      enum: ["Preventive", "Corrective", "Predictive", "Emergency", "Inspection"],
+      default: "Predictive",
+      index: true,
     },
     probableCause: {
       type: String,
@@ -153,7 +164,19 @@ const workOrderSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    estimatedHours: {
+      type: Number,
+      default: 0,
+    },
+    actualHours: {
+      type: Number,
+      default: 0,
+    },
     estimatedRepairCost: {
+      type: Number,
+      default: 0,
+    },
+    costEstimate: {
       type: Number,
       default: 0,
     },
@@ -208,7 +231,15 @@ const workOrderSchema = new mongoose.Schema(
       default: "",
     },
     dueDate: Date,
+    scheduledDate: Date,
     completedAt: Date,
+    completedDate: Date,
+    approvalStatus: {
+      type: String,
+      enum: ["Not Required", "Pending", "Approved", "Rejected"],
+      default: "Not Required",
+      index: true,
+    },
     notes: {
       type: [noteSchema],
       default: [],

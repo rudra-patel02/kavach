@@ -34,6 +34,7 @@ const userSchema = new mongoose.Schema(
         "Engineer",
         "Maintenance Engineer",
         "Operator",
+        "Quality Engineer",
         "Viewer",
       ],
       default: "Viewer",
@@ -108,6 +109,22 @@ const userSchema = new mongoose.Schema(
       weeklyReports: {
         type: Boolean,
         default: true,
+      },
+      push: {
+        type: Boolean,
+        default: true,
+      },
+      desktop: {
+        type: Boolean,
+        default: true,
+      },
+      sound: {
+        type: Boolean,
+        default: true,
+      },
+      categories: {
+        type: [String],
+        default: [],
       },
     },
 

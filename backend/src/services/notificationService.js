@@ -43,6 +43,7 @@ export const serializeNotification = (notification) => {
   return {
     id: String(value._id),
     type: value.type,
+    category: value.category || value.type,
     severity: value.severity,
     displaySeverity:
       value.severity === "Critical"
@@ -97,6 +98,8 @@ export const serializeNotification = (notification) => {
     })),
     read: Boolean(value.read),
     readAt: value.readAt ? new Date(value.readAt).toISOString() : null,
+    archived: Boolean(value.archived),
+    archivedAt: value.archivedAt ? new Date(value.archivedAt).toISOString() : null,
     createdAt: new Date(value.createdAt).toISOString(),
     updatedAt: new Date(value.updatedAt).toISOString(),
   };
@@ -169,6 +172,7 @@ const buildNotification = ({
 
   return {
     type,
+    category: type,
     severity,
     priority: getPriority(severity),
     assetId: machine.assetId || "",
