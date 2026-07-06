@@ -8,6 +8,7 @@ import {
 } from "../controllers/machineController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import roleMiddleware from "../middleware/roleMiddleware.js";
+import { enforceMachineLimit } from "../middleware/subscriptionMiddleware.js";
 
 const router = express.Router();
 const readRoles = [
@@ -27,7 +28,13 @@ router.get("/", authMiddleware, roleMiddleware(readRoles), getMachines);
 router.get("/:id", authMiddleware, roleMiddleware(readRoles), getMachineById);
 
 // Create machine
-router.post("/", authMiddleware, roleMiddleware(writeRoles), createMachine);
+router.post(
+  "/",
+  authMiddleware,
+  roleMiddleware(writeRoles),
+  enforceMachineLimit,
+  createMachine
+);
 
 // Update machine
 router.put("/:id", authMiddleware, roleMiddleware(writeRoles), updateMachine);

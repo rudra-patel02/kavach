@@ -1,21 +1,26 @@
 import mongoose from "mongoose";
 
 import WorkOrder from "../models/workOrder.js";
+import { buildTenantScopedQuery } from "../middleware/tenantMiddleware.js";
 import { createAuditLog } from "../services/auditService.js";
 import {
   createManualWorkOrder,
   deleteWorkOrder,
   getRecentNotificationsForMachine,
-  getWorkOrderByIdentifier,
   serializeWorkOrder,
   updateWorkOrder,
 } from "../services/workOrderService.js";
 import { createSimplePdf, toCsv } from "../utils/exportUtils.js";
+import {
+  getPagination,
+  setPaginationHeaders,
+} from "../utils/pagination.js";
 
 const getIo = (req) => req.app.get("io");
 const ACTIVE_STATUSES = ["OPEN", "ASSIGNED", "IN_PROGRESS", "WAITING_PARTS"];
 
-const buildQuery = (query) => {
+const buildQuery = (req) => {
+  const { query } = req;
   const filters = {};
 
   for (const field of [
@@ -42,7 +47,7 @@ const buildQuery = (query) => {
     ];
   }
 
-  return filters;
+  return buildTenantScopedQuery(req, filters);
 };
 
 const buildSort = (sort = "-createdAt") => {
@@ -69,6 +74,13 @@ const buildSort = (sort = "-createdAt") => {
 const getIdentifierFromRequest = (req) =>
   String(req.params.id || req.body.id || req.body.workOrderId || "").trim();
 
+const buildIdentifierQuery = (identifier) => ({
+  $or: [
+    ...(mongoose.isValidObjectId(identifier) ? [{ _id: identifier }] : []),
+    { workOrderId: identifier },
+  ],
+});
+
 const ensureValidIdentifier = (identifier, res) => {
   if (!identifier) {
     res.status(400).json({ message: "Work order id is required" });
@@ -90,7 +102,9 @@ const loadWorkOrderForMutation = async (req, res) => {
     return null;
   }
 
-  const workOrder = await getWorkOrderByIdentifier(identifier);
+  const workOrder = await WorkOrder.findOne(
+    buildTenantScopedQuery(req, buildIdentifierQuery(identifier))
+  );
 
   if (!workOrder) {
     res.status(404).json({ message: "Work order not found" });
@@ -162,11 +176,27 @@ const escapeHtml = (value) =>
 
 export const getWorkOrders = async (req, res) => {
   try {
-    const limit = Math.min(Number(req.query.limit) || 200, 500);
-    const workOrders = await WorkOrder.find(buildQuery(req.query))
-      .sort(buildSort(req.query.sort))
-      .limit(limit)
-      .lean();
+    const filters = buildQuery(req);
+    const pagination = getPagination({
+      defaultLimit: 200,
+      maxLimit: 500,
+      query: req.query,
+    });
+    const [workOrders, total] = await Promise.all([
+      WorkOrder.find(filters)
+        .sort(buildSort(req.query.sort))
+        .skip(pagination.skip)
+        .limit(pagination.limit)
+        .lean(),
+      WorkOrder.countDocuments(filters),
+    ]);
+
+    setPaginationHeaders(res, {
+      count: workOrders.length,
+      limit: pagination.limit,
+      page: pagination.page,
+      total,
+    });
 
     res.json({
       success: true,
@@ -183,7 +213,7 @@ export const exportWorkOrders = async (req, res) => {
     const format = String(req.params.format || req.query.format || "csv")
       .trim()
       .toLowerCase();
-    const workOrders = await WorkOrder.find(buildQuery(req.query))
+    const workOrders = await WorkOrder.find(buildQuery(req))
       .sort(buildSort(req.query.sort))
       .limit(1000)
       .lean();
@@ -199,6 +229,7 @@ export const getWorkOrderStats = async (req, res) => {
   try {
     const [statusSummary, prioritySummary, overdueCount] = await Promise.all([
       WorkOrder.aggregate([
+        { $match: buildQuery(req) },
         {
           $group: {
             _id: "$status",
@@ -208,6 +239,7 @@ export const getWorkOrderStats = async (req, res) => {
         },
       ]),
       WorkOrder.aggregate([
+        { $match: buildQuery(req) },
         {
           $group: {
             _id: "$priority",
@@ -215,10 +247,12 @@ export const getWorkOrderStats = async (req, res) => {
           },
         },
       ]),
-      WorkOrder.countDocuments({
-        dueDate: { $lt: new Date() },
-        status: { $in: ACTIVE_STATUSES },
-      }),
+      WorkOrder.countDocuments(
+        buildTenantScopedQuery(req, {
+          dueDate: { $lt: new Date() },
+          status: { $in: ACTIVE_STATUSES },
+        })
+      ),
     ]);
     const statusCounts = Object.fromEntries(
       statusSummary.map((item) => [item._id, item.count])
@@ -267,7 +301,9 @@ export const getWorkOrder = async (req, res) => {
       return res.status(400).json({ message: "Invalid work order id" });
     }
 
-    const workOrder = await getWorkOrderByIdentifier(identifier).lean();
+    const workOrder = await WorkOrder.findOne(
+      buildTenantScopedQuery(req, buildIdentifierQuery(identifier))
+    ).lean();
 
     if (!workOrder) {
       return res.status(404).json({ message: "Work order not found" });
@@ -298,7 +334,16 @@ export const getWorkOrder = async (req, res) => {
 
 export const createWorkOrder = async (req, res) => {
   try {
-    const workOrder = await createManualWorkOrder(req.body, getIo(req));
+    const workOrder = await createManualWorkOrder(
+      {
+        ...req.body,
+        organizationId:
+          req.body.organizationId || req.tenantContext?.organizationId || "",
+        plantId: req.body.plantId || req.tenantContext?.plantId || "",
+        tenantId: req.body.tenantId || req.tenantContext?.tenantId || "",
+      },
+      getIo(req)
+    );
 
     await createAuditLog({
       action: "WORK_ORDER_CREATED",
@@ -481,7 +526,9 @@ export const printWorkOrder = async (req, res) => {
       return;
     }
 
-    const workOrder = await getWorkOrderByIdentifier(identifier).lean();
+    const workOrder = await WorkOrder.findOne(
+      buildTenantScopedQuery(req, buildIdentifierQuery(identifier))
+    ).lean();
 
     if (!workOrder) {
       return res.status(404).json({ message: "Work order not found" });
@@ -541,7 +588,9 @@ export const removeWorkOrder = async (req, res) => {
       return res.status(400).json({ message: "Invalid work order id" });
     }
 
-    const workOrder = await getWorkOrderByIdentifier(identifier);
+    const workOrder = await WorkOrder.findOne(
+      buildTenantScopedQuery(req, buildIdentifierQuery(identifier))
+    );
 
     if (!workOrder) {
       return res.status(404).json({ message: "Work order not found" });

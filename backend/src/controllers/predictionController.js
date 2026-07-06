@@ -1,4 +1,6 @@
 import Machine from "../models/machine.js";
+import { buildTenantScopedQuery } from "../middleware/tenantMiddleware.js";
+import { createAuditLog } from "../services/auditService.js";
 import {
   buildPredictiveMachineDetail,
   buildPredictiveOverview,
@@ -9,8 +11,17 @@ const escapeRegex = (value) =>
 
 export const getPredictiveOverview = async (req, res) => {
   try {
-    const machines = await Machine.find().sort({ machineId: 1 }).lean();
+    const machines = await Machine.find(buildTenantScopedQuery(req))
+      .sort({ machineId: 1 })
+      .lean();
     const overview = buildPredictiveOverview(machines);
+
+    await createAuditLog({
+      action: "PREDICTION_OVERVIEW_REQUESTED",
+      metadata: { machineCount: machines.length },
+      req,
+      resourceType: "prediction",
+    });
 
     res.json({
       success: true,
@@ -34,12 +45,14 @@ export const getPredictiveMachine = async (req, res) => {
       });
     }
 
-    const machine = await Machine.findOne({
-      $or: [
-        { machineId },
-        { name: new RegExp(`^${escapeRegex(machineId)}$`, "i") },
-      ],
-    }).lean();
+    const machine = await Machine.findOne(
+      buildTenantScopedQuery(req, {
+        $or: [
+          { machineId },
+          { name: new RegExp(`^${escapeRegex(machineId)}$`, "i") },
+        ],
+      })
+    ).lean();
 
     if (!machine) {
       return res.status(404).json({
@@ -48,6 +61,14 @@ export const getPredictiveMachine = async (req, res) => {
     }
 
     const detail = buildPredictiveMachineDetail(machine);
+
+    await createAuditLog({
+      action: "PREDICTION_MACHINE_REQUESTED",
+      metadata: { machineName: machine.name },
+      req,
+      resourceId: machine.machineId,
+      resourceType: "prediction",
+    });
 
     res.json({
       success: true,

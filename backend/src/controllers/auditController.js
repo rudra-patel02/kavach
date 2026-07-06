@@ -18,6 +18,7 @@ const serializeAuditLog = (log) => ({
   role: log.role,
   sessionId: log.sessionId || "",
   severity: log.severity || "Info",
+  status: log.status || "success",
   userEmail: log.userEmail,
   userId: log.userId,
 });
@@ -73,6 +74,7 @@ export const exportAuditLogs = async (req, res) => {
     const csv = toCsv(logs, [
       { header: "Timestamp", key: "createdAt" },
       { header: "Severity", key: "severity" },
+      { header: "Status", key: "status" },
       { header: "Action", key: "action" },
       { header: "Entity", key: "resourceType" },
       { header: "Entity ID", key: "resourceId" },

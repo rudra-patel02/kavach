@@ -4,6 +4,10 @@ import jwt from "jsonwebtoken";
 import User from "../models/user.js";
 import { createAuditLog } from "../services/auditService.js";
 import { getPermissionsForRole } from "../security/rbac.js";
+import {
+  clearAuthFailures,
+  recordAuthFailure,
+} from "../middleware/securityMiddleware.js";
 
 const normalizeEmail = (email = "") => email.trim().toLowerCase();
 
@@ -36,6 +40,7 @@ const createAccessToken = (user) =>
       role: user.role,
       department: user.department,
       organizationId: user.organizationId,
+      tenantId: user.tenantId,
       plantIds: user.plantIds || [],
       activePlantId: user.activePlantId || "",
       permissions: Array.from(
@@ -73,6 +78,16 @@ export const register = async (req, res) => {
     const phone = req.body.phone || "";
 
     if (!name || !email || !password) {
+      await createAuditLog({
+        action: "USER_REGISTRATION_FAILED",
+        metadata: { email, reason: "missing_required_fields" },
+        req,
+        resourceId: email,
+        resourceType: "auth",
+        severity: "Warning",
+        status: "failure",
+      });
+
       return res.status(400).json({
         success: false,
         message: "Name, email and password are required",
@@ -80,6 +95,16 @@ export const register = async (req, res) => {
     }
 
     if (!isValidEmail(email)) {
+      await createAuditLog({
+        action: "USER_REGISTRATION_FAILED",
+        metadata: { email, reason: "invalid_email" },
+        req,
+        resourceId: email,
+        resourceType: "auth",
+        severity: "Warning",
+        status: "failure",
+      });
+
       return res.status(400).json({
         success: false,
         message: "Enter a valid email address",
@@ -87,6 +112,16 @@ export const register = async (req, res) => {
     }
 
     if (password.length < 8) {
+      await createAuditLog({
+        action: "USER_REGISTRATION_FAILED",
+        metadata: { email, reason: "weak_password" },
+        req,
+        resourceId: email,
+        resourceType: "auth",
+        severity: "Warning",
+        status: "failure",
+      });
+
       return res.status(400).json({
         success: false,
         message: "Password must be at least 8 characters long",
@@ -96,6 +131,16 @@ export const register = async (req, res) => {
     const existing = await User.findOne({ email });
 
     if (existing) {
+      await createAuditLog({
+        action: "USER_REGISTRATION_FAILED",
+        metadata: { email, reason: "duplicate_email" },
+        req,
+        resourceId: email,
+        resourceType: "auth",
+        severity: "Warning",
+        status: "failure",
+      });
+
       return res.status(409).json({
         success: false,
         message: "User already exists",
@@ -112,6 +157,7 @@ export const register = async (req, res) => {
       department,
       employeeId,
       phone,
+      tenantId: req.body.tenantId || "",
       organizationId: req.body.organizationId || "",
       plantIds: Array.isArray(req.body.plantIds) ? req.body.plantIds : [],
       activePlantId: req.body.activePlantId || "",
@@ -154,6 +200,16 @@ export const login = async (req, res) => {
     const password = String(req.body.password || "");
 
     if (!email || !password) {
+      await createAuditLog({
+        action: "LOGIN_FAILED",
+        metadata: { email, reason: "missing_credentials" },
+        req,
+        resourceId: email,
+        resourceType: "auth",
+        severity: "Warning",
+        status: "failure",
+      });
+
       return res.status(400).json({
         success: false,
         message: "Email and password are required",
@@ -163,6 +219,18 @@ export const login = async (req, res) => {
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
+      const failureCount = recordAuthFailure(req);
+
+      await createAuditLog({
+        action: "LOGIN_FAILED",
+        metadata: { email, failureCount, reason: "invalid_credentials" },
+        req,
+        resourceId: email,
+        resourceType: "auth",
+        severity: "Warning",
+        status: "failure",
+      });
+
       return res.status(401).json({
         success: false,
         message: "Invalid credentials",
@@ -173,6 +241,18 @@ export const login = async (req, res) => {
     const valid = await bcrypt.compare(password, user.password);
 
     if (!valid) {
+      const failureCount = recordAuthFailure(req);
+
+      await createAuditLog({
+        action: "LOGIN_FAILED",
+        metadata: { email, failureCount, reason: "invalid_credentials" },
+        req,
+        resourceId: user._id,
+        resourceType: "auth",
+        severity: "Warning",
+        status: "failure",
+      });
+
       return res.status(401).json({
         success: false,
         message: "Invalid credentials",
@@ -188,6 +268,7 @@ export const login = async (req, res) => {
 
     user.refreshToken = refreshToken;
     await user.save();
+    clearAuthFailures(req);
 
     await createAuditLog({
       action: "LOGIN_SUCCESS",
@@ -201,10 +282,19 @@ export const login = async (req, res) => {
           id: String(user._id),
           organizationId: user.organizationId,
           role: user.role,
+          tenantId: user.tenantId,
         },
       },
       resourceId: user._id,
       resourceType: "auth",
+    });
+
+    res.cookie("kavach_access_token", token, {
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+    res.cookie("kavach_refresh_token", refreshToken, {
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      path: "/api/auth",
     });
 
     res.status(200).json({
@@ -258,6 +348,15 @@ export const refresh = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
+    await createAuditLog({
+      action: "REFRESH_TOKEN_FAILED",
+      metadata: { reason: error.message },
+      req,
+      resourceType: "auth",
+      severity: "Warning",
+      status: "failure",
+    });
+
     res.status(401).json({
       success: false,
       message: "Invalid or expired refresh token",
@@ -278,6 +377,9 @@ export const logout = async (req, res) => {
       req,
       resourceType: "auth",
     });
+
+    res.clearCookie("kavach_access_token");
+    res.clearCookie("kavach_refresh_token", { path: "/api/auth" });
 
     res.json({
       success: true,

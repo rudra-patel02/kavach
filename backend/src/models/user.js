@@ -56,6 +56,12 @@ const userSchema = new mongoose.Schema(
       default: "",
     },
 
+    tenantId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+
     organizationId: {
       type: String,
       default: "",

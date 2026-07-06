@@ -6,8 +6,10 @@ import {
   createOrganization,
   createPlant,
   createProductionLine,
+  createTenant,
   getTenantOverview,
   switchPlant,
+  updateTenantSettings,
 } from "../controllers/tenantController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import { permissionMiddleware } from "../middleware/permissionMiddleware.js";
@@ -16,6 +18,25 @@ import { requireFields } from "../middleware/validationMiddleware.js";
 const router = express.Router();
 
 router.get("/", authMiddleware, permissionMiddleware("plants:manage"), getTenantOverview);
+router.post(
+  "/",
+  authMiddleware,
+  permissionMiddleware("enterprise:manage"),
+  requireFields(["tenantId", "name"]),
+  createTenant
+);
+router.patch(
+  "/settings",
+  authMiddleware,
+  permissionMiddleware("enterprise:manage"),
+  updateTenantSettings
+);
+router.patch(
+  "/:tenantId/settings",
+  authMiddleware,
+  permissionMiddleware("enterprise:manage"),
+  updateTenantSettings
+);
 router.post(
   "/organizations",
   authMiddleware,

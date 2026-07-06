@@ -4,7 +4,9 @@ import MachineGroup from "../models/machineGroup.js";
 import Organization from "../models/organization.js";
 import Plant from "../models/plant.js";
 import ProductionLine from "../models/productionLine.js";
+import Tenant from "../models/tenant.js";
 import User from "../models/user.js";
+import { buildTenantScopedQuery } from "../middleware/tenantMiddleware.js";
 import { createAuditLog } from "../services/auditService.js";
 
 const sanitizeId = (value) =>
@@ -24,7 +26,21 @@ const serialize = (doc) => ({
 
 export const getTenantOverview = async (req, res) => {
   try {
+    const context = req.tenantContext || {};
+    const tenantFilter = context.tenantId ? { tenantId: context.tenantId } : {};
+    const organizationFilter = { ...tenantFilter };
+    const plantFilter = buildTenantScopedQuery(req, {});
+    const userFilter = {
+      ...tenantFilter,
+      ...(context.organizationId ? { organizationId: context.organizationId } : {}),
+      ...(context.plantId
+        ? { plantIds: context.plantId }
+        : !context.isSuperAdmin && context.plantIds?.length
+          ? { plantIds: { $in: context.plantIds } }
+          : {}),
+    };
     const [
+      tenants,
       organizations,
       plants,
       departments,
@@ -33,13 +49,14 @@ export const getTenantOverview = async (req, res) => {
       users,
       machines,
     ] = await Promise.all([
-      Organization.find().sort({ name: 1 }).lean(),
-      Plant.find().sort({ name: 1 }).lean(),
-      Department.find().sort({ name: 1 }).lean(),
-      ProductionLine.find().sort({ name: 1 }).lean(),
-      MachineGroup.find().sort({ name: 1 }).lean(),
-      User.find().select("-password -refreshToken").lean(),
-      Machine.find().select("machineId plantId department productionLineId machineGroupId").lean(),
+      Tenant.find(tenantFilter).sort({ name: 1 }).lean(),
+      Organization.find(organizationFilter).sort({ name: 1 }).lean(),
+      Plant.find(plantFilter).sort({ name: 1 }).lean(),
+      Department.find(plantFilter).sort({ name: 1 }).lean(),
+      ProductionLine.find(plantFilter).sort({ name: 1 }).lean(),
+      MachineGroup.find(plantFilter).sort({ name: 1 }).lean(),
+      User.find(userFilter).select("-password -refreshToken").lean(),
+      Machine.find(plantFilter).select("machineId plantId department productionLineId machineGroupId").lean(),
     ]);
 
     res.json({
@@ -57,8 +74,10 @@ export const getTenantOverview = async (req, res) => {
           organizations: organizations.length,
           plants: plants.length,
           productionLines: productionLines.length,
+          tenants: tenants.length,
           users: users.length,
         },
+        tenants: tenants.map(serialize),
         users: users.map(serialize),
       },
     });
@@ -68,11 +87,90 @@ export const getTenantOverview = async (req, res) => {
   }
 };
 
+export const createTenant = async (req, res) => {
+  try {
+    const tenant = await Tenant.create({
+      dataResidency: req.body.dataResidency,
+      domain: req.body.domain,
+      industry: req.body.industry,
+      name: String(req.body.name || "").trim(),
+      settings: req.body.settings || {},
+      status: req.body.status,
+      subscriptionTier: req.body.subscriptionTier,
+      tenantId: String(req.body.tenantId || "").trim(),
+    });
+
+    await createAuditLog({
+      action: "TENANT_CREATED",
+      newValue: tenant,
+      req,
+      resourceId: tenant.tenantId,
+      resourceType: "tenant",
+    });
+
+    res.status(201).json({ success: true, tenant: serialize(tenant.toObject()) });
+  } catch (error) {
+    console.error("Failed to create tenant:", error);
+    res.status(500).json({ message: "Failed to create tenant" });
+  }
+};
+
+export const updateTenantSettings = async (req, res) => {
+  try {
+    const tenantId = String(
+      req.params.tenantId || req.body.tenantId || req.tenantContext?.tenantId || ""
+    ).trim();
+
+    if (!tenantId) {
+      return res.status(400).json({ message: "Tenant ID is required" });
+    }
+
+    if (
+      req.tenantContext?.tenantId &&
+      req.tenantContext.tenantId !== tenantId &&
+      !req.tenantContext?.isSuperAdmin
+    ) {
+      return res.status(403).json({ message: "Tenant access denied" });
+    }
+
+    const oldTenant = await Tenant.findOne({ tenantId }).lean();
+    const tenant = await Tenant.findOneAndUpdate(
+      { tenantId },
+      {
+        settings:
+          req.body.settings && typeof req.body.settings === "object"
+            ? req.body.settings
+            : {},
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!tenant) {
+      return res.status(404).json({ message: "Tenant not found" });
+    }
+
+    await createAuditLog({
+      action: "TENANT_SETTINGS_UPDATED",
+      newValue: tenant,
+      oldValue: oldTenant,
+      req,
+      resourceId: tenant.tenantId,
+      resourceType: "settings",
+    });
+
+    res.json({ settings: tenant.settings || {}, success: true });
+  } catch (error) {
+    console.error("Failed to update tenant settings:", error);
+    res.status(500).json({ message: "Failed to update tenant settings" });
+  }
+};
+
 export const createOrganization = async (req, res) => {
   try {
     const organization = await Organization.create({
       industry: req.body.industry,
       name: String(req.body.name || "").trim(),
+      tenantId: req.body.tenantId || req.tenantContext?.tenantId || "",
       timezone: req.body.timezone,
     });
 
@@ -98,6 +196,7 @@ export const createPlant = async (req, res) => {
       name: String(req.body.name || "").trim(),
       organizationId: String(req.body.organizationId || "").trim(),
       plantId: req.body.plantId || makeId("PLANT", req.body.name),
+      tenantId: req.body.tenantId || req.tenantContext?.tenantId || "",
       timezone: req.body.timezone,
     });
 
@@ -124,6 +223,7 @@ export const createDepartment = async (req, res) => {
       name: String(req.body.name || "").trim(),
       organizationId: req.body.organizationId,
       plantId: String(req.body.plantId || "").trim(),
+      tenantId: req.body.tenantId || req.tenantContext?.tenantId || "",
     });
 
     res.status(201).json({
@@ -144,6 +244,7 @@ export const createProductionLine = async (req, res) => {
       name: String(req.body.name || "").trim(),
       organizationId: req.body.organizationId,
       plantId: String(req.body.plantId || "").trim(),
+      tenantId: req.body.tenantId || req.tenantContext?.tenantId || "",
     });
 
     res.status(201).json({
@@ -164,6 +265,7 @@ export const createMachineGroup = async (req, res) => {
       name: String(req.body.name || "").trim(),
       organizationId: req.body.organizationId,
       plantId: String(req.body.plantId || "").trim(),
+      tenantId: req.body.tenantId || req.tenantContext?.tenantId || "",
     });
 
     res.status(201).json({

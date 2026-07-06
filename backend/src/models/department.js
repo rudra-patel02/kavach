@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 
 const departmentSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: String,
+      default: "",
+      index: true,
+    },
     organizationId: {
       type: String,
       default: "",

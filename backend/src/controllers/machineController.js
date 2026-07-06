@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 import Machine from "../models/machine.js";
 import { createAuditLog } from "../services/auditService.js";
 import { normalizeRole } from "../security/rbac.js";
+import { buildTenantScopedQuery } from "../middleware/tenantMiddleware.js";
+import {
+  getPagination,
+  setPaginationHeaders,
+} from "../utils/pagination.js";
 
 const getMachineLookup = (id) => {
   const identifier = String(id || "").trim();
@@ -34,10 +39,67 @@ const getPlantScope = (req) => {
   return {};
 };
 
+const buildMachineQuery = (req, baseQuery = {}) => {
+  const query = buildTenantScopedQuery(req, {
+    ...getPlantScope(req),
+    ...baseQuery,
+  });
+
+  for (const field of ["status", "criticality", "department", "manufacturer"]) {
+    if (req.query?.[field]) {
+      query[field] = String(req.query[field]);
+    }
+  }
+
+  if (req.query?.search) {
+    const search = String(req.query.search).trim();
+    query.$or = [
+      { machineId: new RegExp(search, "i") },
+      { name: new RegExp(search, "i") },
+      { department: new RegExp(search, "i") },
+      { serialNumber: new RegExp(search, "i") },
+      { manufacturer: new RegExp(search, "i") },
+    ];
+  }
+
+  return query;
+};
+
 // Get all machines
 export const getMachines = async (req, res) => {
   try {
-    const machines = await Machine.find(getPlantScope(req)).sort({ machineId: 1 }).lean();
+    const query = buildMachineQuery(req);
+    const findQuery = Machine.find(query).sort({ machineId: 1 }).lean();
+
+    if (req.query.limit || req.query.page || req.query.skip) {
+      const pagination = getPagination({
+        defaultLimit: 100,
+        maxLimit: 500,
+        query: req.query,
+      });
+      const [machines, total] = await Promise.all([
+        findQuery.skip(pagination.skip).limit(pagination.limit),
+        Machine.countDocuments(query),
+      ]);
+
+      setPaginationHeaders(res, {
+        count: machines.length,
+        limit: pagination.limit,
+        page: pagination.page,
+        total,
+      });
+
+      return res.status(200).json(machines);
+    }
+
+    const machines = await findQuery;
+    setPaginationHeaders(res, {
+      count: machines.length,
+      limit: machines.length,
+      page: 1,
+      total: machines.length,
+    });
+
     res.status(200).json(machines);
   } catch (err) {
     console.error(err);
@@ -56,7 +118,7 @@ export const getMachineById = async (req, res) => {
       });
     }
 
-    const machine = await Machine.findOne(query).lean();
+    const machine = await Machine.findOne(buildMachineQuery(req, query)).lean();
 
     if (!machine) {
       return res.status(404).json({
@@ -78,6 +140,7 @@ export const createMachine = async (req, res) => {
       machineId: req.body.machineId,
       name: req.body.name,
       department: req.body.department,
+      tenantId: req.body.tenantId || req.user?.tenantId || req.tenantContext?.tenantId || "",
       organizationId: req.body.organizationId || req.user?.organizationId || "",
       plantId: req.body.plantId || req.user?.activePlantId || "",
       departmentId: req.body.departmentId || "",
@@ -131,9 +194,10 @@ export const updateMachine = async (req, res) => {
   try {
     const { query } = getMachineLookup(req.params.id);
 
-    const oldMachine = await Machine.findOne(query).lean();
+    const scopedQuery = buildMachineQuery(req, query);
+    const oldMachine = await Machine.findOne(scopedQuery).lean();
     const machine = await Machine.findOneAndUpdate(
-      query,
+      scopedQuery,
       req.body,
       {
         new: true,
@@ -170,7 +234,7 @@ export const deleteMachine = async (req, res) => {
   try {
     const { query } = getMachineLookup(req.params.id);
 
-    const machine = await Machine.findOneAndDelete(query);
+    const machine = await Machine.findOneAndDelete(buildMachineQuery(req, query));
 
     if (!machine) {
       return res.status(404).json({

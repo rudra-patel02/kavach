@@ -19,6 +19,7 @@ export const createAuditLog = async ({
   resourceId = "",
   resourceType,
   severity,
+  status = "success",
 }) => {
   try {
     const retentionDays = Number(process.env.AUDIT_RETENTION_DAYS || 365);
@@ -59,6 +60,7 @@ export const createAuditLog = async ({
         req?.id ||
         "",
       severity: actionSeverity,
+      status,
       retentionExpiresAt,
       userEmail: req?.user?.email || "",
       userId: req?.user?.id || "",
@@ -76,6 +78,7 @@ export const listAuditLogs = async ({
   query,
   resourceType,
   severity,
+  status,
   to,
   userEmail,
 } = {}) => {
@@ -84,6 +87,7 @@ export const listAuditLogs = async ({
   if (action) filters.action = action;
   if (resourceType) filters.resourceType = resourceType;
   if (severity) filters.severity = severity;
+  if (status) filters.status = status;
   if (plantId) filters.plantId = plantId;
   if (userEmail) filters.userEmail = new RegExp(String(userEmail), "i");
 

@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 
 const machineGroupSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: String,
+      default: "",
+      index: true,
+    },
     organizationId: {
       type: String,
       default: "",

@@ -1,43 +1,20 @@
-import AuditLog from "../models/auditLog.js";
-import Machine from "../models/machine.js";
-import Notification from "../models/notification.js";
-import User from "../models/user.js";
-import WorkOrder from "../models/workOrder.js";
-import Device from "../models/device.js";
-import Organization from "../models/organization.js";
-import Plant from "../models/plant.js";
+import BackupLog from "../models/backupLog.js";
 import { createAuditLog } from "../services/auditService.js";
-
-const collections = {
-  auditLogs: AuditLog,
-  devices: Device,
-  machines: Machine,
-  notifications: Notification,
-  organizations: Organization,
-  plants: Plant,
-  users: User,
-  workOrders: WorkOrder,
-};
-
-const sanitizeDocs = (docs) =>
-  docs.map((doc) => {
-    const value = { ...doc };
-    delete value.password;
-    delete value.refreshToken;
-    return value;
-  });
+import {
+  buildBackupPayload,
+  restoreBackupPayload,
+  summarizeBackupPayload,
+  writeBackupFile,
+} from "../services/backupService.js";
 
 export const exportBackup = async (req, res) => {
   try {
-    const data = {};
-
-    for (const [name, Model] of Object.entries(collections)) {
-      data[name] = sanitizeDocs(await Model.find().lean());
-    }
+    const payload = await buildBackupPayload({ includeSecrets: false });
+    const summary = summarizeBackupPayload(payload);
 
     await createAuditLog({
       action: "BACKUP_EXPORTED",
-      metadata: { collections: Object.keys(data) },
+      metadata: { collections: Object.keys(summary), summary },
       req,
       resourceType: "backup",
     });
@@ -48,14 +25,31 @@ export const exportBackup = async (req, res) => {
       `attachment; filename="kavach-backup-${Date.now()}.json"`
     );
     res.json({
-      exportedAt: new Date().toISOString(),
-      service: "KAVACH",
-      version: "12.0.0",
-      data,
+      ...payload,
+      summary,
     });
   } catch (error) {
     console.error("Backup export failed:", error);
     res.status(500).json({ message: "Backup export failed" });
+  }
+};
+
+export const createServerBackup = async (req, res) => {
+  try {
+    const backup = await writeBackupFile({ trigger: "export" });
+
+    await createAuditLog({
+      action: "BACKUP_FILE_CREATED",
+      metadata: backup,
+      req,
+      resourceId: backup.backupId,
+      resourceType: "backup",
+    });
+
+    res.status(201).json({ backup, success: true });
+  } catch (error) {
+    console.error("Backup file creation failed:", error);
+    res.status(500).json({ message: "Backup file creation failed" });
   }
 };
 
@@ -89,37 +83,56 @@ export const exportConfiguration = async (req, res) => {
 
 export const restoreBackup = async (req, res) => {
   try {
-    const payload = req.body?.data || {};
+    const payload = req.body?.data ? req.body : { data: req.body?.data || {} };
     const dryRun = req.query.dryRun !== "false";
-    const summary = Object.fromEntries(
-      Object.keys(collections).map((name) => [
-        name,
-        Array.isArray(payload[name]) ? payload[name].length : 0,
-      ])
-    );
+
+    if (!dryRun) {
+      const restoreToken = String(req.body?.confirmToken || "");
+      const expectedToken = process.env.BACKUP_RESTORE_TOKEN;
+
+      if (expectedToken && restoreToken !== expectedToken) {
+        return res.status(403).json({
+          message: "Valid restore confirmation token is required",
+        });
+      }
+
+      if (!expectedToken && req.body?.confirmRestore !== "RESTORE") {
+        return res.status(400).json({
+          message: "Set confirmRestore to RESTORE to execute a restore",
+        });
+      }
+    }
+
+    const result = await restoreBackupPayload({ dryRun, payload });
 
     await createAuditLog({
-      action: dryRun ? "BACKUP_RESTORE_DRY_RUN" : "BACKUP_RESTORE_REQUESTED",
-      metadata: { dryRun, summary },
+      action: dryRun ? "BACKUP_RESTORE_DRY_RUN" : "BACKUP_RESTORED",
+      metadata: result,
       req,
+      resourceId: result.backupId,
       resourceType: "backup",
     });
 
-    if (!dryRun) {
-      return res.status(501).json({
-        message:
-          "Restore execution requires an operator-approved maintenance window. Dry run summary is available.",
-        summary,
-      });
-    }
-
     res.json({
-      dryRun,
+      ...result,
       success: true,
-      summary,
     });
   } catch (error) {
     console.error("Backup restore failed:", error);
     res.status(500).json({ message: "Backup restore failed" });
+  }
+};
+
+export const getBackupLogs = async (req, res) => {
+  try {
+    const logs = await BackupLog.find()
+      .sort({ createdAt: -1 })
+      .limit(Math.min(Number(req.query.limit) || 100, 500))
+      .lean();
+
+    res.json({ logs, success: true });
+  } catch (error) {
+    console.error("Backup log fetch failed:", error);
+    res.status(500).json({ message: "Backup log fetch failed" });
   }
 };

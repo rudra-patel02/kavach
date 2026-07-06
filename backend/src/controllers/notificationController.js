@@ -1,9 +1,14 @@
 import mongoose from "mongoose";
 
 import Notification from "../models/notification.js";
+import { buildTenantScopedQuery } from "../middleware/tenantMiddleware.js";
 import { serializeNotification } from "../services/notificationService.js";
 import { createAuditLog } from "../services/auditService.js";
 import User from "../models/user.js";
+import {
+  getPagination,
+  setPaginationHeaders,
+} from "../utils/pagination.js";
 
 const getRealtime = (req) => req.app.get("machineGateway") || req.app.get("io");
 
@@ -66,7 +71,8 @@ const getPriority = (severity) => {
   return "P4";
 };
 
-const buildNotificationQuery = (query) => {
+const buildNotificationQuery = (req) => {
+  const { query } = req;
   const filters = {};
 
   if (query.archived === "true") {
@@ -110,8 +116,11 @@ const buildNotificationQuery = (query) => {
     ];
   }
 
-  return filters;
+  return buildTenantScopedQuery(req, filters);
 };
+
+const buildNotificationIdQuery = (req, id) =>
+  buildTenantScopedQuery(req, { _id: id });
 
 const emitRealtime = (realtime, method, event, payload) => {
   if (realtime?.[method]) {
@@ -135,17 +144,32 @@ const getUserPreferences = async (userId) => {
 
 export const getNotifications = async (req, res) => {
   try {
-    const limit = Math.min(Number(req.query.limit) || 50, 200);
-    const filters = buildNotificationQuery(req.query);
+    const pagination = getPagination({
+      defaultLimit: 50,
+      maxLimit: 200,
+      query: req.query,
+    });
+    const filters = buildNotificationQuery(req);
     const notifications = await Notification.find(filters)
       .sort({ createdAt: -1 })
-      .limit(limit + 1)
+      .skip(pagination.skip)
+      .limit(pagination.limit + 1)
       .lean();
-    const hasMore = notifications.length > limit;
-    const page = hasMore ? notifications.slice(0, limit) : notifications;
-    const unreadCount = await Notification.countDocuments({
-      archived: { $ne: true },
-      read: false,
+    const hasMore = notifications.length > pagination.limit;
+    const page = hasMore
+      ? notifications.slice(0, pagination.limit)
+      : notifications;
+    const unreadCount = await Notification.countDocuments(
+      buildTenantScopedQuery(req, {
+        archived: { $ne: true },
+        read: false,
+      })
+    );
+
+    setPaginationHeaders(res, {
+      count: page.length,
+      limit: pagination.limit,
+      page: pagination.page,
     });
 
     res.json({
@@ -196,7 +220,7 @@ export const createNotification = async (req, res) => {
       recommendedEngineer: req.body.recommendedEngineer || "",
       severity,
       suggestedAction: req.body.suggestedAction || "",
-      tenantId: req.body.tenantId || "",
+      tenantId: req.body.tenantId || req.user?.tenantId || req.tenantContext?.tenantId || "",
       title,
       type,
       value: req.body.value,
@@ -246,8 +270,8 @@ export const markNotificationRead = async (req, res) => {
     }
 
     const read = req.body.read === false ? false : true;
-    const notification = await Notification.findByIdAndUpdate(
-      req.params.id,
+    const notification = await Notification.findOneAndUpdate(
+      buildNotificationIdQuery(req, req.params.id),
       {
         read,
         readAt: read ? new Date() : null,
@@ -298,8 +322,8 @@ export const archiveNotification = async (req, res) => {
     }
 
     const archived = req.body.archived === false ? false : true;
-    const notification = await Notification.findByIdAndUpdate(
-      req.params.id,
+    const notification = await Notification.findOneAndUpdate(
+      buildNotificationIdQuery(req, req.params.id),
       {
         archived,
         archivedAt: archived ? new Date() : null,
@@ -344,7 +368,10 @@ export const archiveNotifications = async (req, res) => {
       ? req.body.ids.filter((id) => isValidId(id))
       : [];
     const archivedAt = new Date();
-    const filter = ids.length > 0 ? { _id: { $in: ids } } : { archived: { $ne: true } };
+    const filter = buildTenantScopedQuery(
+      req,
+      ids.length > 0 ? { _id: { $in: ids } } : { archived: { $ne: true } }
+    );
     const result = await Notification.updateMany(filter, {
       archived: true,
       archivedAt,
@@ -367,10 +394,12 @@ export const archiveNotifications = async (req, res) => {
     res.json({
       success: true,
       modifiedCount: result.modifiedCount,
-      unreadCount: await Notification.countDocuments({
-        archived: { $ne: true },
-        read: false,
-      }),
+      unreadCount: await Notification.countDocuments(
+        buildTenantScopedQuery(req, {
+          archived: { $ne: true },
+          read: false,
+        })
+      ),
     });
   } catch (error) {
     console.error("Failed to archive notifications:", error);
@@ -438,7 +467,7 @@ export const markAllNotificationsRead = async (req, res) => {
   try {
     const readAt = new Date();
     const result = await Notification.updateMany(
-      { read: false },
+      buildTenantScopedQuery(req, { read: false }),
       {
         read: true,
         readAt,
@@ -481,7 +510,9 @@ export const deleteNotification = async (req, res) => {
       return res.status(400).json({ message: "Invalid notification id" });
     }
 
-    const notification = await Notification.findByIdAndDelete(req.params.id);
+    const notification = await Notification.findOneAndDelete(
+      buildNotificationIdQuery(req, req.params.id)
+    );
 
     if (!notification) {
       return res.status(404).json({ message: "Notification not found" });
@@ -519,7 +550,7 @@ export const deleteNotification = async (req, res) => {
 
 export const clearNotifications = async (req, res) => {
   try {
-    const result = await Notification.deleteMany({});
+    const result = await Notification.deleteMany(buildTenantScopedQuery(req, {}));
 
     const realtime = getRealtime(req);
 

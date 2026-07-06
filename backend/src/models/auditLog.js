@@ -75,6 +75,12 @@ const auditLogSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.Mixed,
       default: {},
     },
+    status: {
+      type: String,
+      enum: ["success", "failure", "denied", "pending"],
+      default: "success",
+      index: true,
+    },
     severity: {
       type: String,
       enum: ["Info", "Warning", "Critical"],
