@@ -2,6 +2,7 @@ import cors from "cors";
 import express from "express";
 
 import authRoutes from "./routes/authRoutes.js";
+import kpiRoutes from "./routes/kpiRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import { parseCorsOrigins } from "./config/environment.js";
 import {
@@ -22,6 +23,7 @@ import {
 export const IN_SCOPE_API_MOUNTS = [
   ["/api/auth", authRoutes],
   ["/api/users", userRoutes],
+  ["/api/kpis", kpiRoutes],
 ];
 
 // Build the Express app without binding a port or starting MQTT/Socket.IO, so

@@ -22,6 +22,10 @@ export const METRIC_UNITS = {
   noise: "dB",
   flowRate: "L/min",
   gasSensor: "ppm",
+  // Production counters (per-report increments) that feed the Part 3 KPI engine:
+  // OEE performance = produced / (ratedThroughput × runtime), quality = good / total.
+  unitsTotal: "count",
+  unitsGood: "count",
 };
 
 const badRequest = (message) => {

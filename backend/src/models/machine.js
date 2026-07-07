@@ -57,6 +57,15 @@ const machineSchema = new mongoose.Schema(
       default: [],
     },
 
+    // Rated output in units/hour — the "ideal" rate for the Part 3 OEE
+    // performance factor. 0/undefined means OEE performance can't be computed
+    // for this machine (it's flagged incomplete rather than faked).
+    ratedThroughput: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
     // Derived — recomputed by services/health.js from the latest readings.
     healthScore: {
       type: Number,
