@@ -59,7 +59,7 @@ Test-first: write the failing test that encodes the behavior, then implement. Th
 
 ## Feature registry
 - [x] Part 1 — Foundation, Secrets & Auth/Roles ✅ 2026-07-08
-- [ ] Part 2 — Telemetry Ingest, Health & Alerts
+- [x] Part 2 — Telemetry Ingest, Health & Alerts ✅ 2026-07-08
 - [ ] Part 3 — KPI Engine (OEE/MTBF/MTTR)
 - [ ] Part 4 — Work Orders & the Closed Loop
 - [ ] Part 5 — Manager UI: Dashboards, Drill-down, Alerts, Reports & Live Updates
@@ -73,7 +73,7 @@ Test-first: write the failing test that encodes the behavior, then implement. Th
 - Roles are fixed (Manager/Engineer/Viewer), admin-assigned, never self-selected at signup.
 
 ## Next
-Start **Part 2 — Telemetry Ingest, Health & Alerts** (see build-spec.md). Enter plan mode first.
+Start **Part 3 — KPI Engine (OEE/MTBF/MTTR)** (see build-spec.md). Enter plan mode first. Build pure, unit-tested plant + per-machine OEE/MTBF/MTTR over a window from the Part 2 `Reading`/`Alert` (+ Part 4 `WorkOrder`) data, with correct units and an auth-required endpoint scoped to the caller.
 
 ### Part 1 notes (done 2026-07-08)
 - Auth spine: register (always Viewer; ignores role/permissions/tenant), login (access+refresh), refresh, logout. JWT pinned to HS256 everywhere; access token carries only `{id, name, email, role}` (permissions derived server-side from `security/rbac.js`). Roles = Manager/Engineer/Viewer (user model enum + `USER_MANAGEMENT_ROLES`). Admin create-user is `users:manage`-guarded; Viewer is 403.
@@ -81,3 +81,13 @@ Start **Part 2 — Telemetry Ingest, Health & Alerts** (see build-spec.md). Ente
 - Scope reset: `src/app.js` factory mounts only `/api/auth` + `/api/users`; slim `index.js` (no MQTT/Socket.IO/sensor/backup in Part 1 — return in Parts 2–5). Deleted 16 out-of-scope routes + 17 controllers + 20 services + 12 legacy feature tests. Frontend: deleted 13 out-of-scope page trees + orphaned components; trimmed `lib/navigation.ts`.
 - Tests: backend `node --test` = 13 green (`src/test/auth.test.js` covers the 6 DoD tests; kept `test/rbac.test.js`, `test/exportUtils.test.js`). Frontend typecheck clean.
 - **Dormant legacy pending rebuild:** `machineController`/`workOrderController` still import `middleware/tenantMiddleware.js`; `workOrderService.js` still imports the deleted `predictionService.js` (latent — these files are unmounted/unloaded and get rebuilt in Parts 2/4). Frontend dashboard `app/page.tsx` still renders AI/3D widgets (Part 5 UI redesign). Frontend Vitest harness deferred to Part 5 (no Part 1 frontend tests).
+
+### Part 2 notes (done 2026-07-08)
+- **Clean domain models (rebuild canon, replacing legacy bloat):** rewrote `models/machine.js` to the spec shape `{ machineId, name, location, linkedDeviceId, thresholds[], healthScore, status ∈ Running/Warning/Critical/Offline, lastReadingAt, lastReadingSource }` — dropped the ~40 legacy AI/enterprise fields. New `models/reading.js` = tall time-series (one doc per machine/metric/ts, `source ∈ {device, sim}`). New `models/alert.js` = `{ machineId, metric, breachValue, threshold, severity ∈ Warning/Critical, status ∈ open/acknowledged/resolved, ts, acknowledged… }`.
+- **Ingest (transport-agnostic, fail-closed):** `services/ingest.js` `verifyDeviceSecret()` fails CLOSED — unset `DEVICE_SECRET` rejects everything, no fail-open (fixed the latent fail-open in `middleware/deviceAuthMiddleware.js`, now shares the same verifier; timing-safe compare). `ingestTelemetry(payload,{source,deviceSecret,trusted})` parses/validates (metric registry `METRIC_UNITS`), fans a packet into per-metric `Reading`s, recomputes health from **live** readings, updates the machine, syncs alerts. `iot/mqttIngest.js` `handleMqttMessage(topic,msg)` is broker-free testable; `attachMqttIngest(client)` wires a real broker.
+- **Health engine (pure/deterministic):** `services/health.js` `computeHealth(machine, readings)` → `{ healthScore, status, breaches }`. Latest-per-metric vs thresholds; Critical > Warning; penalty Warning −20 / Critical −50, clamp 0–100. Metrics with no configured threshold are ignored (no invented health).
+- **Alerts (dedupe/clear/ack):** `services/alerts.js` `syncAlerts()` keeps **one active alert per (machineId, metric)** — breach with no active alert opens one; repeat breach updates in place (no dupes, severity can escalate); metric returning to normal → `resolved` (cleared); a later breach opens a fresh alert. `acknowledgeAlert(id,userId)` → status `acknowledged` (still active). Manager-facing alert REST/UI is Part 5.
+- **Simulator opt-in + live gating:** `iot/telemetrySimulator.js` runs only when `ENABLE_SENSOR_SIMULATION` is on; every sim packet is flagged `source:"sim"`. `liveSources()` excludes `sim` when the flag is off, so sim readings are stored-but-not-counted (health/status/alerts untouched). `index.js` wires MQTT (`IOT_ENABLED`) + simulator behind env guards, both stopped on shutdown; tests import `app.js` (never `index.js`) so nothing background starts in tests. `seed.js` rewritten to 4 clean machines with thresholds.
+- **Tests:** `src/test/ingest.test.js` = 18 tests (health mapping/score, fail-closed auth + MQTT reject, reading persisted/fan-out/404, alert raise/dedupe/clear/ack, sim tagged + not-counted-when-off + counted-when-on). Full backend suite **31 green**; frontend typecheck clean (npm shim `Permission denied`/`bad interpreter` on this synced `~/kavach` tree is an FS quirk — `node node_modules/typescript/bin/tsc` exits 0).
+- **Decision — MQTT/service is the ingest surface, no public REST ingest route:** honors "MQTT is the only live source"; the DoD (valid secret persists / bad secret rejected) is covered via the service + MQTT handler (broker-free). The fail-closed `deviceAuthMiddleware` is fixed and ready for any future device HTTP path but is not mounted.
+- **Still-dormant legacy (unchanged, unloaded):** old `iot/telemetryProcessor.js` + `iot/mqttSubscriber.js` + `iot/connectionManager.js` still import deleted services — left in place (never loaded) rather than cascade-delete; superseded by the clean `mqttIngest`/`telemetrySimulator`. Legacy `models/telemetry.js`/`sensorHistory.js` unused. Reusable: `iot/mqttClient.js` (clean).
