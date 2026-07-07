@@ -24,19 +24,8 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: [
-        "Admin",
-        "Super Admin",
-        "Organization Admin",
-        "Plant Admin",
-        "Plant Manager",
-        "Maintenance Manager",
-        "Engineer",
-        "Maintenance Engineer",
-        "Operator",
-        "Quality Engineer",
-        "Viewer",
-      ],
+      // v1 has exactly three server-owned roles (see build-spec.md / CLAUDE.md).
+      enum: ["Manager", "Engineer", "Viewer"],
       default: "Viewer",
     },
 

@@ -58,7 +58,7 @@ Test-first: write the failing test that encodes the behavior, then implement. Th
 5. Tick the Feature registry box, then I `/clear` before the next part.
 
 ## Feature registry
-- [ ] Part 1 — Foundation, Secrets & Auth/Roles
+- [x] Part 1 — Foundation, Secrets & Auth/Roles ✅ 2026-07-08
 - [ ] Part 2 — Telemetry Ingest, Health & Alerts
 - [ ] Part 3 — KPI Engine (OEE/MTBF/MTTR)
 - [ ] Part 4 — Work Orders & the Closed Loop
@@ -73,4 +73,11 @@ Test-first: write the failing test that encodes the behavior, then implement. Th
 - Roles are fixed (Manager/Engineer/Viewer), admin-assigned, never self-selected at signup.
 
 ## Next
-Start **Part 1 — Foundation, Secrets & Auth/Roles** (see build-spec.md). Enter plan mode first.
+Start **Part 2 — Telemetry Ingest, Health & Alerts** (see build-spec.md). Enter plan mode first.
+
+### Part 1 notes (done 2026-07-08)
+- Auth spine: register (always Viewer; ignores role/permissions/tenant), login (access+refresh), refresh, logout. JWT pinned to HS256 everywhere; access token carries only `{id, name, email, role}` (permissions derived server-side from `security/rbac.js`). Roles = Manager/Engineer/Viewer (user model enum + `USER_MANAGEMENT_ROLES`). Admin create-user is `users:manage`-guarded; Viewer is 403.
+- Secrets: `backend/.env` untracked + gitignored; JWT_SECRET/JWT_REFRESH_SECRET rotated; `getRefreshSecret()` placeholder fallback removed. **Deferred (per owner): purge `backend/.env` from git history** — the rotation already invalidates the old secret.
+- Scope reset: `src/app.js` factory mounts only `/api/auth` + `/api/users`; slim `index.js` (no MQTT/Socket.IO/sensor/backup in Part 1 — return in Parts 2–5). Deleted 16 out-of-scope routes + 17 controllers + 20 services + 12 legacy feature tests. Frontend: deleted 13 out-of-scope page trees + orphaned components; trimmed `lib/navigation.ts`.
+- Tests: backend `node --test` = 13 green (`src/test/auth.test.js` covers the 6 DoD tests; kept `test/rbac.test.js`, `test/exportUtils.test.js`). Frontend typecheck clean.
+- **Dormant legacy pending rebuild:** `machineController`/`workOrderController` still import `middleware/tenantMiddleware.js`; `workOrderService.js` still imports the deleted `predictionService.js` (latent — these files are unmounted/unloaded and get rebuilt in Parts 2/4). Frontend dashboard `app/page.tsx` still renders AI/3D widgets (Part 5 UI redesign). Frontend Vitest harness deferred to Part 5 (no Part 1 frontend tests).

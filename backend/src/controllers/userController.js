@@ -1,18 +1,12 @@
 import bcrypt from "bcryptjs";
 
 import User from "../models/user.js";
-import { ENTERPRISE_ROLES, getPermissionsForRole, normalizeRole } from "../security/rbac.js";
+import { getPermissionsForRole } from "../security/rbac.js";
 import { createAuditLog } from "../services/auditService.js";
 
-const USER_MANAGEMENT_ROLES = [
-  "Super Admin",
-  "Plant Manager",
-  "Maintenance Manager",
-  "Maintenance Engineer",
-  "Operator",
-  "Quality Engineer",
-  "Viewer",
-];
+// The only assignable roles in v1. Roles are server-owned; anything else falls
+// back to the least-privileged role.
+const USER_MANAGEMENT_ROLES = ["Manager", "Engineer", "Viewer"];
 
 const normalizeEmail = (email = "") => email.trim().toLowerCase();
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -35,14 +29,8 @@ const toSafeUser = (user) => {
   };
 };
 
-const normalizeUserRole = (role) => {
-  if (USER_MANAGEMENT_ROLES.includes(role)) {
-    return role;
-  }
-
-  const normalizedRole = normalizeRole(role);
-  return ENTERPRISE_ROLES.includes(normalizedRole) ? normalizedRole : "Viewer";
-};
+const normalizeUserRole = (role) =>
+  USER_MANAGEMENT_ROLES.includes(role) ? role : "Viewer";
 
 export const getUsers = async (req, res) => {
   try {
@@ -114,19 +102,15 @@ export const createUser = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const role = normalizeUserRole(req.body.role);
+    // An admin sets the role explicitly here; permissions / tenant / plant are
+    // never accepted from the request body (CLAUDE.md hard rule).
     const user = await User.create({
-      activePlantId: req.body.activePlantId || "",
-      department: req.body.department || "Production",
-      email,
-      employeeId: req.body.employeeId || undefined,
       name,
-      notificationPreferences: req.body.notificationPreferences || undefined,
-      organizationId: req.body.organizationId || "",
+      email,
       password: hashedPassword,
-      permissions: Array.isArray(req.body.permissions) ? req.body.permissions : [],
-      phone: req.body.phone || "",
-      plantIds: Array.isArray(req.body.plantIds) ? req.body.plantIds : [],
       role,
+      department: req.body.department || "Production",
+      phone: req.body.phone || "",
       status: req.body.status || "Active",
     });
     const safeUser = toSafeUser(user);
@@ -173,16 +157,7 @@ export const updateUser = async (req, res) => {
     }
 
     const oldValue = toSafeUser(user);
-    const assignableFields = [
-      "activePlantId",
-      "department",
-      "employeeId",
-      "name",
-      "organizationId",
-      "phone",
-      "status",
-      "themePreference",
-    ];
+    const assignableFields = ["department", "name", "phone", "status"];
 
     for (const field of assignableFields) {
       if (req.body[field] !== undefined) {
@@ -205,21 +180,6 @@ export const updateUser = async (req, res) => {
 
     if (req.body.role !== undefined) {
       user.role = normalizeUserRole(req.body.role);
-    }
-
-    if (Array.isArray(req.body.permissions)) {
-      user.permissions = req.body.permissions;
-    }
-
-    if (Array.isArray(req.body.plantIds)) {
-      user.plantIds = req.body.plantIds;
-    }
-
-    if (req.body.notificationPreferences) {
-      user.notificationPreferences = {
-        ...(user.notificationPreferences?.toObject?.() || user.notificationPreferences || {}),
-        ...req.body.notificationPreferences,
-      };
     }
 
     if (req.body.password) {

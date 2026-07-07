@@ -1,7 +1,6 @@
 import jwt from "jsonwebtoken";
 
 import { createAuditLog } from "../services/auditService.js";
-import { tenantContext } from "./tenantMiddleware.js";
 
 const authMiddleware = (req, res, next) => {
   try {
@@ -25,11 +24,14 @@ const authMiddleware = (req, res, next) => {
 
     const token = authHeader.split(" ")[1];
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Pin the algorithm so an attacker can't swap to "none" or an asymmetric alg.
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
 
     req.user = decoded;
 
-    tenantContext(req, res, next);
+    return next();
   } catch (error) {
     void createAuditLog({
       action: "AUTH_TOKEN_INVALID",
