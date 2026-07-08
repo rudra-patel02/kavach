@@ -1,6 +1,7 @@
 import Alert from "../models/alert.js";
 import Machine from "../models/machine.js";
 import Reading from "../models/reading.js";
+import WorkOrder from "../models/workOrder.js";
 import { computeMachineKPIs, computePlantKPIs } from "../services/kpi.js";
 
 const DEFAULT_WINDOW_HOURS = 24;
@@ -41,7 +42,7 @@ export const getKpis = async (req, res) => {
 
     const machineFilter = req.query.machineId ? { machineId: String(req.query.machineId) } : {};
 
-    const [machines, readings, alerts] = await Promise.all([
+    const [machines, readings, alerts, workOrders] = await Promise.all([
       Machine.find(machineFilter).lean(),
       Reading.find({ ts: { $gte: windowStart, $lte: windowEnd } }).lean(),
       // Alerts that started in the window OR are still active (span into it).
@@ -51,9 +52,15 @@ export const getKpis = async (req, res) => {
           { status: { $in: ["open", "acknowledged"] } },
         ],
       }).lean(),
+      // Work orders resolved in the window — their createdAt→resolvedAt repair
+      // intervals feed the KPI engine's MTTR (Part 4 closes the loop into Part 3).
+      WorkOrder.find({
+        status: "Resolved",
+        resolvedAt: { $gte: windowStart, $lte: windowEnd },
+      }).lean(),
     ]);
 
-    const datasets = { readings, alerts, windowStart: from, windowEnd: to };
+    const datasets = { readings, alerts, workOrders, windowStart: from, windowEnd: to };
     const plant = computePlantKPIs(machines, datasets);
     const perMachine = machines.map((machine) => computeMachineKPIs(machine, datasets));
 
