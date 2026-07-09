@@ -1,8 +1,11 @@
 import cors from "cors";
 import express from "express";
 
+import alertRoutes from "./routes/alertRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import kpiRoutes from "./routes/kpiRoutes.js";
+import machineRoutes from "./routes/machineRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import workOrderRoutes from "./routes/workOrderRoutes.js";
 import { parseCorsOrigins } from "./config/environment.js";
@@ -26,6 +29,9 @@ export const IN_SCOPE_API_MOUNTS = [
   ["/api/users", userRoutes],
   ["/api/kpis", kpiRoutes],
   ["/api/workorders", workOrderRoutes],
+  ["/api/reports", reportRoutes],
+  ["/api/machines", machineRoutes],
+  ["/api/alerts", alertRoutes],
 ];
 
 // Build the Express app without binding a port or starting MQTT/Socket.IO, so

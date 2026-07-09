@@ -1,25 +1,12 @@
 import express from "express";
 
-import {
-  downloadReportPdf,
-  generateReport,
-  getReportCatalog,
-} from "../controllers/reportController.js";
+import { exportKpiReport } from "../controllers/reportController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
-import roleMiddleware from "../middleware/roleMiddleware.js";
+import { permissionMiddleware } from "../middleware/permissionMiddleware.js";
 
 const router = express.Router();
 
-const reportRoles = [
-  "Super Admin",
-  "Admin",
-  "Plant Manager",
-  "Maintenance Engineer",
-];
-
-router.post("/generate", authMiddleware, roleMiddleware(reportRoles), generateReport);
-router.get("/", authMiddleware, roleMiddleware(reportRoles), getReportCatalog);
-router.get("/:type/pdf", authMiddleware, roleMiddleware(reportRoles), downloadReportPdf);
-router.get("/:type", authMiddleware, roleMiddleware(reportRoles), generateReport);
+// All three roles hold reports:read. The export mirrors the dashboard KPIs.
+router.get("/kpis", authMiddleware, permissionMiddleware("reports:read"), exportKpiReport);
 
 export default router;

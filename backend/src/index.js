@@ -9,6 +9,7 @@ import { getEnvironmentConfig, parseBoolean } from "./config/environment.js";
 import { createMqttClientManager } from "./iot/mqttClient.js";
 import { attachMqttIngest } from "./iot/mqttIngest.js";
 import { startSimulator } from "./iot/telemetrySimulator.js";
+import { closeSocket, initSocket } from "./socket/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,6 +27,10 @@ const start = async () => {
 
   const app = createApp();
   const server = http.createServer(app);
+
+  // Part 5 — authenticated Socket.IO server for live health/KPI/alert/work-order
+  // pushes. Shares the HTTP server; the handshake requires a valid JWT.
+  initSocket(server);
 
   await new Promise((resolve, reject) => {
     server.once("error", reject);
@@ -68,6 +73,8 @@ const start = async () => {
     console.log(`${signal} received; shutting down`);
 
     stopSimulator();
+
+    await closeSocket();
 
     if (mqttManager) {
       await mqttManager.stop();

@@ -1,116 +1,87 @@
-import Machine from "../models/machine.js";
-import Notification from "../models/notification.js";
-import WorkOrder from "../models/workOrder.js";
-import {
-  buildReport,
-  reportToCsv,
-  reportToExcelHtml,
-  REPORT_TYPES,
-} from "../services/reportService.js";
-import { createAuditLog } from "../services/auditService.js";
+import { computeKpis } from "../services/kpiQuery.js";
 
-const loadReportData = async () => {
-  const [machines, notifications, workOrders] = await Promise.all([
-    Machine.find().sort({ machineId: 1 }).lean(),
-    Notification.find().sort({ createdAt: -1 }).limit(500).lean(),
-    WorkOrder.find().sort({ createdAt: -1 }).limit(500).lean(),
+// Format a KPI fraction (0..1) as a percentage string, or "n/a" when the
+// underlying data is incomplete (null) — never a fabricated number.
+const pct = (value) =>
+  value === null || value === undefined || !Number.isFinite(value)
+    ? "n/a"
+    : `${(value * 100).toFixed(1)}%`;
+
+const hours = (value) =>
+  Number.isFinite(value) ? value.toFixed(2) : "0.00";
+
+const csvCell = (value) => {
+  const text = String(value ?? "");
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+};
+
+const toCsv = ({ window, plant, machines }) => {
+  const rows = [];
+  rows.push(["KAVACH plant KPI report"]);
+  rows.push(["Window", window.from, window.to]);
+  rows.push([]);
+  rows.push([
+    "Scope",
+    "Machine",
+    "Status",
+    "OEE",
+    "Availability",
+    "Performance",
+    "Quality",
+    "MTBF (h)",
+    "MTTR (h)",
+    "Failures",
+    "Data complete",
   ]);
-
-  return {
-    machines,
-    notifications,
-    workOrders,
-  };
+  rows.push([
+    "PLANT",
+    "-",
+    "-",
+    pct(plant.oee),
+    pct(plant.availability),
+    pct(plant.performance),
+    pct(plant.quality),
+    hours(plant.mtbfHours),
+    hours(plant.mttrHours),
+    String(plant.failures),
+    String(plant.dataComplete),
+  ]);
+  for (const m of machines) {
+    rows.push([
+      "MACHINE",
+      m.name || m.machineId,
+      m.status || "",
+      pct(m.oee),
+      pct(m.availability),
+      pct(m.performance),
+      pct(m.quality),
+      hours(m.mtbfHours),
+      hours(m.mttrHours),
+      String(m.failures),
+      String(m.dataComplete),
+    ]);
+  }
+  return rows.map((r) => r.map(csvCell).join(",")).join("\n");
 };
 
-const getFilename = (report) =>
-  `${report.reportId.replace(/[^A-Z0-9-]/gi, "-")}.pdf`;
-
-const sendReport = async ({ format, report, req, res }) => {
-  await createAuditLog({
-    action: "REPORT_GENERATED",
-    metadata: { format, type: report.type },
-    req,
-    resourceId: report.reportId,
-    resourceType: "report",
-  });
-
-  if (format === "pdf") {
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${getFilename(report)}"`
-    );
-    return res.send(report.pdf);
-  }
-
-  if (format === "csv") {
-    res.setHeader("Content-Type", "text/csv; charset=utf-8");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${report.reportId}.csv"`
-    );
-    return res.send(reportToCsv(report));
-  }
-
-  if (format === "excel" || format === "xls") {
-    res.setHeader("Content-Type", "application/vnd.ms-excel; charset=utf-8");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${report.reportId}.xls"`
-    );
-    return res.send(reportToExcelHtml(report));
-  }
-
-  return res.json({
-    success: true,
-    availableTypes: REPORT_TYPES,
-    report: {
-      reportId: report.reportId,
-      type: report.type,
-      title: report.title,
-      generatedAt: report.generatedAt,
-      sections: report.lines,
-    },
-  });
-};
-
-export const getReportCatalog = (req, res) => {
-  res.json({
-    formats: ["json", "pdf", "csv", "excel"],
-    periods: ["daily", "weekly", "monthly", "quarterly"],
-    success: true,
-    types: REPORT_TYPES,
-  });
-};
-
-export const generateReport = async (req, res) => {
+// GET /api/reports/kpis — export the real plant + per-machine KPIs over a
+// window. Numbers come from the same computeKpis() the dashboard uses, so the
+// report and the dashboard always agree. ?format=csv (default json).
+export const exportKpiReport = async (req, res) => {
   try {
-    const type = String(req.body?.type || req.params.type || "maintenance");
-    const format = String(req.body?.format || req.query.format || "json").toLowerCase();
-    const data = await loadReportData();
-    const report = buildReport({ type, ...data });
+    const report = await computeKpis(req.query);
+    const format = String(req.query.format || "json").toLowerCase();
 
-    return sendReport({ format, report, req, res });
+    if (format === "csv") {
+      const filename = `kavach-kpi-report-${report.window.to.slice(0, 10)}.csv`;
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      return res.send(toCsv(report));
+    }
+
+    return res.json({ success: true, ...report });
   } catch (error) {
-    console.error("Report generation failed:", error);
-    res.status(500).json({
-      message: "Failed to generate report",
-    });
-  }
-};
-
-export const downloadReportPdf = async (req, res) => {
-  try {
-    const type = String(req.params.type || "maintenance");
-    const data = await loadReportData();
-    const report = buildReport({ type, ...data });
-
-    return sendReport({ format: "pdf", report, req, res });
-  } catch (error) {
-    console.error("PDF report generation failed:", error);
-    res.status(500).json({
-      message: "Failed to generate PDF report",
-    });
+    console.error("Report export failed:", error.message);
+    res.status(500).json({ success: false, message: "Failed to generate report" });
   }
 };

@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import Machine from "../models/machine.js";
 import User from "../models/user.js";
 import WorkOrder, { WORK_ORDER_PRIORITIES } from "../models/workOrder.js";
+import { emitEvent } from "../socket/index.js";
+import { SOCKET_EVENTS } from "../socket/events.js";
 import {
   findActiveWorkOrderForMachine,
   isValidTransition,
@@ -144,7 +146,10 @@ export const createWorkOrder = async (req, res) => {
       history: [{ from: "", to: status, by: createdBy, at: now }],
     });
 
-    res.status(201).json({ success: true, workOrder: serializeWorkOrder(workOrder) });
+    const serialized = serializeWorkOrder(workOrder);
+    emitEvent(SOCKET_EVENTS.WORKORDER_UPDATE, serialized);
+
+    res.status(201).json({ success: true, workOrder: serialized });
   } catch (error) {
     if (error.code === 11000) {
       return res.status(409).json({
@@ -239,7 +244,14 @@ export const updateWorkOrder = async (req, res) => {
 
     await workOrder.save();
 
-    res.json({ success: true, workOrder: serializeWorkOrder(workOrder) });
+    const serialized = serializeWorkOrder(workOrder);
+    emitEvent(SOCKET_EVENTS.WORKORDER_UPDATE, serialized);
+    // A resolution changes the machine's MTTR, so nudge KPI subscribers too.
+    if (workOrder.status === "Resolved") {
+      emitEvent(SOCKET_EVENTS.KPI_UPDATE, { machineId: workOrder.machineId });
+    }
+
+    res.json({ success: true, workOrder: serialized });
   } catch (error) {
     console.error("Failed to update work order:", error.message);
     res.status(500).json({ success: false, message: "Failed to update work order" });

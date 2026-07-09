@@ -1,132 +1,85 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiUrl } from "@/lib/api";
+import { useState } from "react";
+
+import { login, storeSession } from "@/lib/data";
 
 export default function LoginPage() {
   const router = useRouter();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const login = async () => {
+  const onSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setError("");
 
-    if (!email.trim()) {
-      setError("Email is required");
+    if (!email.trim() || !password) {
+      setError("Email and password are required");
       return;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!emailRegex.test(email)) {
-      setError("Enter a valid email address");
-      return;
-    }
-
-    if (!password.trim()) {
-      setError("Password is required");
-      return;
-    }
-
+    setLoading(true);
     try {
-      setLoading(true);
-
-      const res = await fetch(apiUrl("/api/auth/login"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.message || "Login failed");
-        return;
-      }
-
-      localStorage.setItem("token", data.token);
-      if (data.refreshToken) {
-        localStorage.setItem("refreshToken", data.refreshToken);
-      }
-      localStorage.setItem("user", JSON.stringify(data.user));
-
+      const result = await login(email.trim(), password);
+      storeSession(result);
       router.replace("/");
-    } catch {
-      setError("Unable to connect to server.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center px-5">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-10 w-full max-w-md shadow-2xl">
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <form
+        onSubmit={onSubmit}
+        className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+      >
+        <h1 className="text-xl font-semibold tracking-tight text-slate-900">KAVACH</h1>
+        <p className="mt-1 text-sm text-slate-500">Sign in to the plant console.</p>
 
-        <h1 className="text-4xl font-bold text-white text-center mb-8">
-          🔐 KAVACH Login
-        </h1>
-
-        {error && (
-          <div className="mb-4 bg-red-500/20 border border-red-500 text-red-300 p-3 rounded-lg text-sm">
-            {error}
-          </div>
-        )}
-
+        <label className="mt-5 block text-sm font-medium text-slate-700" htmlFor="email">
+          Email
+        </label>
         <input
+          id="email"
           type="email"
-          placeholder="Email"
-          className="w-full p-3 mb-4 rounded bg-slate-800 text-white outline-none focus:ring-2 focus:ring-cyan-500"
+          autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") login();
-          }}
+          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
         />
 
-        <div className="relative mb-6">
-          <input
-            type={showPassword ? "text" : "password"}
-            placeholder="Password"
-            className="w-full p-3 rounded bg-slate-800 text-white outline-none focus:ring-2 focus:ring-cyan-500 pr-20"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") login();
-            }}
-          />
+        <label className="mt-4 block text-sm font-medium text-slate-700" htmlFor="password">
+          Password
+        </label>
+        <input
+          id="password"
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+        />
 
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-400 text-sm hover:text-cyan-300"
-          >
-            {showPassword ? "Hide" : "Show"}
-          </button>
-        </div>
+        {error ? (
+          <p className="mt-3 text-sm text-red-700" role="alert">
+            {error}
+          </p>
+        ) : null}
 
         <button
+          type="submit"
           disabled={loading}
-          onClick={login}
-          className={`w-full p-3 rounded-lg font-bold text-white transition ${
-            loading
-              ? "bg-slate-700 cursor-not-allowed"
-              : "bg-cyan-600 hover:bg-cyan-700"
-          }`}
+          className="mt-5 w-full rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
         >
-          {loading ? "Signing In..." : "Login"}
+          {loading ? "Signing in…" : "Sign in"}
         </button>
-      </div>
+      </form>
     </div>
   );
 }

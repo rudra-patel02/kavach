@@ -3,6 +3,8 @@ import crypto from "node:crypto";
 import Machine from "../models/machine.js";
 import Reading from "../models/reading.js";
 import { parseBoolean } from "../config/environment.js";
+import { emitEvent } from "../socket/index.js";
+import { SOCKET_EVENTS } from "../socket/events.js";
 import { computeHealth } from "./health.js";
 import { syncAlerts } from "./alerts.js";
 
@@ -198,6 +200,26 @@ export const ingestTelemetry = async (
   await machine.save();
 
   const alerts = await syncAlerts({ machineId: machine.machineId, breaches, ts });
+
+  // Live push (Part 5): the machine's health/status changed and the plant KPIs
+  // may have moved, so tell connected clients to refresh; surface any new alert.
+  emitEvent(SOCKET_EVENTS.MACHINE_UPDATE, {
+    machineId: machine.machineId,
+    status: machine.status,
+    healthScore: machine.healthScore,
+    lastReadingAt: machine.lastReadingAt,
+  });
+  emitEvent(SOCKET_EVENTS.KPI_UPDATE, { machineId: machine.machineId });
+  for (const alert of alerts.raised || []) {
+    emitEvent(SOCKET_EVENTS.ALERT_CREATED, {
+      id: String(alert._id || alert.id || ""),
+      machineId: alert.machineId,
+      metric: alert.metric,
+      severity: alert.severity,
+      breachValue: alert.breachValue,
+      ts: alert.ts,
+    });
+  }
 
   return { machine, readings, breaches, alerts, source: resolvedSource, counted: true };
 };
