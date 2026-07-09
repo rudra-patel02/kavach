@@ -1,172 +1,90 @@
-# KAVACH Industrial Decision Intelligence Platform
+# KAVACH
 
-Phase 15-18 enterprise completion notes are available in
-[PHASE15_18_ENTERPRISE.md](PHASE15_18_ENTERPRISE.md).
+A single-plant industrial decision-intelligence app: it turns real MQTT machine
+telemetry into trustworthy KPIs (OEE / MTBF / MTTR) and lets a manager close the
+loop by assigning tracked work orders to engineers. **No fabricated numbers** —
+every value on screen traces to real data or is labelled as demo.
 
-KAVACH is a production-style Industrial AI Platform for plant monitoring, predictive maintenance, alerting, digital twin operations, work orders, executive analytics, AI copilot workflows, PDF reporting, and role-based operations.
+## What it does
 
-## Architecture
+- Ingests device telemetry over MQTT (fail-closed device auth), stores it as
+  time-series `Reading`s, recomputes each machine's health/status, and raises
+  deduped `Alert`s on threshold breaches.
+- Computes plant + per-machine **OEE = availability × performance × quality**,
+  **MTBF** and **MTTR** over a window, from readings/alerts/work-orders.
+- Lets a Manager spot a failing machine → open its detail → create + assign a
+  work order; an Engineer advances it `Open → Assigned → In Progress → Resolved`;
+  the resolved repair time feeds MTTR. Live updates push over an authenticated
+  Socket.IO channel.
 
-```mermaid
-flowchart LR
-  Browser["Next.js App Router UI"] --> API["Express REST API"]
-  Browser --> Socket["Socket.IO"]
-  API --> Mongo["MongoDB / Mongoose"]
-  Socket --> Browser
-  API --> Services["AI, Prediction, Reports, Search, Analytics Services"]
-  Services --> Mongo
-```
+## Roles (server-owned, never self-selected)
 
-## Folder Structure
+- **Manager** — full oversight: create/assign work orders, acknowledge alerts,
+  manage users.
+- **Engineer** — advances the work orders assigned to them.
+- **Viewer** — read-only dashboards, alerts and reports.
 
-- `frontend/app`: App Router pages for dashboard, executive, predictive, copilot, analytics, alerts, digital twin, settings, users, machines, work orders.
-- `frontend/components`: reusable layout, dashboard, predictive, copilot, chart, notification, and 3D components.
-- `frontend/lib`: typed API clients and client-side analytics helpers.
-- `frontend/types`: TypeScript contracts for backend payloads.
-- `backend/src/controllers`: REST controllers.
-- `backend/src/routes`: Express route modules.
-- `backend/src/services`: AI copilot, predictive maintenance, alert engine, reports, analytics, search, notifications, work orders.
-- `backend/src/models`: MongoDB models for machines, users, notifications, and work orders.
-- `backend/src/middleware`: JWT auth, role checks, security headers, rate limiting, and sanitization.
+Self-registration always yields a Viewer; roles are assigned only by a Manager
+in the admin screen.
 
-## API Overview
+## Tech stack
 
-- `POST /api/auth/login`: login, returns `token`, `refreshToken`, and user.
-- `POST /api/auth/refresh`: rotate refresh token and access token.
-- `POST /api/auth/logout`: revoke refresh token.
-- `POST /api/ai/chat`: AI Maintenance Copilot chat over live machine data.
-- `GET /api/ai/report`: AI plant report payload.
-- `GET /api/predictive/overview`: plant predictive maintenance overview.
-- `GET /api/predictive/:machineId`: machine prediction detail with RUL, history, trend, root cause, confidence.
-- `GET /api/executive/dashboard`: OEE, MTBF, MTTR, downtime, energy, carbon, utilization, and department KPIs.
-- `POST /api/reports/generate`: generate report JSON or PDF with `format=pdf`.
-- `GET /api/reports/:type/pdf`: PDF download for `maintenance`, `plant-health`, `energy`, `weekly`, or `monthly`.
-- `GET /api/analytics/overview`: advanced analytics payload.
-- `GET /api/analytics/export.csv`: analytics CSV export.
-- `GET /api/search?q=...`: global search across machines, predictions, alerts, work orders, engineers, and users.
-- `GET/PATCH /api/settings`: profile, password, theme, notifications, and company settings.
+- **Frontend:** Next.js 16 (App Router, React 19, TypeScript), Tailwind CSS.
+- **Backend:** Express 5 (REST API + long-lived MQTT subscriber + Socket.IO),
+  MongoDB/Mongoose, jsonwebtoken + bcrypt (HS256-pinned).
+- **Tests:** backend `node:test`, frontend Vitest + Testing Library.
+- **Deploy:** Docker Compose behind nginx (only nginx is published).
 
-## Environment Variables
+## Repo layout
 
-Backend variables are documented in `backend/.env.example`. Production-oriented examples are in `.env.production.example`.
+- `backend/src`
+  - `models/` — `machine`, `reading`, `alert`, `workOrder`, `user`
+  - `services/` — `ingest`, `health`, `alerts`, `kpi`, `kpiQuery`, `workOrders`
+  - `controllers/` + `routes/` — `auth`, `users`, `kpi`, `workOrder`, `report`,
+    `machine`, `alert`
+  - `socket/` — authenticated Socket.IO server + event names
+  - `middleware/`, `config/`, `iot/`, `security/`, `test/`
+- `frontend`
+  - `app/` — `login`, `/` (dashboard), `machines/[id]`, `workorders`, `alerts`,
+    `reports`, `admin`
+  - `components/` — `AppShell`, `AuthGuard`, and the page view components
+  - `lib/` — `api` (typed fetch), `data` (the one data layer), `socket`, `auth`
+  - `types/`, `test/`
+- `nginx/`, `deployment/`, `docker-compose.yml`, `.env.example`
 
-Required backend values:
+## REST API (in scope)
 
-- `MONGO_URI`
-- `JWT_SECRET`
-- `JWT_REFRESH_SECRET`
-- `PORT`
-- `CORS_ORIGIN`
+- `POST /api/auth/login` · `POST /api/auth/refresh` · `POST /api/auth/logout`
+- `GET/POST/PATCH/DELETE /api/users` — admin user management (Manager)
+- `GET /api/kpis` — plant + per-machine OEE/MTBF/MTTR over a window
+- `GET /api/machines` · `GET /api/machines/:id` (with recent readings)
+- `GET /api/workorders` · `GET /api/workorders/:id` · `POST /api/workorders`
+  (Manager) · `PATCH /api/workorders/:id` (Manager/Engineer)
+- `GET /api/alerts` · `PATCH /api/alerts/:id/acknowledge` (Manager)
+- `GET /api/reports/kpis?format=csv|json` — export matching the dashboard
+- `GET /api/health` — liveness
 
-Frontend values:
+Telemetry ingest is **not** a public REST route — it arrives over MQTT (the only
+live source). Socket.IO requires a valid JWT in the handshake.
 
-- `NEXT_PUBLIC_API_URL`
-- `NEXT_PUBLIC_SOCKET_URL`
-
-## Development
+## Develop
 
 ```bash
+# backend (needs a local MongoDB + backend/.env, see backend/.env.example)
 npm run backend:dev
+# frontend
 npm run frontend:dev
 ```
 
-Seed local machine data:
+## Test / lint / typecheck / build
 
 ```bash
-npm run backend:seed
-```
-
-## Validation
-
-```bash
-npm run backend:test
+npm run test              # backend node:test + frontend Vitest
 npm run frontend:typecheck
-npm run frontend:lint
+npm run lint              # frontend eslint
 npm run frontend:build
 ```
 
-## Deployment
+## Deploy
 
-Run all services with Docker Compose:
-
-```bash
-docker compose up --build
-```
-
-Services:
-
-- Frontend: `http://localhost:3000`
-- Backend: `http://localhost:5000`
-- MongoDB: `mongodb://localhost:27017/kavach`
-
-Before production deployment:
-
-- Replace all JWT secrets.
-- Set production `CORS_ORIGIN`.
-- Disable sensor simulation unless demo telemetry is intended.
-- Point `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_SOCKET_URL` at the production backend.
-- Configure MongoDB backups and monitoring.
-
-## Phase 8 Implementation Report
-
-Files created:
-
-- Backend: `aiCopilotService.js`, `aiController.js`, `aiRoutes.js`, `executiveAnalyticsService.js`, `executiveController.js`, `executiveRoutes.js`, `reportService.js`, `reportController.js`, `reportRoutes.js`, `searchService.js`, `searchController.js`, `searchRoutes.js`, `analyticsController.js`, `analyticsRoutes.js`, `settingsController.js`, `settingsRoutes.js`, `securityMiddleware.js`.
-- Frontend: executive dashboard page, typed executive/search/settings contracts, API helpers for executive/search/reports/settings/auth.
-- Deployment/docs: backend Dockerfile, frontend Dockerfile, root Docker Compose, `.dockerignore`, `.env.production.example`, root `README.md`.
-
-Files modified:
-
-- Backend auth, users, machines, notifications, predictions, copilot, work orders, sensor simulation, route registration, schemas, environment examples.
-- Frontend layout, sidebar, navbar, copilot, predictive, analytics, alerts, settings, users, API helper, notification/predictive types.
-
-APIs added:
-
-- `/api/ai/chat`
-- `/api/ai/report`
-- `/api/predictive/:machineId`
-- `/api/executive/dashboard`
-- `/api/reports/generate`
-- `/api/reports/:type/pdf`
-- `/api/analytics/overview`
-- `/api/analytics/export.csv`
-- `/api/search`
-- `/api/settings/*`
-- `/api/auth/refresh`
-- `/api/auth/logout`
-
-Database changes:
-
-- Optional machine `predictionHistory`.
-- Optional user notification and theme preferences.
-- Enriched notification alert fields: priority, failure probability, suggested action, downtime, recommended engineer, location, timeline, history.
-- Added operational indexes for machine, notification, and work-order query paths.
-
-UI changes:
-
-- New executive dashboard at `/dashboard/executive`.
-- Global search in the navbar.
-- PDF report downloads.
-- Real settings page.
-- Role-filtered sidebar.
-- Enriched alert center.
-- Analytics CSV export.
-- Copilot now uses `/api/ai/chat`.
-
-Migration steps:
-
-1. Deploy backend with the new models.
-2. Restart the backend so Mongoose creates new indexes.
-3. Ensure all existing users have supported roles. `Super Admin` and `Admin` are treated as equivalent.
-4. Set `JWT_REFRESH_SECRET` before using refresh tokens in production.
-5. Existing machine, notification, and user documents remain valid because new fields are optional.
-
-Testing checklist:
-
-- Backend unit tests pass.
-- Frontend typecheck passes.
-- Frontend lint passes.
-- Frontend production build passes.
-- Login still returns `token` and now also returns `refreshToken`.
-- Dashboard pages load with authenticated API requests.
-- Report PDF endpoints return `application/pdf`.
+See [DEPLOYMENT.md](DEPLOYMENT.md) — `docker compose up` behind nginx.
