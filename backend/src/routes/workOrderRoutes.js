@@ -1,42 +1,54 @@
 import express from "express";
 
 import {
+  assignWorkOrder,
+  completeWorkOrder,
   createWorkOrder,
+  exportWorkOrders,
   getWorkOrder,
-  listWorkOrders,
-  updateWorkOrder,
+  getWorkOrders,
+  getWorkOrderStats,
+  patchWorkOrder,
+  printWorkOrder,
+  replaceWorkOrder,
+  removeWorkOrder,
+  updateWorkOrderStatus,
 } from "../controllers/workOrderController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import roleMiddleware from "../middleware/roleMiddleware.js";
-import {
-  anyPermissionMiddleware,
-  permissionMiddleware,
-} from "../middleware/permissionMiddleware.js";
 
 const router = express.Router();
+const readRoles = [
+  "Super Admin",
+  "Admin",
+  "Plant Manager",
+  "Maintenance Engineer",
+  "Operator",
+  "Viewer",
+];
+const manageRoles = [
+  "Super Admin",
+  "Admin",
+  "Plant Manager",
+  "Maintenance Engineer",
+  "Operator",
+];
 
-// List + detail: any authenticated caller who can read OR manage work orders
-// (all three roles), scoped to the caller inside the controller. Read-or-manage
-// because a Manager holds workorders:manage (which implies read) but not the
-// literal workorders:read.
-const canReadWorkOrders = anyPermissionMiddleware([
-  "workorders:read",
-  "workorders:manage",
-]);
-
-router.get("/", authMiddleware, canReadWorkOrders, listWorkOrders);
-router.get("/:id", authMiddleware, canReadWorkOrders, getWorkOrder);
-
-// Create + assign: Manager only (build-spec: the manager creates + assigns).
-router.post("/", authMiddleware, roleMiddleware(["Manager"]), createWorkOrder);
-
-// Advance / update: Manager or Engineer (both hold workorders:manage); a Viewer
-// is 403. Engineer-vs-manager rules and ownership are enforced in the controller.
-router.patch(
-  "/:id",
-  authMiddleware,
-  permissionMiddleware("workorders:manage"),
-  updateWorkOrder
-);
+router.get("/", authMiddleware, roleMiddleware(readRoles), getWorkOrders);
+router.get("/stats", authMiddleware, roleMiddleware(readRoles), getWorkOrderStats);
+router.get("/export", authMiddleware, roleMiddleware(readRoles), exportWorkOrders);
+router.get("/export/:format", authMiddleware, roleMiddleware(readRoles), exportWorkOrders);
+router.patch("/status", authMiddleware, roleMiddleware(manageRoles), updateWorkOrderStatus);
+router.patch("/assign", authMiddleware, roleMiddleware(manageRoles), assignWorkOrder);
+router.patch("/complete", authMiddleware, roleMiddleware(manageRoles), completeWorkOrder);
+router.get("/:id", authMiddleware, roleMiddleware(readRoles), getWorkOrder);
+router.get("/:id/print", authMiddleware, roleMiddleware(readRoles), printWorkOrder);
+router.post("/", authMiddleware, roleMiddleware(manageRoles), createWorkOrder);
+router.put("/:id", authMiddleware, roleMiddleware(manageRoles), replaceWorkOrder);
+router.patch("/:id", authMiddleware, roleMiddleware(manageRoles), patchWorkOrder);
+router.patch("/:id/status", authMiddleware, roleMiddleware(manageRoles), updateWorkOrderStatus);
+router.patch("/:id/assign", authMiddleware, roleMiddleware(manageRoles), assignWorkOrder);
+router.patch("/:id/complete", authMiddleware, roleMiddleware(manageRoles), completeWorkOrder);
+router.delete("/:id", authMiddleware, roleMiddleware(["Super Admin", "Admin", "Plant Manager"]), removeWorkOrder);
 
 export default router;

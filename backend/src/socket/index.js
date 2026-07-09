@@ -1,83 +1,88 @@
-import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
 
-import { parseCorsOrigins } from "../config/environment.js";
-import { SOCKET_EVENTS } from "./events.js";
+import {
+  DEFAULT_PLANT_ID,
+  SOCKET_EVENTS,
+  getMachineRoom,
+  getPlantRoom,
+  normalizeRoomId,
+} from "./events.js";
+import { createMachineGateway } from "./machineGateway.js";
 
-// Module-level handle so services/controllers can push events without threading
-// the io instance through every call. Null until the server is initialized —
-// which is the case in tests that import app.js without a real HTTP server, so
-// emitEvent() is a safe no-op there.
-let io = null;
+const SOCKET_HEARTBEAT_MS = 25000;
 
-const extractToken = (handshake = {}) => {
-  const authToken = handshake.auth?.token;
-  if (typeof authToken === "string" && authToken.length > 0) {
-    return authToken;
-  }
-  const header = handshake.headers?.authorization || "";
-  return header.startsWith("Bearer ") ? header.slice(7) : "";
-};
-
-// Verify a Socket.IO handshake the same way the REST authMiddleware verifies a
-// request: a valid HS256 JWT is required. Returns the decoded user, or throws.
-// Exported so the security property is directly unit-testable.
-export const authenticateHandshake = (handshake = {}) => {
-  const token = extractToken(handshake);
-  if (!token) {
-    throw new Error("Unauthorized");
-  }
-  return jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
-};
-
-// Authenticated Socket.IO server. The handshake MUST carry a valid HS256 JWT
-// (via `auth.token` or an Authorization header); a tokenless or tampered
-// connection is refused before any event can flow — the socket is not a
-// backdoor around the REST auth.
-export const initSocket = (httpServer) => {
-  const allowedOrigins = parseCorsOrigins(process.env.CORS_ORIGIN);
-
-  io = new Server(httpServer, {
-    path: "/socket.io",
-    cors: {
-      origin: allowedOrigins === "*" ? true : allowedOrigins,
-      credentials: true,
-    },
+export const createSocketServer = (server, corsOptions) => {
+  const io = new Server(server, {
+    cors: corsOptions,
+    pingInterval: SOCKET_HEARTBEAT_MS,
+    pingTimeout: 30000,
+    transports: ["websocket", "polling"],
   });
-
-  io.use((socket, next) => {
-    try {
-      socket.data.user = authenticateHandshake(socket.handshake);
-      return next();
-    } catch {
-      return next(new Error("Unauthorized"));
-    }
-  });
+  const gateway = createMachineGateway(io);
 
   io.on("connection", (socket) => {
-    socket.emit(SOCKET_EVENTS.CONNECTED, { ok: true });
-  });
+    socket.join(getPlantRoom(DEFAULT_PLANT_ID));
+    socket.emit(SOCKET_EVENTS.HELLO, {
+      message: "Socket Working",
+      socketId: socket.id,
+      rooms: [getPlantRoom(DEFAULT_PLANT_ID)],
+    });
 
-  return io;
-};
+    socket.on(SOCKET_EVENTS.JOIN_PLANT, (payload = {}) => {
+      const plantId = normalizeRoomId(payload.plantId || payload);
+      socket.join(getPlantRoom(plantId));
+      socket.emit(SOCKET_EVENTS.HEARTBEAT_ACK, {
+        plantId,
+        joined: true,
+        timestamp: new Date().toISOString(),
+      });
+    });
 
-export const getIO = () => io;
+    socket.on(SOCKET_EVENTS.LEAVE_PLANT, (payload = {}) => {
+      const plantId = normalizeRoomId(payload.plantId || payload);
+      socket.leave(getPlantRoom(plantId));
+    });
 
-// Safe emit for services/controllers. No-op until initSocket() has run.
-export const emitEvent = (event, payload) => {
-  if (io) {
-    io.emit(event, payload);
-  }
-};
+    socket.on(SOCKET_EVENTS.JOIN_MACHINE, (payload = {}) => {
+      const machineId = normalizeRoomId(payload.machineId || payload, "");
 
-export const closeSocket = () =>
-  new Promise((resolve) => {
-    if (!io) {
-      resolve();
-      return;
-    }
-    io.close(() => {
-      io = null;
-      resolve();
+      if (machineId) {
+        socket.join(getMachineRoom(machineId));
+        socket.emit(SOCKET_EVENTS.HEARTBEAT_ACK, {
+          machineId,
+          joined: true,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    });
+
+    socket.on(SOCKET_EVENTS.LEAVE_MACHINE, (payload = {}) => {
+      const machineId = normalizeRoomId(payload.machineId || payload, "");
+
+      if (machineId) {
+        socket.leave(getMachineRoom(machineId));
+      }
+    });
+
+    socket.on(SOCKET_EVENTS.HEARTBEAT_ACK, () => {
+      socket.data.lastHeartbeatAck = Date.now();
     });
   });
+
+  const heartbeatTimer = setInterval(() => {
+    gateway.broadcastHeartbeat(DEFAULT_PLANT_ID);
+  }, SOCKET_HEARTBEAT_MS);
+
+  heartbeatTimer.unref?.();
+
+  const close = (callback) => {
+    clearInterval(heartbeatTimer);
+    io.close(callback);
+  };
+
+  return {
+    io,
+    gateway,
+    close,
+  };
+};

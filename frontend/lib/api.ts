@@ -1,8 +1,6 @@
 const DEV_BACKEND_URL = "http://localhost:5000";
 const API_PREFIX = "/api";
 
-import { navigateTo } from "./navigate";
-
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
 const stripApiPrefix = (value: string) =>
   trimTrailingSlash(value).replace(/\/api$/i, "");
@@ -123,39 +121,16 @@ const refreshAccessToken = async () => {
   return payload.token || null;
 };
 
-// Clear the session and hard-redirect to /login. Called when a request is
-// unrecoverably unauthorized (a 401 that a token refresh could not resolve), so
-// a protected page never sits on stale, unusable data.
-export const redirectToLogin = () => {
-  if (typeof window === "undefined") {
-    return;
-  }
-  localStorage.removeItem("token");
-  localStorage.removeItem("refreshToken");
-  localStorage.removeItem("user");
-  window.dispatchEvent(new Event("kavach:auth-changed"));
-  if (window.location.pathname !== "/login") {
-    navigateTo("/login");
-  }
-};
-
-export interface FetchJsonInit extends RequestInit {
-  // Auth calls (login/refresh) opt out of the redirect: a 401 there means bad
-  // credentials, not an expired session.
-  skipAuthRedirect?: boolean;
-}
-
-export const fetchJson = async <T>(path: string, init: FetchJsonInit = {}) => {
-  const { skipAuthRedirect, ...requestInit } = init;
-  const method = String(requestInit.method || "GET").toUpperCase();
+export const fetchJson = async <T>(path: string, init: RequestInit = {}) => {
+  const method = String(init.method || "GET").toUpperCase();
   const canRetry = method === "GET";
   const makeRequest = (token: string | null) =>
     fetch(apiUrl(path), {
       cache: "no-store",
-      ...requestInit,
+      ...init,
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(requestInit.headers || {}),
+        ...(init.headers || {}),
       },
     });
 
@@ -177,11 +152,6 @@ export const fetchJson = async <T>(path: string, init: FetchJsonInit = {}) => {
 
     if (refreshedToken) {
       response = await makeRequest(refreshedToken);
-    }
-
-    // Still unauthorized after a refresh attempt → the session is dead.
-    if (response.status === 401 && !skipAuthRedirect) {
-      redirectToLogin();
     }
   }
 

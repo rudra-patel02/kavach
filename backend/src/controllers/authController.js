@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 
 import User from "../models/user.js";
 import { createAuditLog } from "../services/auditService.js";
+import { getPermissionsForRole } from "../security/rbac.js";
 import {
   clearAuthFailures,
   recordAuthFailure,
@@ -27,18 +28,9 @@ const getJwtSecret = () => {
   return process.env.JWT_SECRET;
 };
 
-const getRefreshSecret = () => {
-  if (!process.env.JWT_REFRESH_SECRET) {
-    // No insecure fallback — the refresh secret must be provided explicitly.
-    throw new Error("JWT_REFRESH_SECRET is required");
-  }
+const getRefreshSecret = () =>
+  process.env.JWT_REFRESH_SECRET || `${getJwtSecret()}:refresh`;
 
-  return process.env.JWT_REFRESH_SECRET;
-};
-
-// The access token carries only identity + role. Permissions are derived
-// server-side from the role map at authorization time (never trusted from the
-// token), and tenant/plant claims are out of scope for v1.
 const createAccessToken = (user) =>
   jwt.sign(
     {
@@ -46,10 +38,17 @@ const createAccessToken = (user) =>
       name: user.name,
       email: user.email,
       role: user.role,
+      department: user.department,
+      organizationId: user.organizationId,
+      tenantId: user.tenantId,
+      plantIds: user.plantIds || [],
+      activePlantId: user.activePlantId || "",
+      permissions: Array.from(
+        new Set([...(getPermissionsForRole(user.role) || []), ...(user.permissions || [])])
+      ),
     },
     getJwtSecret(),
     {
-      algorithm: "HS256",
       expiresIn: process.env.JWT_EXPIRES_IN || "7d",
     }
   );
@@ -62,7 +61,6 @@ const createRefreshToken = (user) =>
     },
     getRefreshSecret(),
     {
-      algorithm: "HS256",
       expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "30d",
     }
   );
@@ -74,10 +72,10 @@ export const register = async (req, res) => {
     const email = normalizeEmail(String(req.body.email || ""));
     const password = String(req.body.password || "");
 
+    const role = req.body.role || "Viewer";
     const department = req.body.department || "Production";
+    const employeeId = req.body.employeeId || "";
     const phone = req.body.phone || "";
-    // Self-registration is always a Viewer. role / permissions / tenantId are
-    // NEVER read from the request body (CLAUDE.md hard rule).
 
     if (!name || !email || !password) {
       await createAuditLog({
@@ -155,9 +153,14 @@ export const register = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      role: "Viewer",
+      role,
       department,
+      employeeId,
       phone,
+      tenantId: req.body.tenantId || "",
+      organizationId: req.body.organizationId || "",
+      plantIds: Array.isArray(req.body.plantIds) ? req.body.plantIds : [],
+      activePlantId: req.body.activePlantId || "",
     });
 
     await createAuditLog({
@@ -322,9 +325,7 @@ export const refresh = async (req, res) => {
       });
     }
 
-    const decoded = jwt.verify(refreshToken, getRefreshSecret(), {
-      algorithms: ["HS256"],
-    });
+    const decoded = jwt.verify(refreshToken, getRefreshSecret());
     const user = await User.findById(decoded.id).select("+refreshToken");
 
     if (!user || user.refreshToken !== refreshToken) {

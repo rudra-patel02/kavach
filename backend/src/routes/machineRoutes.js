@@ -1,16 +1,45 @@
 import express from "express";
-
-import { getMachine, listMachines } from "../controllers/machineController.js";
+import {
+  getMachines,
+  getMachineById,
+  createMachine,
+  updateMachine,
+  deleteMachine,
+} from "../controllers/machineController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
-import { anyPermissionMiddleware } from "../middleware/permissionMiddleware.js";
+import roleMiddleware from "../middleware/roleMiddleware.js";
+import { enforceMachineLimit } from "../middleware/subscriptionMiddleware.js";
 
 const router = express.Router();
+const readRoles = [
+  "Super Admin",
+  "Admin",
+  "Plant Manager",
+  "Maintenance Engineer",
+  "Operator",
+  "Viewer",
+];
+const writeRoles = ["Super Admin", "Admin", "Plant Manager", "Maintenance Engineer"];
 
-// Read-or-manage: a Manager/Engineer holds machines:manage, a Viewer holds
-// machines:read; either can read.
-const canRead = anyPermissionMiddleware(["machines:read", "machines:manage"]);
+// Get all machines
+router.get("/", authMiddleware, roleMiddleware(readRoles), getMachines);
 
-router.get("/", authMiddleware, canRead, listMachines);
-router.get("/:id", authMiddleware, canRead, getMachine);
+// Get machine by ID
+router.get("/:id", authMiddleware, roleMiddleware(readRoles), getMachineById);
+
+// Create machine
+router.post(
+  "/",
+  authMiddleware,
+  roleMiddleware(writeRoles),
+  enforceMachineLimit,
+  createMachine
+);
+
+// Update machine
+router.put("/:id", authMiddleware, roleMiddleware(writeRoles), updateMachine);
+
+// Delete machine
+router.delete("/:id", authMiddleware, roleMiddleware(["Super Admin", "Admin"]), deleteMachine);
 
 export default router;

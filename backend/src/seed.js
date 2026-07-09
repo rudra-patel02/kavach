@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 
 import connectDB from "./config/db.js";
 import Machine from "./models/machine.js";
+import Notification from "./models/notification.js";
+import WorkOrder from "./models/workOrder.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,55 +18,88 @@ dotenv.config({
 await connectDB();
 
 await Machine.deleteMany({});
+await Notification.deleteMany({});
+await WorkOrder.deleteMany({});
 
-// Clean in-scope machines with per-metric thresholds. Health/status/healthScore
-// are derived from real readings by the health engine, so they start at their
-// defaults (Running / 100) until telemetry arrives.
 await Machine.insertMany([
   {
     machineId: "M001",
     name: "Compressor-01",
-    location: "Production Bay A",
-    linkedDeviceId: "DEV-001",
-    thresholds: [
-      { metric: "temperature", unit: "C", warnMax: 75, critMax: 90 },
-      { metric: "vibration", unit: "mm/s", warnMax: 0.6, critMax: 1.0 },
-      { metric: "oilLevel", unit: "%", warnMin: 40, critMin: 20 },
-    ],
+    department: "Production",
+    status: "Running",
+    health: 98,
+    temperature: 62,
+    vibration: 0.28,
+    power: 38,
+    efficiency: 96,
+    rpm: 1450,
+    humidity: 48,
+    pressure: 1.2,
+    energyConsumed: 420,
   },
   {
     machineId: "M002",
     name: "Pump-03",
-    location: "Utility Room",
-    linkedDeviceId: "DEV-002",
-    thresholds: [
-      { metric: "temperature", unit: "C", warnMax: 80, critMax: 95 },
-      { metric: "pressure", unit: "bar", warnMax: 2.0, critMax: 2.5 },
-    ],
+    department: "Utility",
+    status: "Warning",
+    health: 74,
+    temperature: 81,
+    vibration: 0.72,
+    power: 54,
+    efficiency: 82,
+    rpm: 1380,
+    humidity: 51,
+    pressure: 1.5,
+    energyConsumed: 610,
   },
   {
     machineId: "M003",
     name: "Boiler-02",
-    location: "Boiler House",
-    linkedDeviceId: "DEV-003",
-    thresholds: [
-      { metric: "temperature", unit: "C", warnMax: 90, critMax: 105 },
-      { metric: "pressure", unit: "bar", warnMax: 2.2, critMax: 2.8 },
-    ],
+    department: "Boiler",
+    status: "Critical",
+    health: 31,
+    temperature: 100,
+    vibration: 1.45,
+    power: 92,
+    efficiency: 59,
+    rpm: 1180,
+    humidity: 63,
+    pressure: 2.4,
+    energyConsumed: 980,
   },
   {
     machineId: "M004",
     name: "Conveyor-01",
-    location: "Packaging Line",
-    linkedDeviceId: "DEV-004",
-    thresholds: [
-      { metric: "temperature", unit: "C", warnMax: 70, critMax: 85 },
-      { metric: "rpm", unit: "rpm", warnMin: 1200, critMin: 1000 },
-    ],
+    department: "Packaging",
+    status: "Running",
+    health: 93,
+    temperature: 47,
+    vibration: 0.19,
+    power: 26,
+    efficiency: 97,
+    rpm: 1600,
+    humidity: 44,
+    pressure: 1.0,
+    energyConsumed: 300,
+  },
+  {
+    machineId: "M005",
+    name: "Cooling Tower",
+    department: "Cooling",
+    status: "Running",
+    health: 95,
+    temperature: 36,
+    vibration: 0.12,
+    power: 31,
+    efficiency: 98,
+    rpm: 1500,
+    humidity: 40,
+    pressure: 1.1,
+    energyConsumed: 280,
   },
 ]);
 
-console.log("✅ KAVACH machine database seeded (4 machines with thresholds).");
+console.log("✅ KAVACH machine database seeded successfully.");
 
 await mongoose.connection.close();
 

@@ -13,9 +13,6 @@ const backendUrl = stripApiPrefix(
 );
 
 const nextConfig: NextConfig = {
-  // Minimal, self-contained production server (only the traced runtime deps —
-  // no dev dependencies) for the Docker runner stage.
-  output: "standalone",
   allowedDevOrigins: ["127.0.0.1"],
   outputFileTracingRoot: frontendRoot,
   turbopack: {

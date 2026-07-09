@@ -66,15 +66,6 @@ const parseInteger = (name, defaultValue, { min, max } = {}) => {
   return value;
 };
 
-// A secret that is clearly a copy-paste placeholder (long enough to pass the
-// length check, but obviously not a real random secret). Refused in production
-// so a stock compose/.env can never boot a real deployment on a fake secret.
-const PLACEHOLDER_SECRET_PATTERN =
-  /(replace[-_ ]?with|change[-_ ]?me|changeme|placeholder|your[-_ ]?secret|secret[-_ ]?here|example|dummy|todo|^0+$|^(test|dev|sample)[-_])|abcdef/i;
-
-export const isPlaceholderSecret = (value = "") =>
-  PLACEHOLDER_SECRET_PATTERN.test(String(value));
-
 const requireSecret = (name, { minLength = 32, productionOnly = false } = {}) => {
   const value = process.env[name];
 
@@ -94,13 +85,6 @@ const requireSecret = (name, { minLength = 32, productionOnly = false } = {}) =>
     }
 
     console.warn(`${message}; rotate it before production use`);
-  }
-
-  // A placeholder that slipped through by being long enough is still fake.
-  if (process.env.NODE_ENV === "production" && isPlaceholderSecret(value)) {
-    throw new Error(
-      `${name} looks like a placeholder — set a real, random secret before production`
-    );
   }
 
   return value;

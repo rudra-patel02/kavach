@@ -1,88 +1,259 @@
 import mongoose from "mongoose";
 
-// The v1 work-order lifecycle is a strict forward chain (see build-spec.md /
-// CLAUDE.md): a work order is created (Open), assigned to an engineer
-// (Assigned), worked (In Progress) and closed (Resolved). Transitions are
-// forward-only and single-step; the enforcement lives in services/workOrders.js.
-export const WORK_ORDER_STATUSES = ["Open", "Assigned", "In Progress", "Resolved"];
+export const WORK_ORDER_STATUSES = [
+  "OPEN",
+  "ASSIGNED",
+  "IN_PROGRESS",
+  "WAITING_PARTS",
+  "COMPLETED",
+  "CANCELLED",
+];
 
-// A work order still occupying the machine (not yet Resolved). At most one of
-// these may exist per machine at a time — enforced both in the controller and
-// by the partial unique index below.
-export const ACTIVE_WORK_ORDER_STATUSES = ["Open", "Assigned", "In Progress"];
+export const WORK_ORDER_PRIORITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
 
-export const WORK_ORDER_PRIORITIES = ["Low", "Medium", "High", "Critical"];
+const noteSchema = new mongoose.Schema(
+  {
+    text: {
+      type: String,
+      required: true,
+    },
+    author: {
+      type: String,
+      default: "System",
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: true }
+);
 
-// Immutable audit trail of who moved the work order and when — satisfies the
-// "who/when is recorded" requirement without a separate audit surface.
+const attachmentSchema = new mongoose.Schema(
+  {
+    name: String,
+    url: String,
+    type: String,
+    uploadedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: true }
+);
+
 const historySchema = new mongoose.Schema(
   {
-    from: { type: String, default: "" },
-    to: { type: String, required: true },
-    by: { type: String, default: "" },
-    at: { type: Date, default: Date.now },
+    event: {
+      type: String,
+      required: true,
+    },
+    from: String,
+    to: String,
+    actor: {
+      type: String,
+      default: "System",
+    },
+    message: String,
+    at: {
+      type: Date,
+      default: Date.now,
+    },
   },
   { _id: false }
 );
 
-// Clean, in-scope WorkOrder for the rebuild (replaces the ~30-field legacy
-// model). Only the fields the spec's data model lists, plus a derived
-// resolvedAt (drives Part 3 MTTR) and the transition history. createdBy /
-// machineId / linkedAlertId are set server-side at creation and NEVER accepted
-// from an update body (mass-assignment guard in the controller).
+const notificationSnapshotSchema = new mongoose.Schema(
+  {
+    notificationId: String,
+    severity: String,
+    title: String,
+    message: String,
+    createdAt: Date,
+  },
+  { _id: false }
+);
+
 const workOrderSchema = new mongoose.Schema(
   {
-    // Not indexed at the field level: the partial unique index below already
-    // covers { machineId: 1 }; a second same-key index conflicts on build.
+    workOrderId: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    tenantId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    organizationId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    plantId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    assetId: {
+      type: String,
+      default: "",
+      index: true,
+    },
     machineId: {
       type: String,
       required: true,
     },
-    title: {
+    machineName: {
       type: String,
       required: true,
-      trim: true,
     },
-    description: {
+    department: {
       type: String,
-      default: "",
+      default: "Production",
+      index: true,
     },
     priority: {
       type: String,
       enum: WORK_ORDER_PRIORITIES,
+      default: "MEDIUM",
+      index: true,
+    },
+    severity: {
+      type: String,
+      enum: ["Critical", "High", "Medium", "Low"],
       default: "Medium",
       index: true,
     },
     status: {
       type: String,
       enum: WORK_ORDER_STATUSES,
-      default: "Open",
+      default: "OPEN",
       index: true,
     },
-    // The engineer this work order is assigned to (a User _id as a string). Only
-    // a Manager may set/change it. Empty until assigned.
-    assigneeId: {
+    assignedEngineer: {
       type: String,
       default: "",
       index: true,
     },
-    // The user who created the work order (a Manager). Server-owned.
     createdBy: {
+      type: String,
+      default: "System",
+      index: true,
+    },
+    description: {
       type: String,
       required: true,
     },
-    // The alert that triggered this work order, if any — the "closed loop" link.
-    linkedAlertId: {
+    maintenanceType: {
+      type: String,
+      enum: ["Preventive", "Corrective", "Predictive", "Emergency", "Inspection"],
+      default: "Predictive",
+      index: true,
+    },
+    probableCause: {
       type: String,
       default: "",
     },
-    // Set when the work order reaches Resolved. createdAt→resolvedAt is the
-    // repair interval the KPI engine averages into MTTR.
-    resolvedAt: {
-      type: Date,
+    aiRecommendation: {
+      type: String,
+      default: "",
+    },
+    estimatedDowntimeHours: {
+      type: Number,
+      default: 0,
+    },
+    estimatedHours: {
+      type: Number,
+      default: 0,
+    },
+    actualHours: {
+      type: Number,
+      default: 0,
+    },
+    estimatedRepairCost: {
+      type: Number,
+      default: 0,
+    },
+    costEstimate: {
+      type: Number,
+      default: 0,
+    },
+    actualCost: {
+      type: Number,
+      default: 0,
+    },
+    requiredParts: {
+      type: [
+        {
+          partNumber: String,
+          name: String,
+          quantity: Number,
+          status: {
+            type: String,
+            enum: ["Required", "Reserved", "Issued", "Consumed"],
+            default: "Required",
+          },
+          estimatedCost: Number,
+        },
+      ],
+      default: [],
+    },
+    approvalWorkflow: {
+      requestedBy: String,
+      approvedBy: String,
+      approvedAt: Date,
+      status: {
+        type: String,
+        enum: ["Not Required", "Pending", "Approved", "Rejected"],
+        default: "Not Required",
+        index: true,
+      },
+      comments: String,
+    },
+    maintenanceChecklist: {
+      type: [
+        {
+          label: String,
+          completed: {
+            type: Boolean,
+            default: false,
+          },
+          completedBy: String,
+          completedAt: Date,
+        },
+      ],
+      default: [],
+    },
+    completionNotes: {
+      type: String,
+      default: "",
+    },
+    dueDate: Date,
+    scheduledDate: Date,
+    completedAt: Date,
+    completedDate: Date,
+    approvalStatus: {
+      type: String,
+      enum: ["Not Required", "Pending", "Approved", "Rejected"],
+      default: "Not Required",
+      index: true,
+    },
+    notes: {
+      type: [noteSchema],
+      default: [],
+    },
+    attachments: {
+      type: [attachmentSchema],
+      default: [],
     },
     history: {
       type: [historySchema],
+      default: [],
+    },
+    notificationHistory: {
+      type: [notificationSnapshotSchema],
       default: [],
     },
   },
@@ -91,16 +262,17 @@ const workOrderSchema = new mongoose.Schema(
   }
 );
 
-// At most one active (not-yet-Resolved) work order per machine. A partial unique
-// index is the DB-level backstop; the controller checks first for a clean 409.
 workOrderSchema.index(
   { machineId: 1 },
   {
     unique: true,
-    partialFilterExpression: { status: { $in: ACTIVE_WORK_ORDER_STATUSES } },
+    partialFilterExpression: {
+      status: { $in: ["OPEN", "ASSIGNED", "IN_PROGRESS", "WAITING_PARTS"] },
+    },
   }
 );
-workOrderSchema.index({ assigneeId: 1, status: 1 });
 workOrderSchema.index({ createdAt: -1 });
+workOrderSchema.index({ dueDate: 1 });
+workOrderSchema.index({ organizationId: 1, plantId: 1, status: 1 });
 
 export default mongoose.model("WorkOrder", workOrderSchema);

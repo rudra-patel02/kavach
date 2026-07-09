@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-
+import ThemePersistence from "@/components/layout/ThemePersistence";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "KAVACH — Plant Decision Intelligence",
-  description: "Real telemetry-derived KPIs and closed-loop work orders for one plant.",
+  title: "KAVACH Industrial Dashboard",
+  description: "Real-time industrial monitoring and decision intelligence",
 };
 
 export default function RootLayout({
@@ -13,8 +13,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full">
-      <body className="min-h-full bg-slate-50 antialiased">{children}</body>
+    <html lang="en" className="h-full antialiased">
+      <body className="min-h-full flex flex-col">
+        <ThemePersistence />
+        {children}
+      </body>
     </html>
   );
 }

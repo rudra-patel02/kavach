@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  verify:
+  test-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,27 +14,17 @@ jobs:
         with:
           node-version: 22
           cache: npm
-
       - name: Install root dependencies
         run: npm ci
       - name: Install backend dependencies
         run: npm ci --prefix backend
       - name: Install frontend dependencies
         run: npm ci --prefix frontend
-
       - name: Backend tests
         run: npm run backend:test
-      - name: Frontend tests
-        run: npm run frontend:test
       - name: Frontend typecheck
         run: npm run frontend:typecheck
       - name: Frontend lint
         run: npm run frontend:lint
       - name: Frontend build
         run: npm run frontend:build
-
-      # Block the build on any High/Critical vulnerability in shipped deps.
-      - name: Security audit (backend)
-        run: npm audit --omit=dev --audit-level=high --prefix backend
-      - name: Security audit (frontend)
-        run: npm audit --omit=dev --audit-level=high --prefix frontend

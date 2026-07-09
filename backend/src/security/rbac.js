@@ -38,14 +38,6 @@ export const PERMISSION_MODULES = [
 ];
 
 export const ROLE_PERMISSIONS = {
-  Manager: [
-    "alerts:manage",
-    "dashboard:read",
-    "machines:manage",
-    "reports:read",
-    "users:manage",
-    "workorders:manage",
-  ],
   "Super Admin": ["*"],
   "Plant Admin": [
     "analytics:read",
