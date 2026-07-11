@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: kavach-backend
+    runtime: node
+    rootDir: backend
+    plan: starter
+    buildCommand: npm ci --omit=dev
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: IOT_ENABLED
+        value: "false"
+      - key: ENABLE_SENSOR_SIMULATION
+        value: "false"
+      - key: DEVICE_SECRET
+        sync: false
