@@ -13,8 +13,14 @@ const router = express.Router();
 const reportRoles = [
   "Super Admin",
   "Admin",
+  "Organization Admin",
+  "Plant Admin",
   "Plant Manager",
+  "Maintenance Manager",
+  "Engineer",
   "Maintenance Engineer",
+  "Operator",
+  "Viewer",
 ];
 
 router.post("/generate", authMiddleware, roleMiddleware(reportRoles), generateReport);

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { createMachine as createMachineRequest } from "@/lib/machines";
 
 export default function AddMachinePage() {
   const router = useRouter();
@@ -28,27 +29,14 @@ export default function AddMachinePage() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/api/machines", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(form),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.message || "Failed");
-        return;
-      }
+      await createMachineRequest(form);
 
       alert("Machine Added Successfully");
 
       router.push("/machines");
     } catch (err) {
       console.error(err);
-      alert("Server Error");
+      alert(err instanceof Error ? err.message : "Server Error");
     } finally {
       setLoading(false);
     }

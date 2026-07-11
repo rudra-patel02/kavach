@@ -15,6 +15,10 @@ const USER_MANAGEMENT_ROLES = [
 ];
 
 const normalizeEmail = (email = "") => email.trim().toLowerCase();
+const normalizeOptionalString = (value) => {
+  const normalized = String(value || "").trim();
+  return normalized || undefined;
+};
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const toSafeUser = (user) => {
@@ -44,9 +48,33 @@ const normalizeUserRole = (role) => {
   return ENTERPRISE_ROLES.includes(normalizedRole) ? normalizedRole : "Viewer";
 };
 
+const buildUserScope = (req) => {
+  const context = req.tenantContext || {};
+  const query = {};
+
+  if (context.tenantId) {
+    query.tenantId = context.tenantId;
+  }
+
+  if (context.organizationId && !context.isSuperAdmin) {
+    query.organizationId = context.organizationId;
+  }
+
+  if (
+    context.plantId &&
+    !context.isSuperAdmin &&
+    Array.isArray(context.plantIds) &&
+    context.plantIds.length > 0
+  ) {
+    query.plantIds = context.plantId;
+  }
+
+  return query;
+};
+
 export const getUsers = async (req, res) => {
   try {
-    const query = {};
+    const query = buildUserScope(req);
 
     if (req.query.search) {
       const search = String(req.query.search).trim();
@@ -118,7 +146,7 @@ export const createUser = async (req, res) => {
       activePlantId: req.body.activePlantId || "",
       department: req.body.department || "Production",
       email,
-      employeeId: req.body.employeeId || undefined,
+      employeeId: normalizeOptionalString(req.body.employeeId),
       name,
       notificationPreferences: req.body.notificationPreferences || undefined,
       organizationId: req.body.organizationId || "",
@@ -128,6 +156,7 @@ export const createUser = async (req, res) => {
       plantIds: Array.isArray(req.body.plantIds) ? req.body.plantIds : [],
       role,
       status: req.body.status || "Active",
+      tenantId: req.body.tenantId || req.tenantContext?.tenantId || req.user?.tenantId || "",
     });
     const safeUser = toSafeUser(user);
 
@@ -166,7 +195,10 @@ export const updateUser = async (req, res) => {
       return res.status(400).json({ success: false, message: "User id is required" });
     }
 
-    const user = await User.findById(req.params.id).select("+password +refreshToken");
+    const user = await User.findOne({
+      ...buildUserScope(req),
+      _id: req.params.id,
+    }).select("+password +refreshToken");
 
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
@@ -186,7 +218,10 @@ export const updateUser = async (req, res) => {
 
     for (const field of assignableFields) {
       if (req.body[field] !== undefined) {
-        user[field] = req.body[field];
+        user[field] =
+          field === "employeeId"
+            ? normalizeOptionalString(req.body[field])
+            : req.body[field];
       }
     }
 
@@ -275,7 +310,10 @@ export const updateUser = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findOne({
+      ...buildUserScope(req),
+      _id: req.params.id,
+    });
 
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });

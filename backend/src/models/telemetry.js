@@ -31,6 +31,21 @@ const telemetrySchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    tenantId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    organizationId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    plantId: {
+      type: String,
+      default: "",
+      index: true,
+    },
     timestamp: {
       type: Date,
       required: true,
@@ -63,5 +78,6 @@ const telemetrySchema = new mongoose.Schema(
 
 telemetrySchema.index({ machineId: 1, timestamp: -1 });
 telemetrySchema.index({ deviceId: 1, timestamp: -1 });
+telemetrySchema.index({ tenantId: 1, organizationId: 1, plantId: 1, timestamp: -1 });
 
 export default mongoose.model("Telemetry", telemetrySchema);

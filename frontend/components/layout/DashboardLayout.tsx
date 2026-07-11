@@ -1,8 +1,14 @@
 "use client";
 
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { hasAnyRole, useStoredToken, useStoredUser } from "@/lib/auth";
+import {
+  getStoredUser,
+  hasAnyRole,
+  hasToken,
+  useStoredToken,
+  useStoredUser,
+} from "@/lib/auth";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 
@@ -15,16 +21,28 @@ export default function DashboardLayout({ allowedRoles, children }: Props) {
   const router = useRouter();
   const token = useStoredToken();
   const user = useStoredUser();
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const effectiveToken =
+    isAuthReady && typeof window !== "undefined" ? (hasToken() ? "present" : null) : token;
+  const effectiveUser = isAuthReady ? user || getStoredUser() : user;
   const isAllowed =
-    !allowedRoles || allowedRoles.length === 0 || hasAnyRole(user?.role, allowedRoles);
+    !allowedRoles || allowedRoles.length === 0 || hasAnyRole(effectiveUser?.role, allowedRoles);
 
   useEffect(() => {
-    if (!token) {
+    const timer = window.setTimeout(() => {
+      setIsAuthReady(true);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (isAuthReady && !effectiveToken) {
       router.replace("/login");
     }
-  }, [router, token]);
+  }, [effectiveToken, isAuthReady, router]);
 
-  if (!token) {
+  if (!isAuthReady || !effectiveToken) {
     return <div className="min-h-screen bg-slate-950" />;
   }
 

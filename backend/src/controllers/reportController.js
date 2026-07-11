@@ -1,6 +1,7 @@
 import Machine from "../models/machine.js";
 import Notification from "../models/notification.js";
 import WorkOrder from "../models/workOrder.js";
+import { buildTenantScopedQuery } from "../middleware/tenantMiddleware.js";
 import {
   buildReport,
   reportToCsv,
@@ -9,11 +10,12 @@ import {
 } from "../services/reportService.js";
 import { createAuditLog } from "../services/auditService.js";
 
-const loadReportData = async () => {
+const loadReportData = async (req) => {
+  const scopedQuery = buildTenantScopedQuery(req);
   const [machines, notifications, workOrders] = await Promise.all([
-    Machine.find().sort({ machineId: 1 }).lean(),
-    Notification.find().sort({ createdAt: -1 }).limit(500).lean(),
-    WorkOrder.find().sort({ createdAt: -1 }).limit(500).lean(),
+    Machine.find(scopedQuery).sort({ machineId: 1 }).lean(),
+    Notification.find(scopedQuery).sort({ createdAt: -1 }).limit(500).lean(),
+    WorkOrder.find(scopedQuery).sort({ createdAt: -1 }).limit(500).lean(),
   ]);
 
   return {
@@ -78,7 +80,17 @@ const sendReport = async ({ format, report, req, res }) => {
 export const getReportCatalog = (req, res) => {
   res.json({
     formats: ["json", "pdf", "csv", "excel"],
+    interactiveCharts: [
+      "riskDistribution",
+      "departmentEnergy",
+      "workOrderStatus",
+      "oeeTrend",
+    ],
     periods: ["daily", "weekly", "monthly", "quarterly"],
+    scheduledDelivery: {
+      endpoint: "/api/enterprise/report-schedules",
+      supportsEmailDelivery: true,
+    },
     success: true,
     types: REPORT_TYPES,
   });
@@ -88,7 +100,7 @@ export const generateReport = async (req, res) => {
   try {
     const type = String(req.body?.type || req.params.type || "maintenance");
     const format = String(req.body?.format || req.query.format || "json").toLowerCase();
-    const data = await loadReportData();
+    const data = await loadReportData(req);
     const report = buildReport({ type, ...data });
 
     return sendReport({ format, report, req, res });
@@ -103,7 +115,7 @@ export const generateReport = async (req, res) => {
 export const downloadReportPdf = async (req, res) => {
   try {
     const type = String(req.params.type || "maintenance");
-    const data = await loadReportData();
+    const data = await loadReportData(req);
     const report = buildReport({ type, ...data });
 
     return sendReport({ format: "pdf", report, req, res });

@@ -14,8 +14,13 @@ router.get(
   authMiddleware,
   roleMiddleware([
     "Super Admin",
+    "Admin",
     "Plant Manager",
+    "Maintenance Manager",
     "Maintenance Engineer",
+    "Quality Engineer",
+    "Operator",
+    "Viewer",
   ]),
   getPredictiveOverview
 );

@@ -44,6 +44,7 @@ export const createAuditLog = async ({
       metadata: safeClone(metadata),
       newValue: safeClone(newValue),
       oldValue: safeClone(oldValue),
+      tenantId: req?.user?.tenantId || req?.body?.tenantId || req?.query?.tenantId || "",
       organizationId: req?.user?.organizationId || "",
       plantId:
         req?.user?.activePlantId ||
@@ -74,11 +75,13 @@ export const listAuditLogs = async ({
   action,
   from,
   limit = 200,
+  organizationId,
   plantId,
   query,
   resourceType,
   severity,
   status,
+  tenantId,
   to,
   userEmail,
 } = {}) => {
@@ -88,6 +91,8 @@ export const listAuditLogs = async ({
   if (resourceType) filters.resourceType = resourceType;
   if (severity) filters.severity = severity;
   if (status) filters.status = status;
+  if (tenantId) filters.tenantId = tenantId;
+  if (organizationId) filters.organizationId = organizationId;
   if (plantId) filters.plantId = plantId;
   if (userEmail) filters.userEmail = new RegExp(String(userEmail), "i");
 

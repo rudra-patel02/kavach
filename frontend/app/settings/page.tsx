@@ -13,6 +13,7 @@ import {
   UserRound,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { notifyAuthChanged } from "@/lib/auth";
 import {
   fetchSettings,
   updatePassword,
@@ -103,6 +104,7 @@ export default function SettingsPage() {
       const response = await updateProfileSettings({ name, department, phone });
       setProfile(response.profile);
       localStorage.setItem("user", JSON.stringify(response.profile));
+      notifyAuthChanged();
       setMessage("Profile updated.");
       setError(null);
     } catch (requestError) {
@@ -200,7 +202,10 @@ export default function SettingsPage() {
         ) : (
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
             <div className="space-y-6">
-              <section className="rounded-xl border border-slate-800 bg-slate-900/75 p-5">
+              <section
+                id="profile"
+                className="rounded-xl border border-slate-800 bg-slate-900/75 p-5"
+              >
                 <h2 className="flex items-center gap-2 text-xl font-bold text-white">
                   <UserRound size={20} className="text-cyan-300" />
                   Profile

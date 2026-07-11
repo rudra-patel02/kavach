@@ -33,6 +33,8 @@ type UsersResponse = {
   roles?: string[];
 };
 
+type UserUpdatePayload = Partial<UserRecord> & { password?: string };
+
 const roleOptions = [
   "Super Admin",
   "Plant Manager",
@@ -122,6 +124,19 @@ const emptyDraft = {
   status: "Active" as UserStatus,
 };
 
+const temporaryPasswordChars =
+  "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
+
+const generateTemporaryPassword = () => {
+  const values = new Uint32Array(16);
+  window.crypto.getRandomValues(values);
+
+  return Array.from(
+    values,
+    (value) => temporaryPasswordChars[value % temporaryPasswordChars.length]
+  ).join("");
+};
+
 export default function UserManagementPage() {
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [roles, setRoles] = useState(roleOptions);
@@ -196,7 +211,7 @@ export default function UserManagementPage() {
     }
   };
 
-  const updateUser = async (id: string, payload: Partial<UserRecord>) => {
+  const updateUser = async (id: string, payload: UserUpdatePayload) => {
     setSavingId(id);
 
     try {
@@ -221,6 +236,17 @@ export default function UserManagementPage() {
     } finally {
       setSavingId(null);
     }
+  };
+
+  const resetPassword = async (id: string) => {
+    const generatedPassword = generateTemporaryPassword();
+    const password = window.prompt("Temporary password", generatedPassword);
+
+    if (!password) {
+      return;
+    }
+
+    await updateUser(id, { password });
   };
 
   const deleteUser = async (id: string) => {
@@ -428,11 +454,7 @@ export default function UserManagementPage() {
                           </button>
                           <button
                             type="button"
-                            onClick={() =>
-                              void updateUser(user.id, {
-                                password: "ChangeMe123!",
-                              } as Partial<UserRecord> & { password: string })
-                            }
+                            onClick={() => void resetPassword(user.id)}
                             disabled={savingId === user.id}
                             className="inline-flex items-center gap-1 rounded-lg border border-amber-400/30 px-3 py-1.5 text-xs font-semibold text-amber-100 transition-colors hover:bg-amber-500/10 disabled:opacity-45"
                           >

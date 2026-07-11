@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 import Area from "../models/area.js";
 import Asset from "../models/asset.js";
 import Engineer from "../models/engineer.js";
@@ -153,6 +155,43 @@ const buildSort = (sort = "-createdAt") => {
   return allowed.has(key) ? { [key]: direction } : { createdAt: -1 };
 };
 
+const adaptOrganizationFilters = (Model, filters) => {
+  if (Model.modelName !== "Organization" || !filters.organizationId) {
+    return filters;
+  }
+
+  const organizationId = String(filters.organizationId);
+  const nextFilters = { ...filters };
+  delete nextFilters.organizationId;
+
+  nextFilters.$and = [
+    ...(Array.isArray(nextFilters.$and) ? nextFilters.$and : []),
+    {
+      $or: [
+        ...(mongoose.isValidObjectId(organizationId) ? [{ _id: organizationId }] : []),
+        { organizationCode: organizationId },
+      ],
+    },
+  ];
+
+  return nextFilters;
+};
+
+const organizationScopeQuery = (organizationId) => {
+  if (!organizationId) {
+    return {};
+  }
+
+  const value = String(organizationId);
+
+  return {
+    $or: [
+      ...(mongoose.isValidObjectId(value) ? [{ _id: value }] : []),
+      { organizationCode: value },
+    ],
+  };
+};
+
 export const listCollection = async (
   Model,
   { user, query = {}, searchFields = [], extraFilters = {} } = {}
@@ -174,9 +213,11 @@ export const listCollection = async (
     }));
   }
 
+  const modelFilters = adaptOrganizationFilters(Model, filters);
+
   const [items, total] = await Promise.all([
-    Model.find(filters).sort(buildSort(query.sort)).skip(skip).limit(limit).lean(),
-    Model.countDocuments(filters),
+    Model.find(modelFilters).sort(buildSort(query.sort)).skip(skip).limit(limit).lean(),
+    Model.countDocuments(modelFilters),
   ]);
 
   return {
@@ -305,7 +346,7 @@ export const buildEnterpriseDashboard = async ({ user = {}, query = {} } = {}) =
   const scope = getEnterpriseScope(user, query);
   const [organizations, regions, plants, assets, machines, workOrders, notifications, engineers, aiOverview] =
     await Promise.all([
-      Organization.find(scope.organizationId ? { _id: scope.organizationId } : {}).lean(),
+      Organization.find(organizationScopeQuery(scope.organizationId)).lean(),
       Region.find(scope.organizationId ? { organizationId: scope.organizationId } : {}).lean(),
       Plant.find(scope.organizationId ? { organizationId: scope.organizationId } : {}).lean(),
       Asset.find(scope).lean(),
@@ -458,7 +499,7 @@ export const buildEnterpriseDashboard = async ({ user = {}, query = {} } = {}) =
 
   await FleetAnalytics.create({
     organizationId: scope.organizationId || "",
-    plantId: scope.plantId || "",
+    plantId: typeof scope.plantId === "string" ? scope.plantId : "",
     period: "daily",
     metrics: dashboard.kpis,
     plantComparison: plantRollups,

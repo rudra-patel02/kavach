@@ -46,7 +46,6 @@ const backupLogSchema = new mongoose.Schema(
     },
     retentionExpiresAt: {
       type: Date,
-      index: true,
     },
     startedAt: {
       type: Date,

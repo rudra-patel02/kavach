@@ -53,7 +53,22 @@ export const hasAnyRole = (role: string | undefined, allowedRoles: string[]) => 
 };
 
 export const hasToken = () =>
-  typeof window !== "undefined" && Boolean(localStorage.getItem("token"));
+  typeof window !== "undefined" &&
+  Boolean(localStorage.getItem("token") || getAuthCookie("kavach_access_token"));
+
+const getAuthCookie = (name: string) => {
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  const prefix = `${name}=`;
+  const cookie = document.cookie
+    .split(";")
+    .map((item) => item.trim())
+    .find((item) => item.startsWith(prefix));
+
+  return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : null;
+};
 
 const subscribeToAuthStorage = (onStoreChange: () => void) => {
   if (typeof window === "undefined") {
@@ -85,9 +100,30 @@ const getStoredUserSnapshot = () =>
 const getServerStoredUserSnapshot = () => null;
 
 const getStoredTokenSnapshot = () =>
-  typeof window === "undefined" ? null : localStorage.getItem("token");
+  typeof window === "undefined"
+    ? null
+    : localStorage.getItem("token") || getAuthCookie("kavach_access_token");
 
-const getServerStoredTokenSnapshot = () => null;
+const getServerStoredTokenSnapshot = () => undefined;
+
+export const notifyAuthChanged = () => {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("kavach:auth-changed"));
+  }
+};
+
+export const clearStoredAuth = () => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  localStorage.removeItem("token");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("user");
+  document.cookie = "kavach_access_token=; Max-Age=0; path=/";
+  document.cookie = "kavach_refresh_token=; Max-Age=0; path=/api/auth";
+  notifyAuthChanged();
+};
 
 export const useStoredUser = () => {
   const rawUser = useSyncExternalStore(

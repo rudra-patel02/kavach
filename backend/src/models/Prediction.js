@@ -23,6 +23,21 @@ const predictionSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    tenantId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    organizationId: {
+      type: String,
+      default: "",
+      index: true,
+    },
+    plantId: {
+      type: String,
+      default: "",
+      index: true,
+    },
     machineName: {
       type: String,
       default: "",
@@ -88,5 +103,6 @@ const predictionSchema = new mongoose.Schema(
 
 predictionSchema.index({ machineId: 1, timestamp: -1 });
 predictionSchema.index({ riskPercent: -1, timestamp: -1 });
+predictionSchema.index({ tenantId: 1, organizationId: 1, plantId: 1, timestamp: -1 });
 
 export default mongoose.model("Prediction", predictionSchema);

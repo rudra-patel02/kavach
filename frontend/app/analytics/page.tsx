@@ -34,7 +34,7 @@ import {
   buildAnalyticsSeries,
   type AnalyticsPoint,
 } from "@/lib/enterpriseAnalytics";
-import { apiUrl } from "@/lib/api";
+import { authenticatedFetch } from "@/lib/api";
 import { useEnterpriseTelemetry } from "@/hooks/useEnterpriseTelemetry";
 
 const kpiToneClasses = {
@@ -177,10 +177,7 @@ export default function AnalyticsPage() {
     setIsExporting(true);
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(apiUrl("/api/analytics/export.csv"), {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const response = await authenticatedFetch("/api/analytics/export.csv");
 
       if (!response.ok) {
         throw new Error(`Export failed with status ${response.status}`);

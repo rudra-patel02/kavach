@@ -10,6 +10,10 @@ import {
 } from "../middleware/securityMiddleware.js";
 
 const normalizeEmail = (email = "") => email.trim().toLowerCase();
+const normalizeOptionalString = (value) => {
+  const normalized = String(value || "").trim();
+  return normalized || undefined;
+};
 
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -72,9 +76,9 @@ export const register = async (req, res) => {
     const email = normalizeEmail(String(req.body.email || ""));
     const password = String(req.body.password || "");
 
-    const role = req.body.role || "Viewer";
+    const role = "Viewer";
     const department = req.body.department || "Production";
-    const employeeId = req.body.employeeId || "";
+    const employeeId = normalizeOptionalString(req.body.employeeId);
     const phone = req.body.phone || "";
 
     if (!name || !email || !password) {
@@ -155,12 +159,12 @@ export const register = async (req, res) => {
       password: hashedPassword,
       role,
       department,
-      employeeId,
+      ...(employeeId ? { employeeId } : {}),
       phone,
-      tenantId: req.body.tenantId || "",
-      organizationId: req.body.organizationId || "",
-      plantIds: Array.isArray(req.body.plantIds) ? req.body.plantIds : [],
-      activePlantId: req.body.activePlantId || "",
+      tenantId: "",
+      organizationId: "",
+      plantIds: [],
+      activePlantId: "",
     });
 
     await createAuditLog({

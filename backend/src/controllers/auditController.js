@@ -25,7 +25,15 @@ const serializeAuditLog = (log) => ({
 
 export const getAuditLogs = async (req, res) => {
   try {
-    const logs = await listAuditLogs(req.query);
+    const logs = await listAuditLogs({
+      ...req.query,
+      organizationId:
+        req.tenantContext?.organizationId && !req.tenantContext?.isSuperAdmin
+          ? req.tenantContext.organizationId
+          : req.query.organizationId,
+      plantId: req.tenantContext?.plantId || req.query.plantId,
+      tenantId: req.tenantContext?.tenantId || req.query.tenantId,
+    });
 
     res.json({
       logs: logs.map(serializeAuditLog),
@@ -42,7 +50,16 @@ export const exportAuditLogs = async (req, res) => {
     const format = String(req.query.format || req.params.format || "csv")
       .trim()
       .toLowerCase();
-    const logs = (await listAuditLogs({ ...req.query, limit: 1000 })).map(
+    const logs = (await listAuditLogs({
+      ...req.query,
+      limit: 1000,
+      organizationId:
+        req.tenantContext?.organizationId && !req.tenantContext?.isSuperAdmin
+          ? req.tenantContext.organizationId
+          : req.query.organizationId,
+      plantId: req.tenantContext?.plantId || req.query.plantId,
+      tenantId: req.tenantContext?.tenantId || req.query.tenantId,
+    })).map(
       serializeAuditLog
     );
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");

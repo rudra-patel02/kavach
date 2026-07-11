@@ -1,4 +1,4 @@
-import { apiUrl, fetchJson } from "./api";
+import { authenticatedFetch, fetchJson } from "./api";
 import type {
   AuditLogsResponse,
   BackupConfigurationResponse,
@@ -40,10 +40,7 @@ export const fetchAuditLogs = (params: Record<string, string> = {}) => {
 };
 
 export const downloadAuditExport = async (format: "csv" | "excel" | "pdf") => {
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const response = await fetch(apiUrl(`/api/audit/export/${format}`), {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
+  const response = await authenticatedFetch(`/api/audit/export/${format}`);
 
   if (!response.ok) {
     throw new Error(`Audit export failed with status ${response.status}`);
@@ -69,10 +66,7 @@ export const fetchBackupConfiguration = () =>
   fetchJson<BackupConfigurationResponse>("/api/backup/configuration");
 
 export const downloadBackup = async () => {
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const response = await fetch(apiUrl("/api/backup/export"), {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
+  const response = await authenticatedFetch("/api/backup/export");
 
   if (!response.ok) {
     throw new Error(`Backup export failed with status ${response.status}`);

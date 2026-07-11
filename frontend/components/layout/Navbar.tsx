@@ -1,10 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Search, UserCircle, X } from "lucide-react";
-import { useStoredUser } from "@/lib/auth";
+import {
+  ChevronDown,
+  Loader2,
+  LogOut,
+  Search,
+  Settings,
+  UserCircle,
+  UserRound,
+  X,
+} from "lucide-react";
+import { apiUrl } from "@/lib/api";
+import { clearStoredAuth, useStoredUser } from "@/lib/auth";
 import { globalSearch } from "@/lib/search";
 import type { GlobalSearchResult } from "@/types/search";
 import NotificationCenter from "./NotificationCenter";
@@ -30,10 +40,13 @@ export default function Navbar() {
   );
   const [isSearching, setIsSearching] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const user = useStoredUser();
   const pathname = usePathname();
+  const router = useRouter();
   const searchRef = useRef<HTMLDivElement | null>(null);
+  const profileRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const breadcrumbs = useMemo(() => {
@@ -119,6 +132,14 @@ export default function Navbar() {
         setResults([]);
         setIsSearchFocused(false);
       }
+
+      if (
+        profileRef.current &&
+        event.target instanceof Node &&
+        !profileRef.current.contains(event.target)
+      ) {
+        setIsProfileOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClick);
@@ -137,6 +158,28 @@ export default function Navbar() {
     setRecentActions(nextActions);
     localStorage.setItem("kavach:recent-actions", JSON.stringify(nextActions));
   };
+
+  const handleLogout = async () => {
+    const refreshToken =
+      typeof window === "undefined" ? null : localStorage.getItem("refreshToken");
+
+    clearStoredAuth();
+    setIsProfileOpen(false);
+    router.replace("/login");
+
+    try {
+      await fetch(apiUrl("/api/auth/logout"), {
+        body: JSON.stringify({ refreshToken }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+    } catch {
+      // Local auth has already been cleared; logout should not strand the user.
+    }
+  };
+
+  const displayName = user?.name || user?.email || "Profile";
+  const displayRole = user?.role || "Viewer";
 
   return (
     <header className="h-20 bg-slate-950 border-b border-slate-800 flex items-center justify-between px-8">
@@ -260,7 +303,65 @@ export default function Navbar() {
           </div>
         ) : null}
 
-        <UserCircle size={36} className="text-cyan-400 cursor-pointer" />
+        <div ref={profileRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setIsProfileOpen((current) => !current)}
+            aria-expanded={isProfileOpen}
+            aria-haspopup="menu"
+            className="flex items-center gap-2 rounded-xl px-2 py-1 text-cyan-400 transition-colors hover:bg-slate-900 hover:text-cyan-300"
+          >
+            <UserCircle size={36} />
+            <ChevronDown
+              size={16}
+              className={`transition-transform ${isProfileOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+
+          {isProfileOpen ? (
+            <div
+              role="menu"
+              className="absolute right-0 top-14 z-50 w-64 overflow-hidden rounded-xl border border-slate-700 bg-slate-950 shadow-2xl shadow-black/40"
+            >
+              <div className="border-b border-slate-800 px-4 py-3">
+                <p className="truncate font-semibold text-white">{displayName}</p>
+                <p className="mt-0.5 truncate text-xs text-slate-400">
+                  {displayRole}
+                </p>
+              </div>
+
+              <Link
+                href="/settings#profile"
+                role="menuitem"
+                onClick={() => setIsProfileOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 text-sm text-slate-200 transition-colors hover:bg-cyan-500/10 hover:text-cyan-100"
+              >
+                <UserRound size={16} />
+                Profile
+              </Link>
+
+              <Link
+                href="/settings"
+                role="menuitem"
+                onClick={() => setIsProfileOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 text-sm text-slate-200 transition-colors hover:bg-cyan-500/10 hover:text-cyan-100"
+              >
+                <Settings size={16} />
+                Settings
+              </Link>
+
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => void handleLogout()}
+                className="flex w-full items-center gap-3 border-t border-slate-800 px-4 py-3 text-left text-sm text-red-100 transition-colors hover:bg-red-500/10"
+              >
+                <LogOut size={16} />
+                Logout
+              </button>
+            </div>
+          ) : null}
+        </div>
 
       </div>
 

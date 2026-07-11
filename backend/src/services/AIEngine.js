@@ -29,6 +29,9 @@ const getMachineIdentity = (machine = {}) => ({
   machineId: machine.machineId,
   machineName: machine.name || machine.machineName || "",
   department: machine.department || "Production",
+  organizationId: machine.organizationId || "",
+  plantId: machine.plantId || "",
+  tenantId: machine.tenantId || "",
 });
 
 const toDate = (value = new Date()) => {

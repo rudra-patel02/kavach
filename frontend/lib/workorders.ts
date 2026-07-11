@@ -1,4 +1,4 @@
-import { apiUrl, fetchJson } from "./api";
+import { apiUrl, authenticatedFetch, fetchJson } from "./api";
 import type {
   WorkOrderDeleteResponse,
   WorkOrderResponse,
@@ -105,10 +105,7 @@ export const getWorkOrderPrintUrl = (id: string) =>
   apiUrl(`/api/workorders/${encodeURIComponent(id)}/print`);
 
 const downloadBlob = async (url: string, filename: string) => {
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const response = await fetch(url, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
+  const response = await authenticatedFetch(url);
 
   if (!response.ok) {
     throw new Error(`Download failed with status ${response.status}`);
@@ -132,10 +129,7 @@ export const downloadWorkOrderExport = (format: "csv" | "excel" | "pdf") =>
   );
 
 export const printWorkOrder = async (id: string) => {
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-  const response = await fetch(getWorkOrderPrintUrl(id), {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
+  const response = await authenticatedFetch(getWorkOrderPrintUrl(id));
 
   if (!response.ok) {
     throw new Error(`Print view failed with status ${response.status}`);

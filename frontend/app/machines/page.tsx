@@ -85,7 +85,7 @@ export default function MachinesPage() {
 
       <input
         type="text"
-        placeholder="🔍 Search Machine..."
+        placeholder="Search Machine..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 mb-6 outline-none"
@@ -178,7 +178,7 @@ export default function MachinesPage() {
                         : "text-red-500"
                     }`}
                   >
-                    {Number(machine.temperature ?? 0).toFixed(1)}°C
+                    {Number(machine.temperature ?? 0).toFixed(1)} C
                   </td>
 
                   <td className="p-4">
@@ -226,7 +226,7 @@ export default function MachinesPage() {
 
       <div className="mt-10">
         <h2 className="text-2xl font-bold mb-4">
-          🏭 Digital Twin Factory
+          Digital Twin Factory
         </h2>
 
         <FactoryScene />

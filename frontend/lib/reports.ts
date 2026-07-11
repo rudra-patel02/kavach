@@ -1,4 +1,4 @@
-import { apiUrl, fetchJson } from "./api";
+import { authenticatedFetch, fetchJson } from "./api";
 
 export type ReportType =
   | "daily"
@@ -28,14 +28,11 @@ export const downloadReport = async (
   type: ReportType,
   format: ReportFormat = "pdf"
 ) => {
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const path =
     format === "pdf"
       ? `/api/reports/${type}/pdf`
       : `/api/reports/${type}?format=${format}`;
-  const response = await fetch(apiUrl(path), {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
+  const response = await authenticatedFetch(path);
 
   if (!response.ok) {
     throw new Error(`Report download failed with status ${response.status}`);

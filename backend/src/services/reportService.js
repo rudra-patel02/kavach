@@ -9,9 +9,13 @@ export const REPORT_TYPES = {
   quarterly: "Quarterly Report",
   machine: "Machine Report",
   maintenance: "Maintenance Report",
+  production: "Production Report",
+  downtime: "Downtime Report",
   energy: "Energy Report",
+  oee: "OEE Report",
   prediction: "Prediction Report",
   executive: "Executive Report",
+  "executive-summary": "Executive Summary Report",
   "plant-health": "Plant Health Report",
 };
 

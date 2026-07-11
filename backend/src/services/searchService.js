@@ -14,9 +14,13 @@ const toResult = ({ id, type, title, subtitle, href, score = 1, metadata = {} })
 });
 
 export const buildGlobalSearchResults = ({
+  organizations = [],
+  plants = [],
   query,
   machines,
   notifications,
+  predictions = [],
+  reports = [],
   workOrders,
   users,
 }) => {
@@ -29,6 +33,49 @@ export const buildGlobalSearchResults = ({
   const regex = new RegExp(escapeRegex(search), "i");
   const predictiveOverview = buildPredictiveOverview(machines);
   const results = [];
+
+  for (const organization of organizations) {
+    if (
+      regex.test(organization.name) ||
+      regex.test(organization.organizationCode) ||
+      regex.test(organization.industry) ||
+      regex.test(organization.headquartersCountry)
+    ) {
+      results.push(
+        toResult({
+          id: `organization:${organization._id}`,
+          type: "Organization",
+          title: organization.name,
+          subtitle: `${organization.industry || "Industrial Manufacturing"} - ${organization.status || "Active"}`,
+          href: "/enterprise/organizations",
+          score: regex.test(organization.name) ? 5 : 3,
+          metadata: organization,
+        })
+      );
+    }
+  }
+
+  for (const plant of plants) {
+    if (
+      regex.test(plant.name) ||
+      regex.test(plant.plantId) ||
+      regex.test(plant.country) ||
+      regex.test(plant.location) ||
+      regex.test(plant.plantManager)
+    ) {
+      results.push(
+        toResult({
+          id: `plant:${plant.plantId}`,
+          type: "Plant",
+          title: plant.name,
+          subtitle: `${plant.country || ""} ${plant.location || ""} - ${plant.status || "Active"}`,
+          href: "/enterprise/plants",
+          score: regex.test(plant.plantId) ? 5 : 3,
+          metadata: plant,
+        })
+      );
+    }
+  }
 
   for (const machine of machines) {
     if (
@@ -73,6 +120,27 @@ export const buildGlobalSearchResults = ({
     }
   }
 
+  for (const prediction of predictions) {
+    if (
+      regex.test(prediction.machineId) ||
+      regex.test(prediction.machineName) ||
+      regex.test(prediction.rootCauseSummary) ||
+      regex.test(String(prediction.riskPercent))
+    ) {
+      results.push(
+        toResult({
+          id: `prediction-record:${prediction._id}`,
+          type: "Prediction",
+          title: `${prediction.machineName || prediction.machineId} AI prediction`,
+          subtitle: `${prediction.riskPercent || 0}% risk, ${prediction.healthPercent || 0}% health`,
+          href: `/predictive?machine=${encodeURIComponent(prediction.machineId)}`,
+          score: 4,
+          metadata: prediction,
+        })
+      );
+    }
+  }
+
   for (const notification of notifications) {
     if (
       regex.test(notification.machineId) ||
@@ -84,7 +152,7 @@ export const buildGlobalSearchResults = ({
       results.push(
         toResult({
           id: `alert:${notification._id}`,
-          type: "Alert",
+          type: notification.type === "maintenance" ? "Notification" : "Alert",
           title: notification.title,
           subtitle: `${notification.machineName} - ${notification.severity}`,
           href: "/alerts",
@@ -106,8 +174,8 @@ export const buildGlobalSearchResults = ({
       results.push(
         toResult({
           id: `workOrder:${workOrder._id}`,
-          type: workOrder.assignedEngineer ? "Engineer" : "Work Order",
-          title: workOrder.assignedEngineer || workOrder.workOrderId,
+          type: "Work Order",
+          title: workOrder.workOrderId,
           subtitle: `${workOrder.machineName} - ${workOrder.status} - ${workOrder.priority}`,
           href: "/workorders",
           score: 3,
@@ -127,7 +195,7 @@ export const buildGlobalSearchResults = ({
       results.push(
         toResult({
           id: `user:${user._id}`,
-          type: "Engineer",
+          type: "User",
           title: user.name,
           subtitle: `${user.role} - ${user.department}`,
           href: "/users",
@@ -143,5 +211,26 @@ export const buildGlobalSearchResults = ({
     }
   }
 
-  return results.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title)).slice(0, 30);
+  for (const report of reports) {
+    if (
+      regex.test(report.name) ||
+      regex.test(report.reportType) ||
+      regex.test(report.frequency) ||
+      regex.test(report.format)
+    ) {
+      results.push(
+        toResult({
+          id: `report:${report._id}`,
+          type: "Report",
+          title: report.name,
+          subtitle: `${report.reportType} - ${report.frequency} - ${report.format}`,
+          href: "/enterprise/reports",
+          score: 3,
+          metadata: report,
+        })
+      );
+    }
+  }
+
+  return results.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
 };

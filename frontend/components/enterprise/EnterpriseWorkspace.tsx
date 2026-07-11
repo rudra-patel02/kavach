@@ -140,6 +140,9 @@ const formatDate = (value: unknown) => {
   }).format(date);
 };
 
+const asArray = <T,>(value: T[] | null | undefined): T[] =>
+  Array.isArray(value) ? value : [];
+
 function EnterpriseNav() {
   const pathname = usePathname();
 
@@ -293,21 +296,26 @@ function TopAssets({ assets }: { assets: EnterpriseAssetRisk[] }) {
 }
 
 function DashboardView({ dashboard }: { dashboard: EnterpriseDashboard }) {
+  const kpis: Partial<EnterpriseDashboard["kpis"]> = dashboard.kpis || {};
+  const trends = asArray(dashboard.trends);
+  const plantComparison = asArray(dashboard.plantComparison);
+  const topFailingAssets = asArray(dashboard.topFailingAssets);
+
   return (
     <>
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
-        <KpiCard detail="Enterprise-wide score" icon={Gauge} label="Health Score" tone="emerald" value={formatNumber(dashboard.kpis.enterpriseHealthScore, "%")} />
-        <KpiCard detail="Availability x performance x quality" icon={TrendingUp} label="OEE" value={formatNumber(dashboard.kpis.oee, "%")} />
-        <KpiCard detail="AI risk across assets" icon={AlertTriangle} label="AI Risk" tone="amber" value={formatNumber(dashboard.kpis.aiRisk, "%")} />
-        <KpiCard detail="Maintenance and downtime impact" icon={Zap} label="Revenue Impact" tone="red" value={formatCurrency(dashboard.kpis.revenueImpact)} />
-        <KpiCard detail="Open maintenance demand" icon={ClipboardList} label="Work Orders" value={dashboard.kpis.activeWorkOrders} />
-        <KpiCard detail="Unread critical alerts" icon={Bell} label="Critical Alerts" tone="red" value={dashboard.kpis.criticalAlerts} />
+        <KpiCard detail="Enterprise-wide score" icon={Gauge} label="Health Score" tone="emerald" value={formatNumber(kpis.enterpriseHealthScore, "%")} />
+        <KpiCard detail="Availability x performance x quality" icon={TrendingUp} label="OEE" value={formatNumber(kpis.oee, "%")} />
+        <KpiCard detail="AI risk across assets" icon={AlertTriangle} label="AI Risk" tone="amber" value={formatNumber(kpis.aiRisk, "%")} />
+        <KpiCard detail="Maintenance and downtime impact" icon={Zap} label="Revenue Impact" tone="red" value={formatCurrency(kpis.revenueImpact)} />
+        <KpiCard detail="Open maintenance demand" icon={ClipboardList} label="Work Orders" value={formatNumber(kpis.activeWorkOrders, "", 0)} />
+        <KpiCard detail="Unread critical alerts" icon={Bell} label="Critical Alerts" tone="red" value={formatNumber(kpis.criticalAlerts, "", 0)} />
       </section>
 
       <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <ChartPanel title="Enterprise Health and Risk">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={dashboard.trends}>
+            <LineChart data={trends}>
               <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
               <XAxis dataKey="time" stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
@@ -319,7 +327,7 @@ function DashboardView({ dashboard }: { dashboard: EnterpriseDashboard }) {
         </ChartPanel>
         <ChartPanel title="Maintenance Cost Forecast">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={dashboard.trends}>
+            <AreaChart data={trends}>
               <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
               <XAxis dataKey="time" stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
@@ -331,15 +339,17 @@ function DashboardView({ dashboard }: { dashboard: EnterpriseDashboard }) {
       </section>
 
       <section className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <PlantComparisonTable plants={dashboard.plantComparison} />
-        <TopAssets assets={dashboard.topFailingAssets} />
+        <PlantComparisonTable plants={plantComparison} />
+        <TopAssets assets={topFailingAssets} />
       </section>
     </>
   );
 }
 
 function FleetView({ dashboard }: { dashboard: EnterpriseDashboard }) {
-  const distribution = Object.entries(dashboard.fleet.failureDistribution).map(([name, value]) => ({
+  const fleet: Partial<EnterpriseDashboard["fleet"]> = dashboard.fleet || {};
+  const kpis: Partial<EnterpriseDashboard["kpis"]> = dashboard.kpis || {};
+  const distribution = Object.entries(fleet.failureDistribution || {}).map(([name, value]) => ({
     name,
     value,
   }));
@@ -353,10 +363,10 @@ function FleetView({ dashboard }: { dashboard: EnterpriseDashboard }) {
   return (
     <>
       <section className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <KpiCard detail="All assets with AI context" icon={Factory} label="Fleet Health" tone="emerald" value={formatNumber(dashboard.fleet.overallFleetHealth, "%")} />
-        <KpiCard detail="Critical risk machines" icon={AlertTriangle} label="Critical Machines" tone="red" value={dashboard.fleet.criticalMachines} />
-        <KpiCard detail="Maintenance cost exposure" icon={Wrench} label="Maintenance Cost" tone="violet" value={formatCurrency(dashboard.fleet.maintenanceCost)} />
-        <KpiCard detail="Enterprise energy usage" icon={Zap} label="Energy Usage" value={formatNumber(dashboard.kpis.energyUsage, " kWh")} />
+        <KpiCard detail="All assets with AI context" icon={Factory} label="Fleet Health" tone="emerald" value={formatNumber(fleet.overallFleetHealth, "%")} />
+        <KpiCard detail="Critical risk machines" icon={AlertTriangle} label="Critical Machines" tone="red" value={formatNumber(fleet.criticalMachines, "", 0)} />
+        <KpiCard detail="Maintenance cost exposure" icon={Wrench} label="Maintenance Cost" tone="violet" value={formatCurrency(fleet.maintenanceCost)} />
+        <KpiCard detail="Enterprise energy usage" icon={Zap} label="Energy Usage" value={formatNumber(kpis.energyUsage, " kWh")} />
       </section>
 
       <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
@@ -383,13 +393,13 @@ function FleetView({ dashboard }: { dashboard: EnterpriseDashboard }) {
               <YAxis dataKey="y" name="Health" stroke="#94a3b8" unit="%" type="number" />
               <ZAxis dataKey="z" range={[80, 420]} />
               <Tooltip cursor={{ strokeDasharray: "3 3" }} contentStyle={{ background: "#020617", border: "1px solid #334155", borderRadius: 8, color: "#e2e8f0" }} />
-              <Scatter data={dashboard.fleet.riskHeatmap} fill="#38bdf8" />
+              <Scatter data={asArray(fleet.riskHeatmap)} fill="#38bdf8" />
             </ScatterChart>
           </ResponsiveContainer>
         </ChartPanel>
         <ChartPanel title="Downtime Trend">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={dashboard.fleet.downtimeTrend}>
+            <AreaChart data={asArray(fleet.downtimeTrend)}>
               <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
               <XAxis dataKey="time" stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
@@ -400,7 +410,7 @@ function FleetView({ dashboard }: { dashboard: EnterpriseDashboard }) {
         </ChartPanel>
         <ChartPanel title="Energy Usage">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={dashboard.fleet.energyTrend}>
+            <BarChart data={asArray(fleet.energyTrend)}>
               <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
               <XAxis dataKey="time" stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
@@ -411,19 +421,21 @@ function FleetView({ dashboard }: { dashboard: EnterpriseDashboard }) {
         </ChartPanel>
       </section>
 
-      <PlantComparisonTable plants={dashboard.fleet.plantComparison} />
+      <PlantComparisonTable plants={asArray(fleet.plantComparison)} />
     </>
   );
 }
 
 function ExecutiveView({ dashboard }: { dashboard: EnterpriseDashboard }) {
+  const analytics: Partial<EnterpriseDashboard["crossPlantAnalytics"]> =
+    dashboard.crossPlantAnalytics || {};
   const insightCards = [
-    ["Best Plant", dashboard.crossPlantAnalytics.bestPerformingPlant?.name || "--"],
-    ["Worst Plant", dashboard.crossPlantAnalytics.worstPerformingPlant?.name || "--"],
-    ["Highest Downtime", dashboard.crossPlantAnalytics.highestDowntime?.name || "--"],
-    ["Highest Energy", dashboard.crossPlantAnalytics.highestEnergyConsumption?.name || "--"],
-    ["Highest Failure", dashboard.crossPlantAnalytics.highestFailureRate?.name || "--"],
-    ["Lowest OEE", dashboard.crossPlantAnalytics.lowestOee?.name || "--"],
+    ["Best Plant", analytics.bestPerformingPlant?.name || "--"],
+    ["Worst Plant", analytics.worstPerformingPlant?.name || "--"],
+    ["Highest Downtime", analytics.highestDowntime?.name || "--"],
+    ["Highest Energy", analytics.highestEnergyConsumption?.name || "--"],
+    ["Highest Failure", analytics.highestFailureRate?.name || "--"],
+    ["Lowest OEE", analytics.lowestOee?.name || "--"],
   ];
 
   return (
@@ -440,7 +452,7 @@ function ExecutiveView({ dashboard }: { dashboard: EnterpriseDashboard }) {
       <section className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
         <ChartPanel title="Revenue, Maintenance, and Downtime Cost">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={dashboard.crossPlantAnalytics.costComparison}>
+            <BarChart data={asArray(analytics.costComparison)}>
               <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" />
               <XAxis dataKey="name" stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
@@ -453,7 +465,7 @@ function ExecutiveView({ dashboard }: { dashboard: EnterpriseDashboard }) {
         <section className="rounded-lg border border-slate-800 bg-slate-900/75 p-5">
           <h2 className="text-xl font-bold text-white">AI Recommendations</h2>
           <div className="mt-5 space-y-3">
-            {dashboard.crossPlantAnalytics.recommendations.map((recommendation) => (
+            {asArray(analytics.recommendations).map((recommendation) => (
               <div key={recommendation} className="rounded-lg border border-cyan-400/20 bg-cyan-500/10 p-4 text-sm leading-6 text-cyan-50">
                 {recommendation}
               </div>
@@ -461,14 +473,14 @@ function ExecutiveView({ dashboard }: { dashboard: EnterpriseDashboard }) {
           </div>
         </section>
       </section>
-      <TopAssets assets={dashboard.topFailingAssets} />
+      <TopAssets assets={asArray(dashboard.topFailingAssets)} />
     </>
   );
 }
 
 function EntityTable({
-  columns,
-  items,
+  columns = [],
+  items = [],
   title,
 }: {
   columns: { key: string; label: string; render?: (item: EnterpriseEntity) => string }[];
@@ -523,9 +535,16 @@ function EntityView({
 
   const load = useCallback(async () => {
     setIsLoading(true);
-    const response = await fetchEnterpriseList(resource, { search: query, limit: 100 });
-    setItems(response.items);
-    setIsLoading(false);
+    try {
+      const response = await fetchEnterpriseList(resource, {
+        search: query,
+        limit: 100,
+      });
+
+      setItems(response.items ?? []);
+    } finally {
+      setIsLoading(false);
+    }
   }, [query, resource]);
 
   useEffect(() => {
@@ -543,13 +562,13 @@ function EntityView({
         country: "India",
         location: "Enterprise Zone",
         name: `Plant ${suffix}`,
-        organizationId: String(dashboard.scope?.organizationId || dashboard.plantComparison[0]?.plantId || "default-org"),
+        organizationId: String(dashboard.scope?.organizationId || asArray(dashboard.plantComparison)[0]?.plantId || "default-org"),
       },
       assets: {
         criticality: "High",
-        machineId: dashboard.topFailingAssets[0]?.machineId || "M001",
+        machineId: asArray(dashboard.topFailingAssets)[0]?.machineId || "M001",
         name: `Asset ${suffix}`,
-        plantId: dashboard.plantComparison[0]?.plantId || "default",
+        plantId: asArray(dashboard.plantComparison)[0]?.plantId || "default",
         replacementCost: 25000,
       },
       engineers: {
@@ -686,7 +705,7 @@ function WorkOrdersView({ dashboard }: { dashboard: EnterpriseDashboard }) {
       <section className="rounded-lg border border-slate-800 bg-slate-900/75 p-5">
         <h2 className="text-xl font-bold text-white">Enterprise Work Orders</h2>
         <div className="mt-5 space-y-3">
-          {dashboard.recentWorkOrders.map((order) => (
+          {asArray(dashboard.recentWorkOrders).map((order) => (
             <article key={String(order.workOrderId || order._id)} className="rounded-lg border border-slate-800 bg-slate-950/70 p-4">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>

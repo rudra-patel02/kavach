@@ -10,7 +10,6 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("Operator");
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -29,7 +28,6 @@ export default function RegisterPage() {
           name,
           email,
           password,
-          role,
         }),
       });
 
@@ -70,7 +68,7 @@ export default function RegisterPage() {
           color: "white",
         }}
       >
-        <h1>Create User</h1>
+        <h1>Create Account</h1>
 
         <input
           placeholder="Name"
@@ -93,22 +91,6 @@ export default function RegisterPage() {
           onChange={(e) => setPassword(e.target.value)}
           style={{ width: "100%", padding: 12, marginTop: 15 }}
         />
-
-        <select
-  value={role}
-  onChange={(e) => setRole(e.target.value)}
-  style={{
-    width: "100%",
-    padding: 12,
-    marginTop: 15,
-  }}
->
-  <option>Super Admin</option>
-  <option>Plant Manager</option>
-  <option>Maintenance Engineer</option>
-  <option>Operator</option>
-  <option>Viewer</option>
-</select>
 
         <button
           onClick={register}

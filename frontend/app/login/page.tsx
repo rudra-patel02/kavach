@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiUrl } from "@/lib/api";
+import { notifyAuthChanged, useStoredToken } from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
+  const token = useStoredToken();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -13,6 +15,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (token) {
+      router.replace("/");
+    }
+  }, [router, token]);
 
   const login = async () => {
     setError("");
@@ -60,6 +68,7 @@ export default function LoginPage() {
         localStorage.setItem("refreshToken", data.refreshToken);
       }
       localStorage.setItem("user", JSON.stringify(data.user));
+      notifyAuthChanged();
 
       router.replace("/");
     } catch {

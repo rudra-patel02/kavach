@@ -1,4 +1,4 @@
-import { apiUrl, fetchJson } from "./api";
+import { authenticatedFetch, fetchJson } from "./api";
 import type {
   CopilotChatResponse,
   CopilotReportResponse,
@@ -14,21 +14,16 @@ export const sendCopilotMessage = (message: string) =>
     body: JSON.stringify({ message }),
   });
 
-const getToken = () =>
-  typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
 export const streamCopilotMessage = async (
   message: string,
   onEvent: (event: CopilotStreamEvent) => void,
   history: { content: string; role: "assistant" | "user" }[] = []
 ) => {
-  const token = getToken();
-  const response = await fetch(apiUrl("/api/copilot/chat"), {
+  const response = await authenticatedFetch("/api/copilot/chat", {
     method: "POST",
     headers: {
       "Accept": "text/event-stream",
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify({
       history,

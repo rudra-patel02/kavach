@@ -1,3 +1,5 @@
+import { clearStoredAuth, notifyAuthChanged } from "./auth";
+
 const DEV_BACKEND_URL = "http://localhost:5000";
 const API_PREFIX = "/api";
 
@@ -73,7 +75,23 @@ export const apiUrl = (path: string) => {
 };
 
 const getToken = () =>
-  typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  typeof window !== "undefined"
+    ? localStorage.getItem("token") || getAuthCookie("kavach_access_token")
+    : null;
+
+const getAuthCookie = (name: string) => {
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  const prefix = `${name}=`;
+  const cookie = document.cookie
+    .split(";")
+    .map((item) => item.trim())
+    .find((item) => item.startsWith(prefix));
+
+  return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : null;
+};
 
 const refreshAccessToken = async () => {
   if (typeof window === "undefined") {
@@ -95,8 +113,7 @@ const refreshAccessToken = async () => {
   });
 
   if (!response.ok) {
-    localStorage.removeItem("token");
-    localStorage.removeItem("refreshToken");
+    clearStoredAuth();
     return null;
   }
 
@@ -118,10 +135,15 @@ const refreshAccessToken = async () => {
     localStorage.setItem("user", JSON.stringify(payload.user));
   }
 
+  notifyAuthChanged();
+
   return payload.token || null;
 };
 
-export const fetchJson = async <T>(path: string, init: RequestInit = {}) => {
+export const authenticatedFetch = async (
+  path: string,
+  init: RequestInit = {}
+) => {
   const method = String(init.method || "GET").toUpperCase();
   const canRetry = method === "GET";
   const makeRequest = (token: string | null) =>
@@ -160,6 +182,11 @@ export const fetchJson = async <T>(path: string, init: RequestInit = {}) => {
     response = await makeRequest(getToken());
   }
 
+  return response;
+};
+
+export const fetchJson = async <T>(path: string, init: RequestInit = {}) => {
+  const response = await authenticatedFetch(path, init);
   const contentType = response.headers.get("content-type") || "";
   const payload = contentType.includes("application/json")
     ? await response.json()

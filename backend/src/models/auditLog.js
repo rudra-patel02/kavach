@@ -53,6 +53,11 @@ const auditLogSchema = new mongoose.Schema(
       default: "",
       index: true,
     },
+    tenantId: {
+      type: String,
+      default: "",
+      index: true,
+    },
     organizationId: {
       type: String,
       default: "",
@@ -89,7 +94,6 @@ const auditLogSchema = new mongoose.Schema(
     },
     retentionExpiresAt: {
       type: Date,
-      index: true,
     },
   },
   { timestamps: true }

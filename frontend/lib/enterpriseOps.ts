@@ -35,7 +35,27 @@ export const fetchEnterpriseList = <T extends EnterpriseEntity>(
 ) =>
   fetchJson<EnterpriseListResponse<T>>(
     withQuery(`/api/enterprise/${resource}`, query)
-  );
+  ).then((response) => {
+    const legacyResponse = response as EnterpriseListResponse<T> & {
+      logs?: T[];
+    };
+
+    return {
+      ...response,
+      items: Array.isArray(response.items)
+        ? response.items
+        : Array.isArray(legacyResponse.logs)
+          ? legacyResponse.logs
+          : [],
+      pagination:
+        response.pagination || {
+          limit: 0,
+          page: 1,
+          pages: 1,
+          total: Array.isArray(legacyResponse.logs) ? legacyResponse.logs.length : 0,
+        },
+    };
+  });
 
 export const createEnterpriseEntity = <TResponse>(
   resource: string,

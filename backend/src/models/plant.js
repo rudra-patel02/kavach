@@ -61,11 +61,36 @@ const plantSchema = new mongoose.Schema(
       default: "Active",
       index: true,
     },
+    settings: {
+      oeeTarget: {
+        type: Number,
+        default: 85,
+      },
+      energyTargetKwh: {
+        type: Number,
+        default: 0,
+      },
+      shiftPattern: {
+        type: String,
+        default: "24x7",
+      },
+      safetyStockDays: {
+        type: Number,
+        default: 14,
+      },
+    },
   },
   { timestamps: true }
 );
 
 plantSchema.index({ organizationId: 1, status: 1 });
 plantSchema.index({ regionId: 1, country: 1, status: 1 });
+plantSchema.index({
+  name: "text",
+  plantId: "text",
+  country: "text",
+  location: "text",
+  plantManager: "text",
+});
 
 export default mongoose.model("Plant", plantSchema);

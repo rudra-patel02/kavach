@@ -47,8 +47,7 @@ const userSchema = new mongoose.Schema(
 
     employeeId: {
       type: String,
-      unique: true,
-      sparse: true,
+      trim: true,
     },
 
     phone: {
@@ -142,6 +141,16 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+  }
+);
+
+userSchema.index(
+  { employeeId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      employeeId: { $exists: true, $type: "string", $gt: "" },
+    },
   }
 );
 
