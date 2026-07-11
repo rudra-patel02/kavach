@@ -113,6 +113,12 @@ export const getSystemHealth = async (req, res) => {
     success: true,
     system: {
       ...health,
+      api: {
+        averageLatencyMs: health.diagnostics.averageLatencyMs || 0,
+        errorRate: health.diagnostics.errorRate || 0,
+        requests: health.diagnostics.requests || 0,
+        routes: (health.diagnostics.routes || []).slice(0, 20),
+      },
       diagnostics: {
         ...health.diagnostics,
         routes: health.diagnostics.routes.slice(0, 20),

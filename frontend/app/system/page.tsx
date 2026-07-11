@@ -29,6 +29,69 @@ const formatUptime = (seconds = 0) => {
   return `${hours}h ${minutes}m`;
 };
 
+const defaultHealth: SystemHealthResponse["system"] = {
+  api: {
+    averageLatencyMs: 0,
+    errorRate: 0,
+    requests: 0,
+    routes: [],
+  },
+  cpu: {
+    cores: 0,
+    loadAverage: [],
+    usagePercent: 0,
+  },
+  database: {
+    state: "unknown",
+  },
+  memory: {
+    freeSystemMb: 0,
+    heapUsedMb: 0,
+    rssMb: 0,
+    totalSystemMb: 0,
+  },
+  mqtt: {
+    connected: false,
+    started: false,
+  },
+  socket: {
+    connections: 0,
+  },
+  uptimeSeconds: 0,
+};
+
+const normalizeHealth = (
+  system?: Partial<SystemHealthResponse["system"]> | null
+): SystemHealthResponse["system"] => ({
+  ...defaultHealth,
+  ...system,
+  api: {
+    ...defaultHealth.api,
+    ...(system?.api || {}),
+    routes: system?.api?.routes || [],
+  },
+  cpu: {
+    ...defaultHealth.cpu,
+    ...(system?.cpu || {}),
+  },
+  database: {
+    ...defaultHealth.database,
+    ...(system?.database || {}),
+  },
+  memory: {
+    ...defaultHealth.memory,
+    ...(system?.memory || {}),
+  },
+  mqtt: {
+    ...defaultHealth.mqtt,
+    ...(system?.mqtt || {}),
+  },
+  socket: {
+    ...defaultHealth.socket,
+    ...(system?.socket || {}),
+  },
+});
+
 export default function SystemPage() {
   const [health, setHealth] = useState<SystemHealthResponse["system"] | null>(
     null
@@ -39,9 +102,10 @@ export default function SystemPage() {
   const [error, setError] = useState<string | null>(null);
 
   const loadHealth = useCallback(async () => {
+    setIsLoading(true);
     try {
       const response = await fetchSystemHealth();
-      setHealth(response.system);
+      setHealth(normalizeHealth(response.system));
       setError(null);
     } catch (requestError) {
       setError(
@@ -49,6 +113,7 @@ export default function SystemPage() {
           ? requestError.message
           : "Failed to load system health"
       );
+      setHealth(normalizeHealth(null));
     } finally {
       setIsLoading(false);
     }
@@ -90,6 +155,8 @@ export default function SystemPage() {
     }
   };
 
+  const safeHealth = normalizeHealth(health);
+
   return (
     <DashboardLayout allowedRoles={systemRoles}>
       <div className="min-h-[calc(100vh-9rem)] space-y-6 text-white">
@@ -121,14 +188,14 @@ export default function SystemPage() {
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {[
-            { icon: Activity, label: "CPU", value: `${health?.cpu.usagePercent ?? 0}%` },
-            { icon: HardDrive, label: "Memory RSS", value: `${health?.memory.rssMb ?? 0} MB` },
-            { icon: Database, label: "Database", value: health?.database.state || "unknown" },
-            { icon: Wifi, label: "Sockets", value: health?.socket.connections ?? 0 },
-            { icon: Server, label: "MQTT", value: health?.mqtt.connected ? "connected" : "offline" },
-            { icon: Activity, label: "API Latency", value: `${health?.api.averageLatencyMs ?? 0} ms` },
-            { icon: Activity, label: "Error Rate", value: `${health?.api.errorRate ?? 0}%` },
-            { icon: Server, label: "Uptime", value: formatUptime(health?.uptimeSeconds) },
+            { icon: Activity, label: "CPU", value: `${safeHealth.cpu.usagePercent}%` },
+            { icon: HardDrive, label: "Memory RSS", value: `${safeHealth.memory.rssMb} MB` },
+            { icon: Database, label: "Database", value: safeHealth.database.state },
+            { icon: Wifi, label: "Sockets", value: safeHealth.socket.connections },
+            { icon: Server, label: "MQTT", value: safeHealth.mqtt.connected ? "connected" : "offline" },
+            { icon: Activity, label: "API Latency", value: `${safeHealth.api.averageLatencyMs} ms` },
+            { icon: Activity, label: "Error Rate", value: `${safeHealth.api.errorRate}%` },
+            { icon: Server, label: "Uptime", value: formatUptime(safeHealth.uptimeSeconds) },
           ].map((item) => {
             const Icon = item.icon;
             return (
@@ -161,7 +228,7 @@ export default function SystemPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(health?.api.routes || []).map((route) => (
+                  {safeHealth.api.routes.map((route) => (
                     <tr key={route.route} className="border-t border-slate-800">
                       <td className="py-3 text-slate-300">{route.route}</td>
                       <td className="py-3 text-slate-300">{route.count}</td>
