@@ -63,6 +63,8 @@ export const startDeviceHeartbeatMonitor = ({
     });
   }, intervalMs);
 
+  timer.unref?.();
+
   return () => {
     clearInterval(timer);
   };

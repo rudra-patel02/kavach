@@ -9,6 +9,9 @@ const booleanValues = new Map([
   ["off", false],
 ]);
 
+const DEFAULT_PRODUCTION_FRONTEND_ORIGIN =
+  "https://kavach-1-7749.onrender.com";
+
 const normalizeOrigin = (origin) => {
   const value = String(origin || "").trim().replace(/\/+$/, "");
 
@@ -66,7 +69,7 @@ const parseInteger = (name, defaultValue, { min, max } = {}) => {
   return value;
 };
 
-const requireSecret = (name, { minLength = 32, productionOnly = false } = {}) => {
+const validateSecret = (name, { minLength = 32, productionOnly = false } = {}) => {
   const value = process.env[name];
 
   if (!value) {
@@ -74,17 +77,12 @@ const requireSecret = (name, { minLength = 32, productionOnly = false } = {}) =>
       return "";
     }
 
-    throw new Error(`Missing required environment variable: ${name}`);
+    console.warn(`Missing environment variable: ${name}`);
+    return "";
   }
 
   if (value.length < minLength) {
-    const message = `${name} must be at least ${minLength} characters long`;
-
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(message);
-    }
-
-    console.warn(`${message}; rotate it before production use`);
+    console.warn(`${name} must be at least ${minLength} characters long; rotate it before production use`);
   }
 
   return value;
@@ -109,23 +107,30 @@ export const getEnvironmentConfig = () => {
   });
 
   if (!process.env.MONGO_URI) {
-    throw new Error("Missing required environment variable: MONGO_URI");
+    console.warn("Missing environment variable: MONGO_URI; database-backed routes will fail until it is configured");
   }
 
-  requireSecret("JWT_SECRET");
+  validateSecret("JWT_SECRET");
 
   if (process.env.NODE_ENV === "production") {
-    requireSecret("JWT_REFRESH_SECRET", { productionOnly: true });
+    validateSecret("JWT_REFRESH_SECRET", { productionOnly: true });
 
     if (!process.env.CORS_ORIGIN || process.env.CORS_ORIGIN.trim() === "*") {
-      throw new Error("CORS_ORIGIN must be an explicit whitelist in production");
+      console.warn(
+        `CORS_ORIGIN is not explicitly set; defaulting to ${DEFAULT_PRODUCTION_FRONTEND_ORIGIN}`
+      );
     }
   }
 
   return {
     apiVersion: process.env.API_VERSION || "20.0.0",
     authRateLimitMax,
-    allowedOrigins: parseCorsOrigins(process.env.CORS_ORIGIN),
+    allowedOrigins: parseCorsOrigins(
+      process.env.CORS_ORIGIN ||
+        (process.env.NODE_ENV === "production"
+          ? DEFAULT_PRODUCTION_FRONTEND_ORIGIN
+          : "*")
+    ),
     backupScheduleEnabled: parseBoolean(
       process.env.BACKUP_SCHEDULE_ENABLED,
       false

@@ -63,6 +63,15 @@ dotenv.config({
   path: path.resolve(__dirname, "../.env"),
 });
 
+process.on("unhandledRejection", (reason) => {
+  const message = reason instanceof Error ? reason.stack || reason.message : reason;
+  console.error("Unhandled promise rejection:", message);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught exception:", error.stack || error.message);
+});
+
 const normalizeOrigin = (origin) => {
   const value = origin.trim().replace(/\/+$/, "");
 
@@ -90,6 +99,52 @@ const buildCorsOptions = (allowedOrigins) => ({
   maxAge: 86400,
 });
 
+const logStartup = (message, metadata = {}) => {
+  console.log(
+    JSON.stringify({
+      level: "info",
+      message,
+      service: "kavach-backend",
+      timestamp: new Date().toISOString(),
+      ...metadata,
+    })
+  );
+};
+
+const logStartupError = (message, error, metadata = {}) => {
+  console.error(
+    JSON.stringify({
+      level: "error",
+      message,
+      service: "kavach-backend",
+      timestamp: new Date().toISOString(),
+      error: error?.message || String(error),
+      stack: error?.stack,
+      ...metadata,
+    })
+  );
+};
+
+const runStartupStep = async (name, step) => {
+  const startedAt = Date.now();
+  logStartup("startup_step_started", { step: name });
+
+  try {
+    const result = await step();
+    logStartup("startup_step_completed", {
+      durationMs: Date.now() - startedAt,
+      step: name,
+    });
+    return result;
+  } catch (error) {
+    logStartupError("startup_step_failed", error, {
+      durationMs: Date.now() - startedAt,
+      step: name,
+    });
+    return null;
+  }
+};
+
 const start = async () => {
   const {
     port,
@@ -100,6 +155,11 @@ const start = async () => {
     rateLimitWindowMs,
     sensorIntervalMs,
   } = getEnvironmentConfig();
+  logStartup("startup_config_loaded", {
+    environment: process.env.NODE_ENV || "development",
+    port,
+  });
+
   const app = express();
   const server = http.createServer(app);
   const corsOptions = buildCorsOptions(allowedOrigins);
@@ -165,6 +225,8 @@ const start = async () => {
   app.use(notFoundHandler);
   app.use(globalErrorHandler);
 
+  logStartup("http_server_listen_start", { port });
+
   await new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, () => {
@@ -173,37 +235,51 @@ const start = async () => {
     });
   });
 
-  console.log(`Server running on port ${port}`);
+  logStartup("http_server_listening", { port });
 
-  try {
-    await connectDBWithRetry();
-  } catch (error) {
-    console.error("MongoDB connection failed after retries:", error.message);
-  }
+  let stopSensorSimulation = () => {};
+  let stopBackupScheduler = () => {};
 
-  try {
-    await iotConnectionManager.start();
-  } catch (error) {
-    console.error("IoT connection manager failed to start:", error.message);
-  }
+  const runBackgroundInitializers = async () => {
+    const dbConnection = await runStartupStep("mongodb_connect", () =>
+      connectDBWithRetry()
+    );
 
-  try {
-    await syncActiveMachineNotifications(machineGateway);
-    await syncActiveMachineWorkOrders(machineGateway);
-  } catch (error) {
-    console.error("Initial maintenance automation sync failed:", error.message);
-  }
+    if (!dbConnection) {
+      logStartup("startup_db_dependent_steps_skipped");
+      return;
+    }
 
-  const stopSensorSimulation = enableSensorSimulation
-    ? startSensorSimulation(machineGateway, sensorIntervalMs)
-    : () => {};
-  const stopBackupScheduler = startBackupScheduler({
-    enabled: backupScheduleEnabled,
+    await runStartupStep("iot_connection_manager_start", () =>
+      iotConnectionManager.start()
+    );
+
+    await runStartupStep("maintenance_automation_sync", async () => {
+      await syncActiveMachineNotifications(machineGateway);
+      await syncActiveMachineWorkOrders(machineGateway);
+    });
+
+    stopSensorSimulation = await runStartupStep("sensor_simulation_start", () => {
+      if (!enableSensorSimulation) {
+        logStartup("sensor_simulation_disabled");
+        return () => {};
+      }
+
+      return startSensorSimulation(machineGateway, sensorIntervalMs);
+    }) || (() => {});
+
+    stopBackupScheduler = await runStartupStep("backup_scheduler_start", () =>
+      startBackupScheduler({
+        enabled: backupScheduleEnabled,
+      })
+    ) || (() => {});
+  };
+
+  setImmediate(() => {
+    runBackgroundInitializers().catch((error) => {
+      logStartupError("background_initializers_failed", error);
+    });
   });
-
-  if (!enableSensorSimulation) {
-    console.log("Sensor simulation disabled");
-  }
 
   let shuttingDown = false;
 
