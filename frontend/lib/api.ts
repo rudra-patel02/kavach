@@ -3,8 +3,23 @@ import { clearStoredAuth, notifyAuthChanged } from "./auth";
 const API_PREFIX = "/api";
 
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
+const enforceHttps = (value: string) => {
+  const trimmed = value.trim();
+
+  try {
+    const url = new URL(trimmed);
+
+    if (url.protocol === "http:") {
+      url.protocol = "https:";
+    }
+
+    return trimTrailingSlash(url.toString());
+  } catch {
+    return trimTrailingSlash(trimmed);
+  }
+};
 const stripApiPrefix = (value: string) =>
-  trimTrailingSlash(value).replace(/\/api$/i, "");
+  enforceHttps(value).replace(/\/api$/i, "");
 
 const normalizePath = (path: string) => (path.startsWith("/") ? path : `/${path}`);
 
@@ -33,7 +48,7 @@ export const getApiBaseUrl = () => {
     throw new Error("NEXT_PUBLIC_API_URL is required");
   }
 
-  return trimTrailingSlash(configuredUrl);
+  return enforceHttps(configuredUrl);
 };
 
 export const getSocketBaseUrl = () => {
@@ -50,7 +65,7 @@ export const getSocketBaseUrl = () => {
 
 export const apiUrl = (path: string) => {
   if (/^https?:\/\//i.test(path)) {
-    return path;
+    return enforceHttps(path);
   }
 
   return joinApiBaseAndPath(getApiBaseUrl(), path);
