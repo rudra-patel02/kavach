@@ -41,10 +41,13 @@ export const SUPPORTED_EDGE_DEVICES = [
 ];
 
 export const getDeviceRegistrationConfig = ({
-  apiBaseUrl = process.env.PUBLIC_API_BASE_URL || "http://localhost:5000",
+  apiBaseUrl =
+    process.env.PUBLIC_API_BASE_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    "https://kavach-spgh.onrender.com",
   deviceId,
   machineId,
-  mqttBrokerUrl = process.env.MQTT_BROKER_URL || "mqtt://localhost:1883",
+  mqttBrokerUrl = process.env.MQTT_BROKER_URL || "mqtt://mqtt:1883",
 } = {}) => ({
   api: {
     heartbeatEndpoint: `${apiBaseUrl}/api/iot/devices/${deviceId || "{deviceId}"}/heartbeat`,

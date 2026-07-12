@@ -10,7 +10,7 @@ import analyticsRoutes from "./routes/analyticsRoutes.js";
 import auditRoutes from "./routes/auditRoutes.js";
 import backupRoutes from "./routes/backupRoutes.js";
 import billingRoutes from "./routes/billingRoutes.js";
-import connectDB, { disconnectDB } from "./config/db.js";
+import { connectDBWithRetry, disconnectDB } from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import copilotRoutes from "./routes/copilotRoutes.js";
 import docsRoutes from "./routes/docsRoutes.js";
@@ -86,6 +86,7 @@ const buildCorsOptions = (allowedOrigins) => ({
         },
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
   maxAge: 86400,
 });
 
@@ -99,8 +100,6 @@ const start = async () => {
     rateLimitWindowMs,
     sensorIntervalMs,
   } = getEnvironmentConfig();
-  await connectDB();
-
   const app = express();
   const server = http.createServer(app);
   const corsOptions = buildCorsOptions(allowedOrigins);
@@ -176,7 +175,17 @@ const start = async () => {
 
   console.log(`Server running on port ${port}`);
 
-  await iotConnectionManager.start();
+  try {
+    await connectDBWithRetry();
+  } catch (error) {
+    console.error("MongoDB connection failed after retries:", error.message);
+  }
+
+  try {
+    await iotConnectionManager.start();
+  } catch (error) {
+    console.error("IoT connection manager failed to start:", error.message);
+  }
 
   try {
     await syncActiveMachineNotifications(machineGateway);

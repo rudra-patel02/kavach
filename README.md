@@ -65,10 +65,10 @@ npm run frontend:dev
 
 Default local URLs:
 
-- Frontend: `http://localhost:3000`
-- Backend: `http://localhost:5000`
-- API docs: `http://localhost:5000/api/docs`
-- Public health: `http://localhost:5000/api/health`
+- Frontend: `https://kavach-1-7749.onrender.com`
+- Backend: `https://kavach-spgh.onrender.com`
+- API docs: `https://kavach-spgh.onrender.com/api/docs`
+- Public health: `https://kavach-spgh.onrender.com/api/health`
 
 ## Environment Variables
 

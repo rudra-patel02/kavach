@@ -1,14 +1,10 @@
 import { clearStoredAuth, notifyAuthChanged } from "./auth";
 
-const DEV_BACKEND_URL = "http://localhost:5000";
 const API_PREFIX = "/api";
 
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
 const stripApiPrefix = (value: string) =>
   trimTrailingSlash(value).replace(/\/api$/i, "");
-
-const isLocalHostname = (hostname: string) =>
-  hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
 
 const normalizePath = (path: string) => (path.startsWith("/") ? path : `/${path}`);
 
@@ -33,37 +29,23 @@ const joinApiBaseAndPath = (baseUrl: string, path: string) => {
 export const getApiBaseUrl = () => {
   const configuredUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
 
-  if (configuredUrl) {
-    return trimTrailingSlash(configuredUrl);
+  if (!configuredUrl) {
+    throw new Error("NEXT_PUBLIC_API_URL is required");
   }
 
-  if (typeof window !== "undefined") {
-    const { hostname, origin } = window.location;
-
-    if (isLocalHostname(hostname)) {
-      return DEV_BACKEND_URL;
-    }
-
-    return origin;
-  }
-
-  return DEV_BACKEND_URL;
+  return trimTrailingSlash(configuredUrl);
 };
 
 export const getSocketBaseUrl = () => {
-  const configuredUrl = process.env.NEXT_PUBLIC_SOCKET_URL?.trim();
+  const configuredUrl =
+    process.env.NEXT_PUBLIC_SOCKET_URL?.trim() ||
+    process.env.NEXT_PUBLIC_API_URL?.trim();
 
-  if (configuredUrl) {
-    return stripApiPrefix(configuredUrl);
+  if (!configuredUrl) {
+    throw new Error("NEXT_PUBLIC_SOCKET_URL or NEXT_PUBLIC_API_URL is required");
   }
 
-  const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
-
-  if (configuredApiUrl) {
-    return stripApiPrefix(configuredApiUrl);
-  }
-
-  return DEV_BACKEND_URL;
+  return stripApiPrefix(configuredUrl);
 };
 
 export const apiUrl = (path: string) => {

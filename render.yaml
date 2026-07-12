@@ -10,8 +10,6 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 5000
       - key: MONGO_URI
         sync: false
       - key: JWT_SECRET
@@ -19,7 +17,11 @@ services:
       - key: JWT_REFRESH_SECRET
         sync: false
       - key: CORS_ORIGIN
-        sync: false
+        value: https://kavach-1-7749.onrender.com
+      - key: MONGO_CONNECT_ATTEMPTS
+        value: "5"
+      - key: MONGO_CONNECT_RETRY_MS
+        value: "5000"
       - key: IOT_ENABLED
         value: "false"
       - key: ENABLE_SENSOR_SIMULATION

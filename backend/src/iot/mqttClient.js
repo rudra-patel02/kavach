@@ -7,7 +7,7 @@ const parseNumber = (value, fallback) => {
 };
 
 export const getMqttConfig = () => ({
-  brokerUrl: process.env.MQTT_BROKER_URL || "mqtt://localhost:1883",
+  brokerUrl: process.env.MQTT_BROKER_URL || "mqtt://mqtt:1883",
   clientId:
     process.env.MQTT_CLIENT_ID ||
     `kavach-backend-${process.pid}-${Date.now().toString(36)}`,

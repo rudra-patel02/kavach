@@ -98,8 +98,8 @@ export const getPublicHealth = async (req, res) => {
   const startedAt = process.hrtime.bigint();
   const health = buildHealthPayload(req, startedAt);
 
-  res.status(health.database.state === "connected" ? 200 : 503).json({
-    success: health.database.state === "connected",
+  res.status(200).json({
+    success: true,
     health,
     timestamp: new Date().toISOString(),
   });

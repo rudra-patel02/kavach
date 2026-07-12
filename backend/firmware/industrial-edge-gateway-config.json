@@ -4,7 +4,7 @@
   "deviceType": "Industrial Edge Gateway",
   "protocol": "MQTT",
   "mqtt": {
-    "brokerUrl": "mqtt://localhost:1883",
+    "brokerUrl": "mqtt://mqtt:1883",
     "registerTopic": "kavach/device/register",
     "heartbeatTopic": "kavach/device/edge-gateway-001/heartbeat",
     "telemetryTopic": "kavach/device/edge-gateway-001/telemetry",

@@ -1,10 +1,11 @@
 import json
 import random
 import time
+import os
 
 import paho.mqtt.client as mqtt
 
-BROKER = "localhost"
+BROKER = os.getenv("MQTT_BROKER_HOST", "mqtt")
 DEVICE_ID = "rpi-001"
 MACHINE_ID = "M-103"
 DEVICE_SECRET = "replace-with-device-shared-secret"
