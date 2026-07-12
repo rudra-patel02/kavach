@@ -22,11 +22,19 @@ const enforceHttps = (value: string) => {
 const stripApiPrefix = (value: string) =>
   enforceHttps(value).replace(/\/api$/i, "");
 
-const backendUrl = stripApiPrefix(
+const publicApiUrl = enforceHttps(
   process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || ""
 );
+const publicSocketUrl = enforceHttps(
+  process.env.NEXT_PUBLIC_SOCKET_URL || publicApiUrl
+);
+const backendUrl = stripApiPrefix(publicApiUrl);
 
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_API_URL: publicApiUrl,
+    NEXT_PUBLIC_SOCKET_URL: publicSocketUrl,
+  },
   outputFileTracingRoot: frontendRoot,
   turbopack: {
     root: frontendRoot,
