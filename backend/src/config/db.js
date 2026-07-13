@@ -47,6 +47,12 @@ const connectDB = async () => {
     throw new Error("MONGO_URI is required");
   }
 
+  if (/[<>]/.test(mongoUri)) {
+    throw new Error(
+      "MONGO_URI contains placeholder tokens; configure a real MongoDB connection string"
+    );
+  }
+
   if (mongoose.connection.readyState === 1) {
     return mongoose.connection;
   }

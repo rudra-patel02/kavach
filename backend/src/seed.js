@@ -7,6 +7,7 @@ import connectDB from "./config/db.js";
 import Machine from "./models/machine.js";
 import Notification from "./models/notification.js";
 import WorkOrder from "./models/workOrder.js";
+import { ensureSeededAdminUser } from "./services/adminUserService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -100,6 +101,19 @@ await Machine.insertMany([
 ]);
 
 console.log("✅ KAVACH machine database seeded successfully.");
+
+const adminResult = await ensureSeededAdminUser();
+
+console.log(
+  JSON.stringify({
+    level: "info",
+    message: "seeded_admin_user_ready",
+    email: adminResult.email,
+    passwordUpdated: adminResult.passwordUpdated,
+    storedPasswordIsBcrypt: adminResult.storedPasswordIsBcrypt,
+    userId: adminResult.userId,
+  })
+);
 
 await mongoose.connection.close();
 
