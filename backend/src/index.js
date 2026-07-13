@@ -135,6 +135,14 @@ const start = async () => {
     port,
   });
 
+  const dbConnection = await runStartupStep("mongodb_connect", () =>
+    connectDBWithRetry()
+  );
+
+  if (!dbConnection) {
+    throw new Error("MongoDB connection failed; refusing to start HTTP server");
+  }
+
   const app = express();
   const server = http.createServer(app);
   const corsOptions = buildCorsOptions(allowedOrigins, {
@@ -219,15 +227,6 @@ const start = async () => {
   let stopBackupScheduler = () => {};
 
   const runBackgroundInitializers = async () => {
-    const dbConnection = await runStartupStep("mongodb_connect", () =>
-      connectDBWithRetry()
-    );
-
-    if (!dbConnection) {
-      logStartup("startup_db_dependent_steps_skipped");
-      return;
-    }
-
     await runStartupStep("iot_connection_manager_start", () =>
       iotConnectionManager.start()
     );
