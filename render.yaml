@@ -18,6 +18,8 @@ services:
         sync: false
       - key: CORS_ORIGIN
         value: https://kavach-1-7749.onrender.com
+      - key: CORS_CREDENTIALS
+        value: "true"
       - key: MONGO_CONNECT_ATTEMPTS
         value: "5"
       - key: MONGO_CONNECT_RETRY_MS

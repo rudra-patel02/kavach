@@ -27,6 +27,7 @@ import systemRoutes from "./routes/systemRoutes.js";
 import tenantRoutes from "./routes/tenantRoutes.js";
 import workOrderRoutes from "./routes/workOrderRoutes.js";
 import { createIoTConnectionManager } from "./iot/connectionManager.js";
+import { buildCorsOptions } from "./config/cors.js";
 import { getEnvironmentConfig } from "./config/environment.js";
 import { startSensorSimulation } from "./services/SensorService.js";
 import { startBackupScheduler } from "./services/backupService.js";
@@ -70,33 +71,6 @@ process.on("unhandledRejection", (reason) => {
 
 process.on("uncaughtException", (error) => {
   console.error("Uncaught exception:", error.stack || error.message);
-});
-
-const normalizeOrigin = (origin) => {
-  const value = origin.trim().replace(/\/+$/, "");
-
-  try {
-    return new URL(value).origin;
-  } catch {
-    return value;
-  }
-};
-
-const buildCorsOptions = (allowedOrigins) => ({
-  origin:
-    allowedOrigins === "*"
-      ? "*"
-      : (origin, callback) => {
-          if (!origin || allowedOrigins.includes(normalizeOrigin(origin))) {
-            callback(null, true);
-          } else {
-            callback(new Error("Origin is not allowed by CORS"));
-          }
-        },
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
-  maxAge: 86400,
 });
 
 const logStartup = (message, metadata = {}) => {
@@ -154,6 +128,7 @@ const start = async () => {
     rateLimitMax,
     rateLimitWindowMs,
     sensorIntervalMs,
+    corsCredentials,
   } = getEnvironmentConfig();
   logStartup("startup_config_loaded", {
     environment: process.env.NODE_ENV || "development",
@@ -162,7 +137,9 @@ const start = async () => {
 
   const app = express();
   const server = http.createServer(app);
-  const corsOptions = buildCorsOptions(allowedOrigins);
+  const corsOptions = buildCorsOptions(allowedOrigins, {
+    credentials: corsCredentials,
+  });
   const socketServer = createSocketServer(server, corsOptions);
   const { io, gateway: machineGateway } = socketServer;
   const iotConnectionManager = createIoTConnectionManager({
@@ -179,8 +156,9 @@ const start = async () => {
   app.use(securityHeaders);
   app.use(secureCookies);
   app.use(compression());
-  app.use(rateLimit({ max: rateLimitMax, windowMs: rateLimitWindowMs }));
   app.use(cors(corsOptions));
+  app.options(/.*/, cors(corsOptions));
+  app.use(rateLimit({ max: rateLimitMax, windowMs: rateLimitWindowMs }));
   app.use(express.json({ limit: "1mb" }));
   app.use(sanitizeRequest);
   app.use(tenantContext);

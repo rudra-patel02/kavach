@@ -26,6 +26,7 @@ services:
       JWT_SECRET: replace-with-a-random-secret-at-least-32-characters-long
       JWT_REFRESH_SECRET: replace-with-a-second-random-secret-at-least-32-characters
       CORS_ORIGIN: ${FRONTEND_ORIGIN:-https://kavach-1-7749.onrender.com}
+      CORS_CREDENTIALS: ${CORS_CREDENTIALS:-true}
       ENABLE_SENSOR_SIMULATION: "true"
       SENSOR_INTERVAL_MS: 1500
       IOT_ENABLED: "true"

@@ -137,6 +137,7 @@ export const getEnvironmentConfig = () => {
     ),
     bruteForceMaxFailures,
     bruteForceWindowMs,
+    corsCredentials: parseBoolean(process.env.CORS_CREDENTIALS, true),
     enableSensorSimulation: parseBoolean(
       process.env.ENABLE_SENSOR_SIMULATION,
       false
