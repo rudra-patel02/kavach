@@ -18,6 +18,19 @@ test("extracts MongoDB URI metadata without credentials", () => {
   assert.equal(JSON.stringify(metadata).includes("user"), false);
 });
 
+test("extracts metadata from standard multi-host MongoDB URIs", () => {
+  const metadata = getMongoUriMetadata(
+    "mongodb://user:secret@host-a.example:27017,host-b.example:27017/test?ssl=true"
+  );
+
+  assert.deepEqual(metadata, {
+    configured: true,
+    database: "test",
+    hosts: ["host-a.example:27017", "host-b.example:27017"],
+    protocol: "mongodb",
+  });
+});
+
 test("reports missing MongoDB URI as unconfigured", () => {
   assert.deepEqual(getMongoUriMetadata(""), {
     configured: false,

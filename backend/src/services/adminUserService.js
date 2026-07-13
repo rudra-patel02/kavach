@@ -47,6 +47,7 @@ export const ensureSeededAdminUser = async ({
     },
     {
       new: true,
+      returnDocument: "after",
       runValidators: true,
       setDefaultsOnInsert: true,
       upsert: true,

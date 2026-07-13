@@ -20,8 +20,17 @@ export const getMongoUriMetadata = (mongoUri = process.env.MONGO_URI) => {
   }
 
   try {
-    const url = new URL(value);
-    const hosts = url.host ? url.host.split(",").filter(Boolean) : [];
+    const sanitizedValue = value.replace(
+      /^(mongodb(?:\+srv)?:\/\/)([^/@]+@)?([^/?]+)/,
+      (match, protocol, credentials = "", hosts = "") =>
+        `${protocol}${credentials}${hosts.split(",")[0] || ""}`
+    );
+    const url = new URL(sanitizedValue);
+    const hosts =
+      value
+        .match(/^(?:mongodb(?:\+srv)?:\/\/)(?:[^/@]+@)?([^/?]+)/)?.[1]
+        ?.split(",")
+        .filter(Boolean) || [];
     const database = url.pathname.replace(/^\/+/, "").split("?")[0] || "";
 
     return {

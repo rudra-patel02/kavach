@@ -6,7 +6,6 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 import aiRoutes from "./routes/aiRoutes.js";
-import adminRepairRoutes from "./routes/adminRepairRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
 import auditRoutes from "./routes/auditRoutes.js";
 import backupRoutes from "./routes/backupRoutes.js";
@@ -173,7 +172,6 @@ const start = async () => {
   app.use(tenantContext);
   app.use(requestMetrics);
 
-  app.use("/api/admin", adminRepairRoutes);
   app.use("/api/auth", authRoutes);
   app.use("/api/ai", aiRoutes);
   app.use("/api/analytics", analyticsRoutes);
