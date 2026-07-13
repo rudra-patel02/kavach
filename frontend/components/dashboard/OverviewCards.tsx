@@ -1,17 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchMachines } from "@/lib/machines";
-import socket from "@/lib/socket";
-import type { MachineData } from "@/types/machine";
 import {
-  Cpu,
   Activity,
   AlertTriangle,
   Brain,
-  Zap,
+  Cpu,
   Thermometer,
+  Zap,
 } from "lucide-react";
+import { fetchMachines } from "@/lib/machines";
+import socket from "@/lib/socket";
+import type { MachineData } from "@/types/machine";
 
 export default function OverviewCards() {
   const [machines, setMachines] = useState<MachineData[]>([]);
@@ -19,7 +19,7 @@ export default function OverviewCards() {
   useEffect(() => {
     fetchMachines()
       .then((data) => setMachines(data))
-      .catch(console.error);
+      .catch(() => setMachines([]));
 
     const handleMachineUpdate = (data: MachineData[]) => {
       setMachines(data);
@@ -37,7 +37,7 @@ export default function OverviewCards() {
   const avgHealth =
     machines.length > 0
       ? (
-          machines.reduce((sum, m) => sum + (m.health || 0), 0) /
+          machines.reduce((sum, machine) => sum + (machine.health || 0), 0) /
           machines.length
         ).toFixed(1)
       : "0";
@@ -45,81 +45,81 @@ export default function OverviewCards() {
   const avgTemperature =
     machines.length > 0
       ? (
-          machines.reduce((sum, m) => sum + (m.temperature || 0), 0) /
-          machines.length
+          machines.reduce(
+            (sum, machine) => sum + (machine.temperature || 0),
+            0
+          ) / machines.length
         ).toFixed(1)
       : "0";
 
   const criticalAlerts = machines.filter(
-    (m) => m.status === "Critical"
+    (machine) => machine.status === "Critical"
   ).length;
 
   const energy =
     machines.length > 0
-      ? machines
-          .reduce((sum, m) => sum + (m.power || 0), 0)
-          .toFixed(0)
+      ? machines.reduce((sum, machine) => sum + (machine.power || 0), 0).toFixed(0)
       : "0";
 
   const cards = [
     {
+      color: "text-cyan-400",
+      icon: Cpu,
       title: "Machines",
       value: totalMachines,
-      icon: Cpu,
-      color: "text-cyan-400",
     },
     {
+      color: "text-green-400",
+      icon: Activity,
       title: "Plant Health",
       value: `${avgHealth}%`,
-      icon: Activity,
-      color: "text-green-400",
     },
     {
+      color: "text-red-400",
+      icon: AlertTriangle,
       title: "Critical Alerts",
       value: criticalAlerts,
-      icon: AlertTriangle,
-      color: "text-red-400",
     },
     {
+      color: "text-yellow-400",
+      icon: Zap,
       title: "Energy",
       value: `${energy} kW`,
-      icon: Zap,
-      color: "text-yellow-400",
     },
     {
-      title: "Avg Temp",
-      value: `${avgTemperature}°C`,
-      icon: Thermometer,
       color: "text-orange-400",
+      icon: Thermometer,
+      title: "Avg Temp",
+      value: `${avgTemperature} C`,
     },
     {
+      color: "text-purple-400",
+      icon: Brain,
       title: "AI Confidence",
       value: "96%",
-      icon: Brain,
-      color: "text-purple-400",
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
       {cards.map((card) => {
         const Icon = card.icon;
 
         return (
           <div
             key={card.title}
-            className="bg-slate-900 rounded-2xl border border-slate-800 p-6 hover:border-cyan-500 transition-all duration-300"
+            className="rounded-xl border border-slate-800 bg-slate-900 p-6 transition-all duration-300 hover:-translate-y-0.5 hover:border-cyan-500"
           >
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-slate-400 text-sm">{card.title}</p>
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm text-slate-400">{card.title}</p>
 
-                <h2 className={`text-4xl font-bold mt-3 ${card.color}`}>
+                <h2 className={`mt-3 text-4xl font-bold ${card.color}`}>
                   {card.value}
                 </h2>
               </div>
 
-              <Icon size={42} className={card.color} />
+              <Icon size={42} className={`${card.color} shrink-0`} />
             </div>
           </div>
         );

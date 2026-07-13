@@ -1,12 +1,13 @@
 "use client";
 
 import {
-CircularProgressbar,
-buildStyles,
+  CircularProgressbar,
+  buildStyles,
 } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -15,6 +16,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import { fetchMachine } from "@/lib/machines";
 import type { MachineData } from "@/types/machine";
 
@@ -25,14 +27,30 @@ export default function MachineDetails() {
   const [machine, setMachine] = useState<MachineData | null>(null);
   const [liveHealth, setLiveHealth] = useState(98);
   const [liveTemperature, setLiveTemperature] = useState(62);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
- useEffect(() => {
-  if (!id) return;
+  useEffect(() => {
+    if (!id) return;
 
-  fetchMachine(id)
-    .then(setMachine)
-    .catch((err) => console.error(err));
-}, [id]);
+    fetchMachine(id)
+      .then((response) => {
+        setMachine(response);
+        setLiveHealth(Number(response.health ?? 98));
+        setLiveTemperature(Number(response.temperature ?? 62));
+        setError(null);
+      })
+      .catch((requestError: unknown) => {
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : "Unable to load machine details"
+        );
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [id]);
 
   useEffect(() => {
   const interval = setInterval(() => {
@@ -58,11 +76,30 @@ export default function MachineDetails() {
   return () => clearInterval(interval);
 }, []);
 
-  if (!machine) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
-        Loading...
-      </div>
+      <DashboardLayout>
+        <div className="flex min-h-[420px] items-center justify-center rounded-xl border border-slate-800 bg-slate-900/70 text-cyan-200">
+          <span className="inline-flex items-center gap-2 font-semibold">
+            <Loader2 size={20} className="animate-spin" />
+            Loading machine details
+          </span>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error || !machine) {
+    return (
+      <DashboardLayout>
+        <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-6 text-red-100">
+          <div className="flex items-center gap-3">
+            <AlertTriangle size={22} />
+            <h1 className="text-xl font-bold">Machine unavailable</h1>
+          </div>
+          <p className="mt-2 text-sm">{error || "Machine was not found."}</p>
+        </div>
+      </DashboardLayout>
     );
   }
 
@@ -75,15 +112,24 @@ export default function MachineDetails() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-8">
+    <DashboardLayout>
+      <div className="space-y-6 text-white">
 
-      <h1 className="text-4xl font-bold mb-8">
-        {machine.name}
-      </h1>
+      <section>
+        <p className="text-sm font-semibold uppercase tracking-wide text-cyan-300">
+          Machine Detail
+        </p>
+        <h1 className="mt-2 text-3xl font-bold md:text-4xl">
+          {machine.name}
+        </h1>
+        <p className="mt-2 text-sm text-slate-400">
+          {machine.machineId} - {machine.department}
+        </p>
+      </section>
 
-      <div className="grid md:grid-cols-4 gap-6 mb-8">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
 
-        <div className="bg-slate-900 rounded-xl p-6 flex flex-col items-center">
+        <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-6 flex flex-col items-center">
   <p className="text-slate-400 mb-4">Health</p>
 
   <div className="w-28 h-28">
@@ -103,7 +149,7 @@ export default function MachineDetails() {
     />
   </div>
 </div>
-        <div className="bg-slate-900 rounded-xl p-6">
+        <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-6">
           <p className="text-slate-400">Status</p>
 
           <h2
@@ -119,7 +165,7 @@ export default function MachineDetails() {
           </h2>
         </div>
 
-        <div className="bg-slate-900 rounded-xl p-6">
+        <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-6">
           <p className="text-slate-400">Health</p>
 
           <h2 className="text-3xl font-bold text-cyan-400">
@@ -127,14 +173,14 @@ export default function MachineDetails() {
           </h2>
         </div>
 
-        <div className="bg-slate-900 rounded-xl p-6 flex flex-col items-center">
+        <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-6 flex flex-col items-center">
   <p className="text-slate-400 mb-4">Temperature</p>
 
   <div className="w-28 h-28">
     <CircularProgressbar
       value={liveTemperature}
       maxValue={120}
-      text={`${liveTemperature}°`}
+      text={`${liveTemperature} C`}
       styles={buildStyles({
         textColor: "#fb923c",
         pathColor:
@@ -151,9 +197,9 @@ export default function MachineDetails() {
 
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid gap-6 lg:grid-cols-2">
 
-        <div className="bg-slate-900 rounded-xl p-6">
+        <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-6">
 
           <h2 className="text-2xl font-semibold mb-4">
             Live Temperature
@@ -175,7 +221,7 @@ export default function MachineDetails() {
 
         </div>
 
-        <div className="bg-slate-900 rounded-xl p-6">
+        <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-6">
 
           <h2 className="text-2xl font-semibold mb-4">
             AI Analysis
@@ -227,6 +273,7 @@ export default function MachineDetails() {
 
       </div>
 
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

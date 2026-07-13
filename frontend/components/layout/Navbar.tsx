@@ -182,21 +182,22 @@ export default function Navbar() {
   const displayRole = user?.role || "Viewer";
 
   return (
-    <header className="h-20 bg-slate-950 border-b border-slate-800 flex items-center justify-between px-8">
+    <header className="border-b border-slate-800 bg-slate-950 px-4 py-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
 
-      <div>
-        <h2 className="text-2xl font-bold text-white">
+      <div className="min-w-0">
+        <h2 className="truncate text-xl font-bold text-white sm:text-2xl">
           {breadcrumbs.at(-1)}
         </h2>
 
-        <p className="text-slate-400 text-sm">
+        <p className="truncate text-sm text-slate-400">
           {breadcrumbs.join(" / ")}
         </p>
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex flex-wrap items-center justify-end gap-3 sm:gap-4">
 
-        <div ref={searchRef} className="relative">
+        <div ref={searchRef} className="relative order-last w-full sm:order-none sm:w-auto">
           <div className="flex items-center bg-slate-900 rounded-xl px-4 py-2">
 
             {isSearching ? (
@@ -211,7 +212,7 @@ export default function Navbar() {
               onFocus={() => setIsSearchFocused(true)}
               onChange={(event) => handleQueryChange(event.target.value)}
               placeholder="Command palette"
-              className="w-72 bg-transparent outline-none ml-3 text-white placeholder:text-slate-500"
+              className="ml-3 min-w-0 flex-1 bg-transparent text-white outline-none placeholder:text-slate-500 sm:w-72"
             />
 
             {query ? (
@@ -235,7 +236,7 @@ export default function Navbar() {
             (isSearchFocused &&
               query.trim().length < 2 &&
               recentActions.length > 0)) ? (
-            <div className="absolute right-0 top-12 z-50 w-[440px] overflow-hidden rounded-xl border border-slate-700 bg-slate-950 shadow-2xl shadow-black/40">
+            <div className="absolute right-0 top-12 z-50 w-full overflow-hidden rounded-xl border border-slate-700 bg-slate-950 shadow-2xl shadow-black/40 sm:w-[440px]">
               {error ? (
                 <div className="px-4 py-3 text-sm text-red-100">{error}</div>
               ) : query.trim().length < 2 && recentActions.length > 0 ? (
@@ -364,7 +365,7 @@ export default function Navbar() {
         </div>
 
       </div>
-
+      </div>
     </header>
   );
 }

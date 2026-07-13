@@ -50,7 +50,7 @@ export default function Sidebar() {
   );
 
   return (
-    <aside className="hidden h-screen w-72 flex-col border-r border-slate-800 bg-slate-950 lg:flex lg:sticky lg:top-0">
+    <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col border-r border-slate-800 bg-slate-950 lg:flex">
 
       <div className="p-8 border-b border-slate-800">
         <h1 className="text-3xl font-bold text-cyan-400">
@@ -62,7 +62,7 @@ export default function Sidebar() {
         </p>
       </div>
 
-      <nav className="flex-1 p-5 space-y-3">
+      <nav className="flex-1 space-y-2 overflow-y-auto p-5">
 
         {visibleItems.map((item) => {
 

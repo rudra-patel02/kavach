@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Loader2, Plus, Search } from "lucide-react";
 import FactoryScene from "@/components/3d/FactoryScene";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { fetchMachines } from "@/lib/machines";
@@ -27,6 +28,7 @@ export default function MachinesPage() {
   const [search, setSearch] = useState("");
   const [machines, setMachines] = useState<Machine[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -35,8 +37,11 @@ export default function MachinesPage() {
         const data = await fetchMachines();
 
         setMachines(Array.isArray(data) ? data : []);
+        setError(null);
       } catch (error) {
-        console.error("Machine API Error:", error);
+        setError(
+          error instanceof Error ? error.message : "Unable to load machines"
+        );
         setMachines([]);
       } finally {
         setLoading(false);
@@ -69,29 +74,45 @@ export default function MachinesPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6 text-white">
+        <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wide text-cyan-300">
+              Assets
+            </p>
+            <h1 className="mt-2 text-3xl font-bold md:text-4xl">
+              Machine Management
+            </h1>
+            <p className="mt-2 text-sm text-slate-400">
+              Search, inspect, and monitor connected industrial machines.
+            </p>
+          </div>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <button
+            type="button"
+            onClick={() => router.push("/machines/add")}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition-colors hover:bg-cyan-500/20"
+          >
+            <Plus size={18} />
+            Add Machine
+          </button>
+        </section>
 
-  <h1 className="text-4xl font-bold">
-    Machine Management
-  </h1>
+        {error ? (
+          <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+            {error}
+          </div>
+        ) : null}
 
-  <button
-    onClick={() => router.push("/machines/add")}
-    className="bg-cyan-600 hover:bg-cyan-700 px-5 py-3 rounded-lg font-semibold"
-  >
-    + Add Machine
-  </button>
-
-</div>
-
-      <input
-        type="text"
-        placeholder="Search Machine..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 mb-6 outline-none"
-      />
+        <label className="flex items-center rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 focus-within:border-cyan-400/60">
+          <Search size={18} className="text-slate-500" />
+          <input
+            type="text"
+            placeholder="Search machine, ID, or department"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            className="ml-3 min-w-0 flex-1 bg-transparent text-white outline-none placeholder:text-slate-500"
+          />
+        </label>
 
       <div className="overflow-x-auto rounded-xl bg-slate-900 border border-slate-700">
 
@@ -117,18 +138,21 @@ export default function MachinesPage() {
               <tr>
                 <td
                   colSpan={9}
-                  className="text-center py-10 text-cyan-400"
+                  className="py-12 text-center text-cyan-300"
                 >
-                  Loading Machines...
+                  <span className="inline-flex items-center gap-2 font-semibold">
+                    <Loader2 size={18} className="animate-spin" />
+                    Loading machines
+                  </span>
                 </td>
               </tr>
             ) : filteredMachines.length === 0 ? (
               <tr>
                 <td
                   colSpan={9}
-                  className="text-center py-10 text-red-400"
+                  className="py-12 text-center text-slate-400"
                 >
-                  No Machines Found
+                  No machines match this view.
                 </td>
               </tr>
             ) : (
@@ -226,13 +250,13 @@ export default function MachinesPage() {
 
       </div>
 
-      <div className="mt-10">
-        <h2 className="text-2xl font-bold mb-4">
+      <section>
+        <h2 className="mb-4 text-2xl font-bold">
           Digital Twin Factory
         </h2>
 
         <FactoryScene />
-      </div>
+      </section>
 
       </div>
     </DashboardLayout>

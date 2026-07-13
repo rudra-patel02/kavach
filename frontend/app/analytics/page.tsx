@@ -156,6 +156,7 @@ export default function AnalyticsPage() {
   } = useEnterpriseTelemetry();
   const [activeInsightIndex, setActiveInsightIndex] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const analyticsSeries = useMemo(
     () => buildAnalyticsSeries(machines, overview, workOrders),
     [machines, overview, workOrders]
@@ -175,6 +176,7 @@ export default function AnalyticsPage() {
 
   const exportCsv = async () => {
     setIsExporting(true);
+    setExportError(null);
 
     try {
       const response = await authenticatedFetch("/api/analytics/export.csv");
@@ -194,7 +196,11 @@ export default function AnalyticsPage() {
       link.remove();
       URL.revokeObjectURL(url);
     } catch (requestError) {
-      console.error(requestError);
+      setExportError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Unable to export analytics CSV"
+      );
     } finally {
       setIsExporting(false);
     }
@@ -251,6 +257,12 @@ export default function AnalyticsPage() {
         {error ? (
           <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
             {error}
+          </div>
+        ) : null}
+
+        {exportError ? (
+          <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+            {exportError}
           </div>
         ) : null}
 

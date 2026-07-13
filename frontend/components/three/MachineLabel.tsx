@@ -12,27 +12,18 @@ type MachineData = {
   };
 };
 
-export default function MachineLabel({
-  machine,
-}: {
-  machine: MachineData;
-}) {
+export default function MachineLabel({ machine }: { machine: MachineData }) {
   const statusColor =
     machine.status === "Running"
       ? "#22c55e"
       : machine.status === "Warning"
-      ? "#facc15"
-      : machine.status === "Critical"
-      ? "#ef4444"
-      : "#9ca3af";
+        ? "#facc15"
+        : machine.status === "Critical"
+          ? "#ef4444"
+          : "#9ca3af";
 
   return (
-    <Html
-      position={[0, 1.6, 0]}
-      center
-      distanceFactor={8}
-      transform
-    >
+    <Html position={[0, 1.6, 0]} center distanceFactor={8} transform>
       <div
         style={{
           minWidth: "170px",
@@ -51,17 +42,13 @@ export default function MachineLabel({
           {machine.name}
         </div>
 
-        <div style={{ color: statusColor }}>
-          ● {machine.status}
-        </div>
+        <div style={{ color: statusColor }}>Status: {machine.status}</div>
 
-        <div>❤️ Health: {machine.health?.toFixed(0)}%</div>
+        <div>Health: {machine.health?.toFixed(0)}%</div>
 
-        <div>🌡 Temp: {machine.temperature?.toFixed(1)}°C</div>
+        <div>Temp: {machine.temperature?.toFixed(1)} C</div>
 
-        <div>
-          🤖 AI: {machine.aiPrediction?.failureRisk ?? "Unknown"}
-        </div>
+        <div>AI: {machine.aiPrediction?.failureRisk ?? "Unknown"}</div>
       </div>
     </Html>
   );
