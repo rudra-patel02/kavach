@@ -13,6 +13,10 @@ const enforceHttps = (value: string) => {
       url.protocol = "https:";
     }
 
+    if (url.protocol === "ws:") {
+      url.protocol = "wss:";
+    }
+
     return trimTrailingSlash(url.toString());
   } catch {
     return trimTrailingSlash(trimmed);
