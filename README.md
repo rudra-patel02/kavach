@@ -1,225 +1,157 @@
-# KAVACH Industrial Decision Intelligence Platform
+# KAVACH
 
-KAVACH is a production-ready industrial operations platform for plant monitoring, predictive maintenance, digital twin views, work orders, alerts, reports, analytics, AI-assisted maintenance workflows, audit logs, tenant administration, and role-based access control.
+KAVACH is a production-ready industrial operations platform for machine monitoring, predictive maintenance, enterprise plant management, AI-assisted operations, alerts, audit logs, reports, work orders, and live Socket.IO telemetry.
+
+The repository contains a Next.js frontend and an Express/MongoDB backend. The production deployment is configured for Render, MongoDB Atlas, HTTPS-only frontend API calls, Express CORS, and Socket.IO websocket handshakes.
+
+## Production URLs
+
+Update this section if the Render service names change.
+
+| Service | URL |
+| --- | --- |
+| Frontend | `https://kavach-1-7749.onrender.com` |
+| Backend API | `https://kavach-spgh.onrender.com` |
+| API health | `https://kavach-spgh.onrender.com/api/health` |
+| API docs | `https://kavach-spgh.onrender.com/api/docs` |
+| OpenAPI JSON | `https://kavach-spgh.onrender.com/api/docs/openapi.json` |
+| Socket.IO | `wss://kavach-spgh.onrender.com/socket.io` |
 
 ## Architecture
 
-```mermaid
-flowchart LR
-  User["Browser"] --> Frontend["Next.js frontend"]
-  Frontend --> Backend["Express API"]
-  Frontend --> Socket["Socket.IO realtime channel"]
-  Backend --> Mongo["MongoDB"]
-  Backend --> MQTT["MQTT broker / IoT devices"]
-  Backend --> Services["Analytics, reports, AI, prediction, audit services"]
-  Services --> Mongo
-  MQTT --> Backend
+```text
+Browser
+  |
+  | HTTPS / WSS
+  v
+Next.js frontend
+  |
+  | NEXT_PUBLIC_API_URL / NEXT_PUBLIC_SOCKET_URL
+  v
+Express API + Socket.IO
+  |
+  | MONGO_URI
+  v
+MongoDB Atlas
+
+Optional: MQTT broker -> backend IoT ingestion -> Socket.IO -> live UI
 ```
 
-## Folder Structure
+## Repository Layout
 
-- `frontend/app`: Next.js App Router pages and route-level screens.
-- `frontend/components`: layout, dashboard, chart, predictive, copilot, notification, enterprise, and 3D UI components.
-- `frontend/lib`: typed API clients, auth helpers, socket helpers, and frontend service wrappers.
-- `frontend/types`: TypeScript contracts for backend responses.
-- `backend/src/controllers`: HTTP controller logic.
-- `backend/src/routes`: Express route modules mounted under `/api`.
-- `backend/src/services`: analytics, AI, reporting, search, prediction, notification, backup, and work-order services.
-- `backend/src/models`: Mongoose models.
-- `backend/src/middleware`: auth, permissions, tenant context, security, rate limiting, observability, validation, and errors.
-- `backend/src/iot`: MQTT clients, device registry, telemetry ingestion, and device health.
-- `deployment`: supporting deployment configuration such as Mosquitto config.
-- `nginx`: reverse proxy config for Docker Compose deployments.
-
-## Requirements
-
-- Node.js 22
-- npm
-- MongoDB 7 or a managed MongoDB connection string
-- MQTT broker if IoT ingestion is enabled
-
-## Setup
-
-1. Install dependencies.
-
-```bash
-npm --prefix backend ci
-npm --prefix frontend ci
+```text
+.
+|-- backend/              Express API, Socket.IO, MongoDB models, services
+|-- frontend/             Next.js app, dashboard UI, API helpers
+|-- deployment/           Deployment support files
+|-- nginx/                Optional reverse proxy assets
+|-- docker-compose.yml    Local/container deployment reference
+|-- render.yaml           Render backend service blueprint
+|-- .env.example          Full environment variable reference
+|-- .env.production.example
+|-- README.md             Product and operations overview
+|-- INSTALL.md            Local installation guide
+|-- DEPLOYMENT.md         Production deployment guide
+|-- API.md                REST and Socket.IO reference
 ```
 
-2. Create local env files from examples.
+## Technology Stack
 
-```bash
-copy backend\.env.example backend\.env
-copy frontend\.env.example frontend\.env
+| Layer | Technology |
+| --- | --- |
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS |
+| Visualization | Three.js, React Three Fiber, Drei, Recharts |
+| Backend | Node.js 22, Express 5 |
+| Database | MongoDB, Mongoose |
+| Auth | JWT access tokens, refresh tokens, bcrypt password hashing |
+| Realtime | Socket.IO websocket and polling fallback |
+| IoT | Optional MQTT integration and device telemetry ingestion |
+| Deployment | Render, Docker Compose reference |
+
+## Main Capabilities
+
+- Dashboard and executive operations views
+- Machine registry, machine detail, digital twin views, and live status
+- Enterprise organization, plant, region, area, asset, engineer, and onboarding flows
+- Predictive maintenance and work order management
+- AI overview, fleet health, root cause, forecasts, and copilot chat
+- Alerts, notifications, preferences, and archive/read workflows
+- Audit logs and exportable reports
+- System health, backup export/configuration, and operational diagnostics
+- Socket.IO live updates for machines, telemetry, alerts, work orders, and enterprise refresh events
+
+## Required Runtime
+
+- Node.js `22.x`
+- npm `10+`
+- MongoDB Atlas or compatible MongoDB server
+- HTTPS hosting for production frontend and backend
+
+## Environment Files
+
+Use `.env.example` as the full reference. Do not commit real secrets.
+
+Frontend production must include:
+
+```env
+NEXT_PUBLIC_API_URL=https://kavach-spgh.onrender.com
+NEXT_PUBLIC_SOCKET_URL=https://kavach-spgh.onrender.com
 ```
 
-3. Fill in local values. Do not commit `.env` files.
+Backend production must include:
 
-4. Start the apps.
+```env
+NODE_ENV=production
+PORT=5000
+MONGO_URI=mongodb+srv://<user>:<password>@<cluster>/<database>
+JWT_SECRET=<strong-random-secret>
+JWT_REFRESH_SECRET=<strong-random-secret>
+CORS_ORIGIN=https://kavach-1-7749.onrender.com
+CORS_CREDENTIALS=true
+IOT_ENABLED=false
+ENABLE_SENSOR_SIMULATION=false
+```
+
+## Common Commands
+
+Run commands from the repository root unless noted.
 
 ```bash
 npm run backend:dev
-npm run frontend:dev
-```
-
-Default local URLs:
-
-- Frontend: `https://kavach-1-7749.onrender.com`
-- Backend: `https://kavach-spgh.onrender.com`
-- API docs: `https://kavach-spgh.onrender.com/api/docs`
-- Public health: `https://kavach-spgh.onrender.com/api/health`
-
-## Environment Variables
-
-Safe examples are provided in:
-
-- `.env.example`: combined production reference.
-- `backend/.env.example`: backend service variables.
-- `frontend/.env.example`: frontend service variables.
-
-Required backend production variables:
-
-- `NODE_ENV=production`
-- `PORT`
-- `MONGO_URI`
-- `JWT_SECRET`
-- `JWT_REFRESH_SECRET`
-- `CORS_ORIGIN`
-
-Required frontend production variables:
-
-- `NEXT_PUBLIC_API_URL`
-- `NEXT_PUBLIC_SOCKET_URL`
-
-Important optional backend variables:
-
-- `API_VERSION`
-- `JWT_EXPIRES_IN`
-- `JWT_REFRESH_EXPIRES_IN`
-- `RATE_LIMIT_WINDOW_MS`
-- `RATE_LIMIT_MAX`
-- `AUTH_RATE_LIMIT_MAX`
-- `BRUTE_FORCE_WINDOW_MS`
-- `BRUTE_FORCE_MAX_FAILURES`
-- `IOT_ENABLED`
-- `ENABLE_SENSOR_SIMULATION`
-- `MQTT_BROKER_URL`
-- `MQTT_USERNAME`
-- `MQTT_PASSWORD`
-- `MQTT_CLIENT_ID`
-- `MQTT_KEEPALIVE`
-- `MQTT_RECONNECT_MS`
-- `DEVICE_SECRET`
-- `DEVICE_OFFLINE_AFTER_MS`
-- `DEVICE_HEARTBEAT_MONITOR_MS`
-- `PUBLIC_API_BASE_URL`
-- `OPENAI_API_KEY`
-- `AI_PROVIDER`
-- `OPENAI_MODEL`
-- `ENERGY_COST_PER_KWH`
-- `CARBON_KG_PER_KWH`
-- `DOWNTIME_COST_PER_HOUR`
-- `COMPANY_NAME`
-- `COMPANY_SITE`
-- `COMPANY_INDUSTRY`
-- `COMPANY_TIMEZONE`
-- `BACKUP_DIR`
-- `BACKUP_RETENTION_DAYS`
-- `BACKUP_SCHEDULE_ENABLED`
-- `BACKUP_SCHEDULE_INTERVAL_MS`
-- `BACKUP_RESTORE_TOKEN`
-- `AUDIT_RETENTION_DAYS`
-- `COMPRESSION_THRESHOLD_BYTES`
-
-## API Endpoints
-
-API base path: `/api`
-
-- Auth: `POST /auth/login`, `POST /auth/register`, `POST /auth/refresh`, `POST /auth/logout`
-- Machines: `GET /machines`, `POST /machines`, `GET /machines/:id`, `PATCH /machines/:id`, `DELETE /machines/:id`
-- IoT: `/iot/*` for device registration, telemetry, status, and MQTT operations
-- Predictive: `GET /predictive/overview`, `GET /predictive/:machineId`
-- Work orders: `GET /workorders`, `POST /workorders`, status/assign/complete/export endpoints
-- Notifications: `GET /notifications`, `POST /notifications`, archive, preferences, and rules endpoints
-- Reports: report generation and export endpoints under `/reports`
-- Analytics: analytics overview and export endpoints under `/analytics`
-- Executive: executive dashboard endpoints under `/executive`
-- Enterprise: enterprise operations endpoints under `/enterprise`
-- Tenants: tenant hierarchy endpoints under `/tenants`
-- Users: RBAC user management under `/users`
-- Settings: profile, password, preferences, and company settings under `/settings`
-- Audit: audit list and export endpoints under `/audit`
-- Search: `GET /search?q=...`
-- Billing: subscription and invoice endpoints under `/billing`
-- Backup: export, configuration, and restore endpoints under `/backup`
-- System: `GET /system/health`
-- Docs: `GET /docs`, `GET /docs/openapi.json`
-- Public health: `GET /health`
-
-The OpenAPI document is available at `/api/docs/openapi.json`.
-
-## Validation
-
-Run before every release:
-
-```bash
-npm run frontend:typecheck
-npm run frontend:lint
-npm run frontend:build
+npm run backend:start
+npm run backend:seed
 npm run backend:test
+npm run frontend:dev
+npm run frontend:lint
+npm run frontend:typecheck
+npm run frontend:build
+npm run frontend:start
 ```
 
-## Deployment
+## Authentication
 
-### Frontend on Vercel
+The backend stores passwords as bcrypt hashes. The seeded production admin account is:
 
-Use `frontend` as the Vercel project root.
-
-- Build command: `npm run build`
-- Install command: `npm ci`
-- Output: Next.js default
-- Required env:
-  - `NEXT_PUBLIC_API_URL=https://<backend-service-url>`
-  - `NEXT_PUBLIC_SOCKET_URL=https://<backend-service-url>`
-
-`frontend/vercel.json` is included for framework/build settings.
-
-### Backend on Render
-
-Use `render.yaml` or create a Render Web Service manually.
-
-- Root directory: `backend`
-- Build command: `npm ci --omit=dev`
-- Start command: `npm run start`
-- Health check path: `/api/health`
-- Required env:
-  - `NODE_ENV=production`
-  - `MONGO_URI`
-  - `JWT_SECRET`
-  - `JWT_REFRESH_SECRET`
-  - `CORS_ORIGIN=https://<frontend-domain>`
-
-### Backend on Railway
-
-Use `backend` as the Railway service root.
-
-- Build command: `npm ci --omit=dev`
-- Start command: `npm run start`
-- Required env values match the backend production list above.
-
-`backend/railway.json` is included for build/start settings.
-
-### Docker Compose
-
-For single-host deployments:
-
-```bash
-docker compose up --build -d
+```text
+Email: admin@kavach.com
+Password: admin123
 ```
 
-Review `docker-compose.yml`, `nginx/kavach.conf`, and `deployment/mosquitto.conf` before exposing public traffic.
+Rotate this password immediately after production access is confirmed.
 
-## Release Checklist
+## Production Rules
 
-See `RELEASE_CHECKLIST.md`.
+- Use only HTTPS backend URLs in frontend environment variables.
+- Use only WSS/HTTPS Socket.IO connections in production.
+- Configure backend CORS for the exact frontend origin.
+- Never expose `MONGO_URI`, JWT secrets, device secrets, or repair keys in frontend variables.
+- Do not run one-time repair endpoints in production after verification.
+- Confirm MongoDB Atlas network access allows the Render backend outbound IP range or appropriate access rule.
+
+## Documentation
+
+- Local setup: `INSTALL.md`
+- Production deployment: `DEPLOYMENT.md`
+- API and realtime contract: `API.md`
+- Live Swagger UI: `/api/docs`
+- OpenAPI JSON: `/api/docs/openapi.json`
