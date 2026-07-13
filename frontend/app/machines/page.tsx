@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import FactoryScene from "@/components/3d/FactoryScene";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import { fetchMachines } from "@/lib/machines";
 import socket from "@/lib/socket";
 import { useRouter } from "next/navigation";
@@ -66,9 +67,10 @@ export default function MachinesPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-8">
+    <DashboardLayout>
+      <div className="space-y-6 text-white">
 
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
   <h1 className="text-4xl font-bold">
     Machine Management
@@ -91,9 +93,9 @@ export default function MachinesPage() {
         className="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 mb-6 outline-none"
       />
 
-      <div className="rounded-xl bg-slate-900 border border-slate-700 overflow-hidden">
+      <div className="overflow-x-auto rounded-xl bg-slate-900 border border-slate-700">
 
-        <table className="w-full">
+        <table className="min-w-[980px] w-full">
 
           <thead className="bg-slate-800">
             <tr>
@@ -232,6 +234,7 @@ export default function MachinesPage() {
         <FactoryScene />
       </div>
 
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
