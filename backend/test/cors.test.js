@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { buildCorsOptions, normalizeOrigin } from "../src/config/cors.js";
-import { parseBoolean, parseCorsOrigins } from "../src/config/environment.js";
+import {
+  getEnvironmentConfig,
+  parseBoolean,
+  parseCorsOrigins,
+} from "../src/config/environment.js";
 
 const PRODUCTION_ORIGIN = "https://kavach-1-7749.onrender.com";
 
@@ -64,4 +68,31 @@ test("does not enable credentials with wildcard origins", () => {
 
   assert.equal(options.origin, "*");
   assert.equal(options.credentials, false);
+});
+
+test("always allows the production frontend origin in production", () => {
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousCorsOrigin = process.env.CORS_ORIGIN;
+
+  process.env.NODE_ENV = "production";
+  process.env.CORS_ORIGIN = "https://stale-frontend.example";
+
+  try {
+    const config = getEnvironmentConfig();
+
+    assert.ok(config.allowedOrigins.includes(PRODUCTION_ORIGIN));
+    assert.ok(config.allowedOrigins.includes("https://stale-frontend.example"));
+  } finally {
+    if (previousNodeEnv === undefined) {
+      delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = previousNodeEnv;
+    }
+
+    if (previousCorsOrigin === undefined) {
+      delete process.env.CORS_ORIGIN;
+    } else {
+      process.env.CORS_ORIGIN = previousCorsOrigin;
+    }
+  }
 });

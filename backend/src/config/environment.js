@@ -35,6 +35,16 @@ export const parseCorsOrigins = (value) => {
   return origins.length > 0 ? origins : "*";
 };
 
+const withDefaultProductionOrigin = (origins) => {
+  if (process.env.NODE_ENV !== "production" || origins === "*") {
+    return origins;
+  }
+
+  return Array.from(
+    new Set([...origins, DEFAULT_PRODUCTION_FRONTEND_ORIGIN].map(normalizeOrigin))
+  );
+};
+
 export const parseBoolean = (value, defaultValue = false) => {
   if (value === undefined || value === null || value === "") {
     return defaultValue;
@@ -125,11 +135,13 @@ export const getEnvironmentConfig = () => {
   return {
     apiVersion: process.env.API_VERSION || "20.0.0",
     authRateLimitMax,
-    allowedOrigins: parseCorsOrigins(
-      process.env.CORS_ORIGIN ||
-        (process.env.NODE_ENV === "production"
-          ? DEFAULT_PRODUCTION_FRONTEND_ORIGIN
-          : "*")
+    allowedOrigins: withDefaultProductionOrigin(
+      parseCorsOrigins(
+        process.env.CORS_ORIGIN ||
+          (process.env.NODE_ENV === "production"
+            ? DEFAULT_PRODUCTION_FRONTEND_ORIGIN
+            : "*")
+      )
     ),
     backupScheduleEnabled: parseBoolean(
       process.env.BACKUP_SCHEDULE_ENABLED,
