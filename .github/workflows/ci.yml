@@ -27,4 +27,7 @@ jobs:
       - name: Frontend lint
         run: npm run frontend:lint
       - name: Frontend build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_SOCKET_URL: ${{ secrets.NEXT_PUBLIC_SOCKET_URL }}
         run: npm run frontend:build

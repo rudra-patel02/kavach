@@ -49,7 +49,7 @@ export const getApiBaseUrl = () => {
   const configuredUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
 
   if (!configuredUrl) {
-    throw new Error("NEXT_PUBLIC_API_URL is required");
+    return "";
   }
 
   return enforceHttps(configuredUrl);
@@ -58,11 +58,8 @@ export const getApiBaseUrl = () => {
 export const getSocketBaseUrl = () => {
   const configuredUrl =
     process.env.NEXT_PUBLIC_SOCKET_URL?.trim() ||
-    process.env.NEXT_PUBLIC_API_URL?.trim();
-
-  if (!configuredUrl) {
-    throw new Error("NEXT_PUBLIC_SOCKET_URL or NEXT_PUBLIC_API_URL is required");
-  }
+    process.env.NEXT_PUBLIC_API_URL?.trim() ||
+    (typeof window !== "undefined" ? window.location.origin : "");
 
   return stripApiPrefix(configuredUrl);
 };

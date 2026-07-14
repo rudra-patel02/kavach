@@ -39,24 +39,53 @@ export const SOCKET_EVENTS = {
   MAINTENANCE_STATUS_UPDATE: "enterprise:maintenance:update",
 };
 
-const socket = io(getSocketBaseUrl(), {
-  path: "/socket.io",
-  transports: ["websocket", "polling"],
-  autoConnect: false,
-  reconnection: true,
-  reconnectionAttempts: Infinity,
-  reconnectionDelay: 1000,
-  reconnectionDelayMax: 5000,
-  timeout: 10000,
-});
+let socketInstance = null;
 
-if (typeof window !== "undefined") {
-  socket.connect();
-}
+const createSocket = () => {
+  const nextSocket = io(getSocketBaseUrl(), {
+    path: "/socket.io",
+    transports: ["websocket", "polling"],
+    autoConnect: false,
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    timeout: 10000,
+  });
 
-socket.on(SOCKET_EVENTS.HEARTBEAT, (payload) => {
-  socket.emit(SOCKET_EVENTS.HEARTBEAT_ACK, payload);
-});
+  nextSocket.on(SOCKET_EVENTS.HEARTBEAT, (payload) => {
+    nextSocket.emit(SOCKET_EVENTS.HEARTBEAT_ACK, payload);
+  });
+
+  nextSocket.connect();
+
+  return nextSocket;
+};
+
+const getSocket = () => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  if (!socketInstance) {
+    socketInstance = createSocket();
+  }
+
+  return socketInstance;
+};
+
+const callSocket = (method) => (...args) => {
+  const activeSocket = getSocket();
+  return activeSocket ? activeSocket[method](...args) : undefined;
+};
+
+const socket = {
+  connect: callSocket("connect"),
+  disconnect: callSocket("disconnect"),
+  emit: callSocket("emit"),
+  off: callSocket("off"),
+  on: callSocket("on"),
+};
 
 export const joinPlantRoom = (plantId = "default") => {
   socket.emit(SOCKET_EVENTS.JOIN_PLANT, { plantId });
