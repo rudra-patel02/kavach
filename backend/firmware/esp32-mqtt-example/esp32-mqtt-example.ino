@@ -5,7 +5,7 @@
 
 const char* WIFI_SSID = "Rudra 2.4GHz";
 const char* WIFI_PASSWORD = "12345678990";
-const char* BACKEND_SENSOR_URL = "http://172.20.10.2:5000/api/iot/sensor";
+const char* BACKEND_SENSOR_URL = "https://kavach-spgh.onrender.com/api/iot/sensor";
 const char* DEVICE_ID = "esp32-dht22-01";
 
 #define DHT_PIN 4
