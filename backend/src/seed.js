@@ -37,7 +37,7 @@ await Machine.insertMany([
     humidity: 48,
     pressure: 1.2,
     energyConsumed: 420,
-    linkedDeviceId: "esp32-dht11-01",
+    linkedDeviceId: "esp32-dht22-01",
     liveTelemetryEnabled: true,
     telemetrySource: "iot",
   },

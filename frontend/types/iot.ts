@@ -82,6 +82,8 @@ export interface IoTSensorReading {
   temperature: number | null;
   humidity: number | null;
   timestamp: string | null;
+  connectionStatus?: IoTDeviceStatus;
+  lastSeen?: string | null;
 }
 
 export interface IoTLatestSensorResponse {

@@ -7,6 +7,8 @@ import socket, { SOCKET_EVENTS } from "@/lib/socket";
 import type { MachineData } from "@/types/machine";
 import type { IoTSensorReading } from "@/types/iot";
 
+const ESP32_DEVICE_ID = "esp32-dht22-01";
+
 export default function LiveSensors() {
   const [reading, setReading] = useState<IoTSensorReading | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -17,7 +19,7 @@ export default function LiveSensors() {
 
     const loadReading = async () => {
       try {
-        const response = await fetchLatestIoTSensor();
+        const response = await fetchLatestIoTSensor(ESP32_DEVICE_ID);
 
         if (!isMounted) {
           return;
@@ -45,7 +47,7 @@ export default function LiveSensors() {
     loadReading();
     const timer = window.setInterval(loadReading, 5000);
     const handleSensorUpdate = (machine: MachineData) => {
-      if (!machine?.linkedDeviceId) {
+      if (machine?.linkedDeviceId !== ESP32_DEVICE_ID) {
         return;
       }
 
@@ -59,6 +61,8 @@ export default function LiveSensors() {
           machine.lastLiveTelemetryAt ||
           machine.lastHeartbeat ||
           new Date().toISOString(),
+        connectionStatus: "online",
+        lastSeen: machine.lastLiveTelemetryAt || machine.lastHeartbeat || null,
       });
       setError(null);
       setIsLoading(false);
@@ -85,7 +89,7 @@ export default function LiveSensors() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wide text-cyan-300">
-            ESP32 DHT11
+            ESP32 DHT22
           </p>
           <h2 className="mt-2 text-2xl font-bold text-white">
             Live Sensor Data
@@ -93,7 +97,9 @@ export default function LiveSensors() {
         </div>
 
         <div className="rounded-full border border-cyan-400/30 px-3 py-1 text-sm text-cyan-200">
-          {isLoading ? "Connecting" : reading ? "Live" : "No reading"}
+          {isLoading
+            ? "Connecting"
+            : reading?.connectionStatus || (reading ? "online" : "No reading")}
         </div>
       </div>
 
@@ -126,7 +132,8 @@ export default function LiveSensors() {
       </div>
 
       <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-400">
-        <span>Device: {reading?.deviceId || "Waiting for ESP32"}</span>
+        <span>Device: {reading?.deviceId || ESP32_DEVICE_ID}</span>
+        <span>Status: {reading?.connectionStatus || "Waiting"}</span>
         <span>Updated: {updatedAt}</span>
       </div>
     </div>

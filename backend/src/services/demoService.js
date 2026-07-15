@@ -194,7 +194,7 @@ export const generateDemoData = async () => {
           vibration: Number((0.18 + index * 0.08).toFixed(2)),
           ...(index === 0
             ? {
-                linkedDeviceId: "esp32-dht11-01",
+                linkedDeviceId: "esp32-dht22-01",
                 liveTelemetryEnabled: true,
                 telemetrySource: "iot",
               }

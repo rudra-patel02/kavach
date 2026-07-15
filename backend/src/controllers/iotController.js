@@ -81,15 +81,17 @@ const normalizeDhtSensorPayload = (payload = {}) => {
   };
 };
 
-const serializeDhtSensor = (telemetry) => {
+const serializeDhtSensor = (telemetry, device = null) => {
   if (!telemetry) {
     return null;
   }
 
   return {
+    connectionStatus: device?.connectionStatus || "unknown",
     deviceId: telemetry.deviceId,
     humidity: telemetry.metrics?.humidity ?? null,
     id: String(telemetry._id),
+    lastSeen: device?.lastSeen ? new Date(device.lastSeen).toISOString() : null,
     machineId: telemetry.machineId,
     temperature: telemetry.metrics?.temperature ?? null,
     timestamp: telemetry.timestamp
@@ -391,9 +393,12 @@ export const getLatestDhtSensorReading = async (req, res) => {
     const telemetry = await Telemetry.findOne(filter)
       .sort({ timestamp: -1 })
       .lean();
+    const device = telemetry
+      ? await Device.findOne({ deviceId: telemetry.deviceId }).lean()
+      : null;
 
     res.json({
-      reading: serializeDhtSensor(telemetry),
+      reading: serializeDhtSensor(telemetry, device),
       success: true,
     });
   } catch (error) {
