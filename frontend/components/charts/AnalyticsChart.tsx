@@ -21,27 +21,38 @@ const data = [
 
 export default function AnalyticsCharts() {
   return (
-    <div className="rounded-2xl bg-slate-900 border border-slate-700 p-6">
-      <h2 className="text-xl font-bold text-white mb-6">
+    <div className="premium-card rounded-2xl p-6">
+      <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300/80">
+        Throughput
+      </p>
+      <h2 className="mb-6 mt-2 text-xl font-black text-white">
         Production Analytics
       </h2>
 
       <div style={{ width: "100%", height: 300 }}>
         <ResponsiveContainer>
           <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid stroke="rgba(148,163,184,0.14)" strokeDasharray="4 6" />
 
-            <XAxis dataKey="time" />
+            <XAxis dataKey="time" stroke="#94a3b8" />
 
-            <YAxis />
+            <YAxis stroke="#94a3b8" />
 
-            <Tooltip />
+            <Tooltip
+              contentStyle={{
+                background: "rgba(2, 6, 23, 0.92)",
+                border: "1px solid rgba(34, 211, 238, 0.28)",
+                borderRadius: 12,
+                color: "#e2e8f0",
+              }}
+            />
 
             <Line
               type="monotone"
               dataKey="production"
-              stroke="#00E5FF"
+              stroke="#22d3ee"
               strokeWidth={4}
+              dot={false}
             />
           </LineChart>
         </ResponsiveContainer>

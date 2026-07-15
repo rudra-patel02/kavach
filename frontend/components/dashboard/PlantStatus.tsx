@@ -1,3 +1,5 @@
+import { Activity } from "lucide-react";
+
 export default function PlantStatus() {
   const machines = [
     {
@@ -23,8 +25,12 @@ export default function PlantStatus() {
   ];
 
   return (
-    <div className="bg-[#111827] rounded-2xl p-6 shadow-lg">
-      <h2 className="text-xl font-semibold mb-5 text-white">
+    <div className="premium-card rounded-2xl p-6">
+      <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-300/80">
+        Operations
+      </p>
+      <h2 className="mb-5 mt-2 flex items-center gap-3 text-xl font-black text-white">
+        <Activity size={21} className="text-emerald-300" />
         Plant Status
       </h2>
 
@@ -32,18 +38,18 @@ export default function PlantStatus() {
         {machines.map((machine) => (
           <div
             key={machine.name}
-            className="flex justify-between items-center"
+            className="premium-tile flex items-center justify-between rounded-xl p-4"
           >
-            <span className="text-gray-300">
+            <span className="font-medium text-slate-200">
               {machine.name}
             </span>
 
             <div className="flex items-center gap-2">
               <div
-                className={`h-3 w-3 rounded-full ${machine.color}`}
+                className={`h-3 w-3 rounded-full ${machine.color} live-dot`}
               />
 
-              <span className="text-sm text-gray-400">
+              <span className="text-sm text-slate-400">
                 {machine.status}
               </span>
             </div>

@@ -19,19 +19,29 @@ const data = [
 
 export default function MachineHealthChart() {
   return (
-    <div className="rounded-2xl border border-slate-700 bg-slate-900 p-6">
-      <h2 className="text-xl font-bold text-white mb-6">
+    <div className="premium-card rounded-2xl p-6">
+      <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-300/80">
+        Reliability
+      </p>
+      <h2 className="mb-6 mt-2 text-xl font-black text-white">
         Machine Health
       </h2>
 
       <div style={{ width: "100%", height: 300 }}>
         <ResponsiveContainer>
           <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="machine" />
-            <YAxis domain={[0, 100]} />
-            <Tooltip />
-            <Bar dataKey="health" fill="#22c55e" radius={[6, 6, 0, 0]} />
+            <CartesianGrid stroke="rgba(148,163,184,0.14)" strokeDasharray="4 6" />
+            <XAxis dataKey="machine" stroke="#94a3b8" />
+            <YAxis domain={[0, 100]} stroke="#94a3b8" />
+            <Tooltip
+              contentStyle={{
+                background: "rgba(2, 6, 23, 0.92)",
+                border: "1px solid rgba(16, 185, 129, 0.28)",
+                borderRadius: 12,
+                color: "#e2e8f0",
+              }}
+            />
+            <Bar dataKey="health" fill="#34d399" radius={[8, 8, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

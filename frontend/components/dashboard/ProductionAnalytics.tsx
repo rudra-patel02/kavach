@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BarChart3 } from "lucide-react";
 import { fetchMachines } from "@/lib/machines";
 import socket from "@/lib/socket";
 
@@ -14,8 +15,7 @@ export default function ProductionAnalytics() {
   const [machines, setMachines] = useState<Machine[]>([]);
 
   useEffect(() => {
-    fetchMachines()
-      .then(setMachines);
+    fetchMachines().then(setMachines);
 
     const handleUpdate = (data: Machine[]) => {
       setMachines(data);
@@ -48,41 +48,37 @@ export default function ProductionAnalytics() {
         ).toFixed(1)
       : "0";
 
+  const metrics = [
+    ["Running", running, "text-emerald-300"],
+    ["Warning", warning, "text-yellow-300"],
+    ["Critical", critical, "text-red-300"],
+    ["Avg Health", `${avgHealth}%`, "text-cyan-300"],
+    ["Avg Temp", `${avgTemp} C`, "text-orange-300"],
+  ];
+
   return (
-    <div className="rounded-2xl bg-slate-900 border border-slate-700 p-6">
-      <h2 className="text-2xl font-bold text-white mb-6">
-        📊 Production Analytics
+    <div className="premium-card rounded-2xl p-6">
+      <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300/80">
+        Production
+      </p>
+      <h2 className="mb-6 mt-2 flex items-center gap-3 text-2xl font-black text-white">
+        <BarChart3 size={22} className="text-cyan-300" />
+        Production Analytics
       </h2>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="bg-slate-800 rounded-xl p-4 text-center">
-          <p className="text-slate-400">Running</p>
-          <h3 className="text-3xl font-bold text-green-400">{running}</h3>
-        </div>
-
-        <div className="bg-slate-800 rounded-xl p-4 text-center">
-          <p className="text-slate-400">Warning</p>
-          <h3 className="text-3xl font-bold text-yellow-400">{warning}</h3>
-        </div>
-
-        <div className="bg-slate-800 rounded-xl p-4 text-center">
-          <p className="text-slate-400">Critical</p>
-          <h3 className="text-3xl font-bold text-red-500">{critical}</h3>
-        </div>
-
-        <div className="bg-slate-800 rounded-xl p-4 text-center">
-          <p className="text-slate-400">Avg Health</p>
-          <h3 className="text-3xl font-bold text-cyan-400">
-            {avgHealth}%
-          </h3>
-        </div>
-
-        <div className="bg-slate-800 rounded-xl p-4 text-center">
-          <p className="text-slate-400">Avg Temp</p>
-          <h3 className="text-3xl font-bold text-orange-400">
-            {avgTemp}°C
-          </h3>
-        </div>
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+        {metrics.map(([label, value, color], index) => (
+          <div
+            key={label}
+            className="premium-tile surface-enter rounded-xl p-4 text-center"
+            style={{ animationDelay: `${index * 50}ms` }}
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+              {label}
+            </p>
+            <h3 className={`mt-3 text-3xl font-black ${color}`}>{value}</h3>
+          </div>
+        ))}
       </div>
     </div>
   );

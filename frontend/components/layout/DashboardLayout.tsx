@@ -49,12 +49,12 @@ export default function DashboardLayout({ allowedRoles, children }: Props) {
   }, [effectiveToken, isAuthReady, router]);
 
   if (!isAuthReady || !effectiveToken) {
-    return <div className="min-h-screen bg-slate-950" />;
+    return <div className="min-h-screen bg-slate-950 industrial-shell" />;
   }
 
   if (!isAllowed) {
     return (
-      <div className="flex min-h-screen bg-slate-950">
+      <div className="flex min-h-screen bg-slate-950 industrial-shell">
         <Sidebar />
         <div className="min-w-0 flex-1">
           <Navbar />
@@ -72,13 +72,13 @@ export default function DashboardLayout({ allowedRoles, children }: Props) {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-950">
+    <div className="flex min-h-screen bg-slate-950 industrial-shell">
       <Sidebar />
 
       <div className="min-w-0 flex-1">
         <Navbar />
 
-        <main className="p-4 sm:p-6 lg:p-8">
+        <main className="p-4 sm:p-6 lg:p-8 xl:p-10">
           {children}
         </main>
       </div>

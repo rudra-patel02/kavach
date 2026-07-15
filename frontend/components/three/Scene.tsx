@@ -36,7 +36,7 @@ export default function Scene() {
   }, []);
 
   return (
-    <div className="w-full h-[500px] rounded-2xl overflow-hidden border border-slate-700">
+    <div className="premium-card h-[500px] w-full overflow-hidden rounded-2xl">
       <Canvas camera={{ position: [8, 6, 8], fov: 45 }}>
         <Lights />
 

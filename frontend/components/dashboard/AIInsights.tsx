@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BrainCircuit } from "lucide-react";
 import { fetchMachines } from "@/lib/machines";
 import socket from "@/lib/socket";
 import type { MachineData } from "@/types/machine";
@@ -9,8 +10,7 @@ export default function AIInsights() {
   const [machines, setMachines] = useState<MachineData[]>([]);
 
   useEffect(() => {
-    fetchMachines()
-      .then((data) => setMachines(data));
+    fetchMachines().then((data) => setMachines(data));
 
     const handleMachineUpdate = (data: MachineData[]) => {
       setMachines(data);
@@ -35,8 +35,8 @@ export default function AIInsights() {
         title: `${machine.name} Temperature`,
         message: `Temperature reached ${machine.temperature.toFixed(
           1
-        )}°C. Immediate inspection recommended.`,
-        color: "border-red-500",
+        )} C. Immediate inspection recommended.`,
+        color: "border-red-400/50",
       });
     }
 
@@ -46,7 +46,7 @@ export default function AIInsights() {
         message: `High vibration detected (${machine.vibration.toFixed(
           2
         )}). Check bearings and alignment.`,
-        color: "border-yellow-500",
+        color: "border-yellow-400/50",
       });
     }
 
@@ -56,7 +56,7 @@ export default function AIInsights() {
         message: `Machine health is ${machine.health.toFixed(
           0
         )}%. Schedule preventive maintenance.`,
-        color: "border-orange-500",
+        color: "border-orange-400/50",
       });
     }
 
@@ -66,7 +66,7 @@ export default function AIInsights() {
         message: `Power usage is unusually high (${machine.power.toFixed(
           0
         )} kW). Investigate load conditions.`,
-        color: "border-blue-500",
+        color: "border-blue-400/50",
       });
     }
   });
@@ -75,27 +75,30 @@ export default function AIInsights() {
     insights.push({
       title: "Factory Status",
       message: "All monitored machines are operating within normal limits.",
-      color: "border-green-500",
+      color: "border-emerald-400/50",
     });
   }
 
   return (
-    <div className="rounded-2xl bg-slate-900 border border-slate-700 p-6">
-      <h2 className="text-2xl font-bold text-white mb-6">
-        🤖 AI Insights
+    <div className="premium-card rounded-2xl p-6">
+      <p className="text-xs font-bold uppercase tracking-[0.22em] text-violet-300/80">
+        Recommendations
+      </p>
+      <h2 className="mb-6 mt-2 flex items-center gap-3 text-2xl font-black text-white">
+        <BrainCircuit size={23} className="text-violet-300" />
+        AI Insights
       </h2>
 
-      <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-2">
         {insights.map((item, index) => (
           <div
-            key={index}
-            className={`rounded-xl border-l-4 ${item.color} bg-slate-800 p-4`}
+            key={`${item.title}-${index}`}
+            className={`premium-tile surface-enter rounded-xl border-l-4 ${item.color} p-4`}
+            style={{ animationDelay: `${index * 60}ms` }}
           >
-            <h3 className="text-white font-semibold">
-              {item.title}
-            </h3>
+            <h3 className="font-bold text-white">{item.title}</h3>
 
-            <p className="text-slate-300 mt-2">
+            <p className="mt-2 text-sm leading-6 text-slate-300">
               {item.message}
             </p>
           </div>

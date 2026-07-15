@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import CountUp from "react-countup";
+import { motion } from "framer-motion";
 import { AlertTriangle, Bot, TrendingUp, Zap } from "lucide-react";
 import { fetchMachines } from "@/lib/machines";
 import LiveBadge from "./LiveBadge";
@@ -98,12 +99,17 @@ export default function AICommandCenter() {
   ];
 
   return (
-    <div>
+    <section className="premium-card rounded-2xl p-6 lg:p-7">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="flex items-center gap-3 text-3xl font-bold text-white">
-          <Bot className="text-cyan-300" size={28} />
-          AI Command Center
-        </h2>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300/80">
+            Autonomous Intelligence
+          </p>
+          <h2 className="mt-2 flex items-center gap-3 text-2xl font-black text-white md:text-3xl">
+            <Bot className="text-cyan-300" size={28} />
+            AI Command Center
+          </h2>
+        </div>
 
         <LiveBadge />
       </div>
@@ -114,34 +120,41 @@ export default function AICommandCenter() {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-        {cards.map((card) => {
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+        {cards.map((card, index) => {
           const Icon = card.icon;
 
           return (
-            <div
+            <motion.div
               key={card.title}
-              className={`rounded-xl border bg-slate-900 p-6 shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:shadow-cyan-500/20 ${card.border}`}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.07, duration: 0.42 }}
+              whileHover={{ y: -4 }}
+              className={`premium-tile surface-enter rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1 hover:bg-slate-900/80 ${card.border}`}
+              style={{ animationDelay: `${index * 70}ms` }}
             >
               <div className="flex items-center justify-between gap-4">
-                <Icon size={34} className={card.color} />
+                <div className="rounded-xl border border-slate-700/70 bg-slate-950/70 p-3">
+                  <Icon size={24} className={card.color} />
+                </div>
 
-                <span className={`text-4xl font-bold ${card.color}`}>
+                <span className={`text-4xl font-black ${card.color}`}>
                   <CountUp end={card.value} duration={1.5} suffix={card.unit} />
                 </span>
               </div>
 
-              <h3 className="mt-5 text-lg font-semibold text-white">
+              <h3 className="mt-5 text-base font-bold text-white">
                 {card.title}
               </h3>
 
               <p className="mt-1 text-sm text-slate-400">
                 Live Industrial AI Metric
               </p>
-            </div>
+            </motion.div>
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }

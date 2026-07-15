@@ -182,11 +182,14 @@ export default function Navbar() {
   const displayRole = user?.role || "Viewer";
 
   return (
-    <header className="border-b border-slate-800 bg-slate-950 px-4 py-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-40 border-b border-cyan-400/10 bg-slate-950/72 px-4 py-4 shadow-xl shadow-slate-950/20 backdrop-blur-2xl sm:px-6 lg:px-8">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
 
       <div className="min-w-0">
-        <h2 className="truncate text-xl font-bold text-white sm:text-2xl">
+        <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300/80">
+          Command Workspace
+        </p>
+        <h2 className="mt-1 truncate text-xl font-black text-white sm:text-2xl">
           {breadcrumbs.at(-1)}
         </h2>
 
@@ -198,7 +201,7 @@ export default function Navbar() {
       <div className="flex flex-wrap items-center justify-end gap-3 sm:gap-4">
 
         <div ref={searchRef} className="relative order-last w-full sm:order-none sm:w-auto">
-          <div className="flex items-center bg-slate-900 rounded-xl px-4 py-2">
+          <div className="flex items-center rounded-xl border border-slate-700/70 bg-slate-900/70 px-4 py-2 shadow-inner shadow-black/20 transition-colors focus-within:border-cyan-300/50">
 
             {isSearching ? (
               <Loader2 size={18} className="animate-spin text-cyan-300" />
@@ -236,7 +239,7 @@ export default function Navbar() {
             (isSearchFocused &&
               query.trim().length < 2 &&
               recentActions.length > 0)) ? (
-            <div className="absolute right-0 top-12 z-50 w-full overflow-hidden rounded-xl border border-slate-700 bg-slate-950 shadow-2xl shadow-black/40 sm:w-[440px]">
+            <div className="premium-card absolute right-0 top-12 z-50 w-full overflow-hidden rounded-xl sm:w-[440px]">
               {error ? (
                 <div className="px-4 py-3 text-sm text-red-100">{error}</div>
               ) : query.trim().length < 2 && recentActions.length > 0 ? (
@@ -254,7 +257,7 @@ export default function Navbar() {
                     >
                       <div className="flex items-center justify-between gap-3">
                         <p className="font-semibold text-white">{result.title}</p>
-                        <span className="rounded-full border border-slate-700 bg-slate-900 px-2 py-0.5 text-xs font-semibold text-slate-300">
+                        <span className="rounded-full border border-slate-700 bg-slate-900/80 px-2 py-0.5 text-xs font-semibold text-slate-300">
                           Recent
                         </span>
                       </div>
@@ -299,7 +302,7 @@ export default function Navbar() {
         <NotificationCenter />
 
         {user?.activePlantId ? (
-          <div className="hidden rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-300 xl:block">
+          <div className="hidden rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-3 py-2 text-sm text-slate-300 xl:block">
             Plant: <span className="font-semibold text-cyan-200">{user.activePlantId}</span>
           </div>
         ) : null}
@@ -310,7 +313,7 @@ export default function Navbar() {
             onClick={() => setIsProfileOpen((current) => !current)}
             aria-expanded={isProfileOpen}
             aria-haspopup="menu"
-            className="flex items-center gap-2 rounded-xl px-2 py-1 text-cyan-400 transition-colors hover:bg-slate-900 hover:text-cyan-300"
+            className="flex items-center gap-2 rounded-xl border border-transparent px-2 py-1 text-cyan-300 transition-colors hover:border-cyan-400/20 hover:bg-cyan-400/10"
           >
             <UserCircle size={36} />
             <ChevronDown
@@ -322,7 +325,7 @@ export default function Navbar() {
           {isProfileOpen ? (
             <div
               role="menu"
-              className="absolute right-0 top-14 z-50 w-64 overflow-hidden rounded-xl border border-slate-700 bg-slate-950 shadow-2xl shadow-black/40"
+              className="premium-card absolute right-0 top-14 z-50 w-64 overflow-hidden rounded-xl"
             >
               <div className="border-b border-slate-800 px-4 py-3">
                 <p className="truncate font-semibold text-white">{displayName}</p>

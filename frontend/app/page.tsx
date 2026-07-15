@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 
 import OverviewCards from "@/components/dashboard/OverviewCards";
@@ -24,7 +25,36 @@ import ProductionAnalytics from "@/components/dashboard/ProductionAnalytics";
 export default function Home() {
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-8 surface-enter">
+
+        <motion.section
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          className="premium-card rounded-2xl p-6 lg:p-8"
+        >
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.28em] text-cyan-300/80">
+                Enterprise Industrial AI
+              </p>
+              <h1 className="mt-3 text-3xl font-black tracking-tight text-white md:text-5xl">
+                Kavach Operations Command
+              </h1>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400 md:text-base">
+                Real-time machine intelligence, ESP32 telemetry, predictive risk,
+                and plant performance in one operational view.
+              </p>
+            </div>
+
+            <div className="premium-tile rounded-xl px-4 py-3 text-sm text-slate-300">
+              <div className="flex items-center gap-2">
+                <span className="live-dot h-2.5 w-2.5 rounded-full bg-cyan-300" />
+                Live plant telemetry
+              </div>
+            </div>
+          </div>
+        </motion.section>
 
         {/* Overview Cards */}
         <OverviewCards />

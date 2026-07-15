@@ -21,9 +21,12 @@ const data = [
 
 export default function EnergyChart() {
   return (
-    <div className="rounded-2xl border border-slate-700 bg-slate-900 p-6">
-      <h2 className="text-xl font-bold text-white mb-6">
-        ⚡ Energy Consumption
+    <div className="premium-card rounded-2xl p-6">
+      <p className="text-xs font-bold uppercase tracking-[0.22em] text-blue-300/80">
+        Power
+      </p>
+      <h2 className="mb-6 mt-2 text-xl font-black text-white">
+        Energy Consumption
       </h2>
 
       <div style={{ width: "100%", height: 300 }}>
@@ -31,23 +34,26 @@ export default function EnergyChart() {
           <AreaChart data={data}>
             <defs>
               <linearGradient id="energyFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.05} />
+                <stop offset="5%" stopColor="#38bdf8" stopOpacity={0.72} />
+                <stop offset="95%" stopColor="#38bdf8" stopOpacity={0.04} />
               </linearGradient>
             </defs>
 
-            <CartesianGrid strokeDasharray="3 3" />
-
-            <XAxis dataKey="time" />
-
-            <YAxis />
-
-            <Tooltip />
-
+            <CartesianGrid stroke="rgba(148,163,184,0.14)" strokeDasharray="4 6" />
+            <XAxis dataKey="time" stroke="#94a3b8" />
+            <YAxis stroke="#94a3b8" />
+            <Tooltip
+              contentStyle={{
+                background: "rgba(2, 6, 23, 0.92)",
+                border: "1px solid rgba(56, 189, 248, 0.28)",
+                borderRadius: 12,
+                color: "#e2e8f0",
+              }}
+            />
             <Area
               type="monotone"
               dataKey="energy"
-              stroke="#3B82F6"
+              stroke="#38bdf8"
               fill="url(#energyFill)"
               strokeWidth={3}
             />

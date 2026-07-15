@@ -50,19 +50,20 @@ export default function Sidebar() {
   );
 
   return (
-    <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col border-r border-slate-800 bg-slate-950 lg:flex">
+    <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col border-r border-cyan-400/10 bg-slate-950/80 shadow-2xl shadow-cyan-950/10 backdrop-blur-2xl lg:flex">
 
-      <div className="p-8 border-b border-slate-800">
-        <h1 className="text-3xl font-bold text-cyan-400">
+      <div className="border-b border-cyan-400/10 p-8">
+        <div className="mb-5 h-1 w-16 rounded-full bg-cyan-400 shadow-lg shadow-cyan-400/30" />
+        <h1 className="text-3xl font-black tracking-[0.18em] text-cyan-200">
           KAVACH
         </h1>
 
-        <p className="text-slate-400 mt-2 text-sm">
+        <p className="mt-3 text-sm leading-5 text-slate-400">
           Industrial Decision Intelligence
         </p>
       </div>
 
-      <nav className="flex-1 space-y-2 overflow-y-auto p-5">
+      <nav className="flex-1 space-y-2 overflow-y-auto p-4">
 
         {visibleItems.map((item) => {
 
@@ -77,13 +78,13 @@ export default function Sidebar() {
               key={item.name}
               href={item.href}
               aria-current={isActive ? "page" : undefined}
-              className={`flex items-center gap-4 rounded-xl px-5 py-3 transition-all duration-300 ${
+              className={`group flex items-center gap-4 rounded-lg px-4 py-3 text-sm font-semibold transition-all duration-300 ${
                 isActive
-                  ? "border border-cyan-400/30 bg-cyan-500/15 text-cyan-300 shadow-lg shadow-cyan-950/20"
-                  : "text-slate-300 hover:bg-cyan-500/15 hover:text-cyan-400"
+                  ? "border border-cyan-300/30 bg-cyan-400/10 text-cyan-100 shadow-lg shadow-cyan-950/30"
+                  : "border border-transparent text-slate-400 hover:border-cyan-400/20 hover:bg-cyan-400/10 hover:text-cyan-100"
               }`}
             >
-              <Icon size={22} />
+              <Icon size={20} className={isActive ? "text-cyan-200" : "text-slate-500 transition-colors group-hover:text-cyan-200"} />
               <span>{item.name}</span>
             </Link>
           );
@@ -92,8 +93,11 @@ export default function Sidebar() {
 
       </nav>
 
-      <div className="p-6 border-t border-slate-800 text-center text-slate-500 text-xs">
-        Kavach v1.0
+      <div className="border-t border-cyan-400/10 p-5 text-xs text-slate-500">
+        <div className="premium-tile rounded-lg px-4 py-3">
+          <p className="font-semibold text-slate-300">Kavach v1.0</p>
+          <p className="mt-1">Enterprise AI Platform</p>
+        </div>
       </div>
 
     </aside>

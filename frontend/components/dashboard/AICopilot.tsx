@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Bot, Send } from "lucide-react";
 import { fetchMachines } from "@/lib/machines";
 import socket from "@/lib/socket";
 
@@ -19,8 +20,7 @@ export default function AICopilot() {
   const [question, setQuestion] = useState("");
 
   useEffect(() => {
-    fetchMachines()
-      .then(setMachines);
+    fetchMachines().then(setMachines);
 
     const handleMachineUpdate = (data: Machine[]) => {
       setMachines(data);
@@ -47,9 +47,7 @@ export default function AICopilot() {
         return "No machines are currently in a critical state.";
       }
 
-      return `Critical machines: ${critical
-        .map((m) => m.name)
-        .join(", ")}.`;
+      return `Critical machines: ${critical.map((m) => m.name).join(", ")}.`;
     }
 
     if (q.includes("maintenance")) {
@@ -71,29 +69,42 @@ export default function AICopilot() {
 
       return `${hottest.name} has the highest temperature (${hottest.temperature.toFixed(
         1
-      )}°C).`;
+      )} C).`;
     }
 
     return "I couldn't understand that request. Try asking about critical machines, maintenance, or temperature.";
   }, [question, machines]);
 
   return (
-    <div className="rounded-2xl bg-slate-900 border border-slate-700 p-6">
-      <h2 className="text-2xl font-bold text-white mb-5">
-        🤖 AI Copilot
-      </h2>
+    <div className="premium-card rounded-2xl p-6">
+      <div className="mb-5 flex items-center gap-3">
+        <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/10 p-3">
+          <Bot size={22} className="text-cyan-200" />
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300/80">
+            Operator Assistant
+          </p>
+          <h2 className="text-2xl font-black text-white">AI Copilot</h2>
+        </div>
+      </div>
 
-      <input
-        value={question}
-        onChange={(e) => setQuestion(e.target.value)}
-        placeholder="Ask: Which machine needs maintenance?"
-        className="w-full rounded-lg bg-slate-800 border border-slate-600 p-3 text-white outline-none"
-      />
+      <div className="flex items-center gap-3 rounded-xl border border-slate-700/80 bg-slate-950/60 px-4 py-3 transition-colors focus-within:border-cyan-300/50">
+        <input
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          placeholder="Ask: Which machine needs maintenance?"
+          className="min-w-0 flex-1 bg-transparent text-white outline-none placeholder:text-slate-500"
+        />
+        <Send size={18} className="text-cyan-300" />
+      </div>
 
-      <div className="mt-5 rounded-xl bg-slate-800 p-4">
-        <p className="text-cyan-300 font-semibold mb-2">Response</p>
+      <div className="premium-tile mt-5 rounded-xl p-4">
+        <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-cyan-300">
+          Response
+        </p>
 
-        <p className="text-slate-200">{answer}</p>
+        <p className="leading-6 text-slate-200">{answer}</p>
       </div>
     </div>
   );
