@@ -2,20 +2,20 @@
 
 KAVACH is a production-ready industrial operations platform for machine monitoring, predictive maintenance, enterprise plant management, AI-assisted operations, alerts, audit logs, reports, work orders, and live Socket.IO telemetry.
 
-The repository contains a Next.js frontend and an Express/MongoDB backend. The production deployment is configured for Render, MongoDB Atlas, HTTPS-only frontend API calls, Express CORS, and Socket.IO websocket handshakes.
+The repository contains a Next.js frontend and an Express/MongoDB backend. The production deployment is configured for Vercel frontend hosting, Render or Railway backend hosting, MongoDB Atlas, HTTPS-only frontend API calls, Express CORS, and Socket.IO websocket handshakes.
 
-## Production URLs
+## Production Targets
 
-Update this section if the Render service names change.
+Replace the example hosts with your deployed Vercel and backend service URLs.
 
 | Service | URL |
 | --- | --- |
-| Frontend | `https://kavach-1-7749.onrender.com` |
-| Backend API | `https://kavach-spgh.onrender.com` |
-| API health | `https://kavach-spgh.onrender.com/api/health` |
-| API docs | `https://kavach-spgh.onrender.com/api/docs` |
-| OpenAPI JSON | `https://kavach-spgh.onrender.com/api/docs/openapi.json` |
-| Socket.IO | `wss://kavach-spgh.onrender.com/socket.io` |
+| Frontend | `https://your-vercel-app.vercel.app` |
+| Backend API | `https://your-backend-service.onrender.com` or Railway equivalent |
+| API health | `https://your-backend-service.onrender.com/api/health` |
+| API docs | `https://your-backend-service.onrender.com/api/docs` |
+| OpenAPI JSON | `https://your-backend-service.onrender.com/api/docs/openapi.json` |
+| Socket.IO | `wss://your-backend-service.onrender.com/socket.io` |
 
 ## Architecture
 
@@ -66,7 +66,7 @@ Optional: MQTT broker -> backend IoT ingestion -> Socket.IO -> live UI
 | Auth | JWT access tokens, refresh tokens, bcrypt password hashing |
 | Realtime | Socket.IO websocket and polling fallback |
 | IoT | Optional MQTT integration and device telemetry ingestion |
-| Deployment | Render, Docker Compose reference |
+| Deployment | Vercel frontend, Render/Railway backend, Docker Compose reference |
 
 ## Main Capabilities
 
@@ -94,8 +94,9 @@ Use `.env.example` as the full reference. Do not commit real secrets.
 Frontend production must include:
 
 ```env
-NEXT_PUBLIC_API_URL=https://kavach-spgh.onrender.com
-NEXT_PUBLIC_SOCKET_URL=https://kavach-spgh.onrender.com
+NEXT_PUBLIC_API_URL=https://your-backend-service.onrender.com
+NEXT_PUBLIC_SOCKET_URL=https://your-backend-service.onrender.com
+API_URL=https://your-backend-service.onrender.com
 ```
 
 Backend production must include:
@@ -106,10 +107,30 @@ PORT=5000
 MONGO_URI=mongodb+srv://<user>:<password>@<cluster>/<database>
 JWT_SECRET=<strong-random-secret>
 JWT_REFRESH_SECRET=<strong-random-secret>
-CORS_ORIGIN=https://kavach-1-7749.onrender.com
+CORS_ORIGIN=https://your-vercel-app.vercel.app
 CORS_CREDENTIALS=true
 IOT_ENABLED=false
 ENABLE_SENSOR_SIMULATION=false
+```
+
+## Production Verification
+
+Run the core production checks before deployment:
+
+```bash
+npm run verify
+```
+
+Run dependency audits before release approval:
+
+```bash
+npm run verify:production
+```
+
+Production health check:
+
+```text
+GET /api/health
 ```
 
 ## Common Commands

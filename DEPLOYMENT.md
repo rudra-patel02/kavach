@@ -1,31 +1,67 @@
 # KAVACH Production Deployment
 
-This guide covers production deployment for the KAVACH frontend and backend, with Render as the expected hosting platform and MongoDB Atlas as the production database.
+This guide prepares KAVACH for a production split deployment:
 
-## Production Targets
+- Frontend: Vercel, root directory `frontend`
+- Backend: Render or Railway, root directory `backend`
+- Database: MongoDB Atlas
+- Realtime: Socket.IO over HTTPS/WSS
+- IoT: ESP32 posts to the backend `/api/iot/sensor` endpoint
 
-| Service | URL |
+Do not put backend secrets in Vercel or in any `NEXT_PUBLIC_` variable.
+
+## Required Checks
+
+Run from the repository root before every production deploy:
+
+```bash
+npm run verify
+```
+
+Run the dependency audit before release approval:
+
+```bash
+npm run verify:production
+```
+
+`verify` runs frontend lint, frontend typecheck, frontend production build, and backend tests. `verify:production` adds production dependency audits for both apps.
+
+## Frontend on Vercel
+
+Use the existing `frontend/vercel.json`.
+
+| Setting | Value |
 | --- | --- |
-| Frontend | `https://kavach-1-7749.onrender.com` |
-| Backend | `https://kavach-spgh.onrender.com` |
-| Health check | `https://kavach-spgh.onrender.com/api/health` |
-| API docs | `https://kavach-spgh.onrender.com/api/docs` |
-| Socket.IO | `wss://kavach-spgh.onrender.com/socket.io` |
+| Framework | Next.js |
+| Root directory | `frontend` |
+| Install command | `npm ci` |
+| Build command | `npm run build` |
+| Output directory | `.next` |
+| Node.js | `22.x` from `frontend/package.json` |
 
-## Deployment Prerequisites
+Set these Vercel environment variables for Production, Preview, and Development as appropriate:
 
-- Node.js `22.x`
-- npm `10+`
-- MongoDB Atlas database
-- Render account with access to this repository
-- Production secrets generated before deployment
-- Frontend and backend hosted on HTTPS domains
+```env
+NEXT_PUBLIC_API_URL=https://your-backend-service.onrender.com
+NEXT_PUBLIC_SOCKET_URL=https://your-backend-service.onrender.com
+API_URL=https://your-backend-service.onrender.com
+```
 
-## Backend Deployment on Render
+For Railway backend, use the Railway public HTTPS backend URL instead.
 
-The repository includes `render.yaml` for the backend service.
+The frontend config:
 
-Render backend settings:
+- keeps local/private HTTP URLs usable for ESP32 LAN testing
+- upgrades public HTTP backend URLs to HTTPS
+- rewrites `/api/*` to the backend when `API_URL` or `NEXT_PUBLIC_API_URL` is configured
+- disables `X-Powered-By`
+- disables production browser source maps
+- adds browser security headers
+- lazy-loads heavy dashboard/3D/chart panels with skeleton fallbacks
+
+## Backend on Render
+
+Use `render.yaml` from the repository root.
 
 | Setting | Value |
 | --- | --- |
@@ -34,184 +70,146 @@ Render backend settings:
 | Build command | `npm ci --omit=dev` |
 | Start command | `npm run start` |
 | Health check path | `/api/health` |
-| Node version | `22.x` from `backend/package.json` |
+| Node.js | `22.x` from `backend/package.json` |
 
-Required backend environment variables:
+Required Render environment variables:
 
 ```env
 NODE_ENV=production
-PORT=5000
 MONGO_URI=mongodb+srv://<user>:<password>@<cluster>/<database>
-JWT_SECRET=<strong-random-secret>
-JWT_REFRESH_SECRET=<strong-random-secret>
-CORS_ORIGIN=https://kavach-1-7749.onrender.com
+JWT_SECRET=<random-32-plus-character-secret>
+JWT_REFRESH_SECRET=<different-random-32-plus-character-secret>
+CORS_ORIGIN=https://your-vercel-app.vercel.app
 CORS_CREDENTIALS=true
-MONGO_CONNECT_ATTEMPTS=5
-MONGO_CONNECT_RETRY_MS=5000
-IOT_ENABLED=false
-ENABLE_SENSOR_SIMULATION=false
-DEVICE_SECRET=<strong-device-secret>
+PUBLIC_API_BASE_URL=https://your-backend-service.onrender.com
+DEVICE_SECRET=<random-device-secret>
 ```
 
-Optional backend variables:
+Recommended production variables are listed in `.env.example` and `backend/.env.example`.
 
-```env
-API_VERSION=20.0.0
-MONGO_MAX_POOL_SIZE=20
-MONGO_MAX_IDLE_TIME_MS=60000
-MONGO_SERVER_SELECTION_TIMEOUT_MS=10000
-JWT_EXPIRES_IN=7d
-JWT_REFRESH_EXPIRES_IN=30d
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX=600
-AUTH_RATE_LIMIT_MAX=25
-BRUTE_FORCE_WINDOW_MS=900000
-BRUTE_FORCE_MAX_FAILURES=8
-OPENAI_API_KEY=
-AI_PROVIDER=offline
-OPENAI_MODEL=gpt-4o-mini
-MQTT_BROKER_URL=
-MQTT_USERNAME=
-MQTT_PASSWORD=
-MQTT_CLIENT_ID=kavach-backend-prod
-```
+## Backend on Railway
 
-## Frontend Deployment on Render
-
-Create a separate Render web service for `frontend`.
-
-Recommended frontend settings:
+Use `backend/railway.json`.
 
 | Setting | Value |
 | --- | --- |
-| Runtime | Node |
-| Root directory | `frontend` |
-| Build command | `npm ci && npm run build` |
+| Root directory | `backend` |
+| Builder | Nixpacks |
+| Build command | `npm ci --omit=dev` |
 | Start command | `npm run start` |
-| Node version | `22.x` from `frontend/package.json` |
+| Health check path | `/api/health` |
 
-Required frontend environment variables:
+Set the same backend variables listed for Render. Use the Railway public service URL in:
 
 ```env
-NEXT_PUBLIC_API_URL=https://kavach-spgh.onrender.com
-NEXT_PUBLIC_SOCKET_URL=https://kavach-spgh.onrender.com
+PUBLIC_API_BASE_URL=https://your-railway-backend.up.railway.app
 ```
 
-Do not include backend secrets in frontend variables. Any variable prefixed with `NEXT_PUBLIC_` is bundled for the browser.
+Then set Vercel:
 
-## MongoDB Atlas Configuration
+```env
+NEXT_PUBLIC_API_URL=https://your-railway-backend.up.railway.app
+NEXT_PUBLIC_SOCKET_URL=https://your-railway-backend.up.railway.app
+API_URL=https://your-railway-backend.up.railway.app
+```
 
-1. Create or select the production Atlas cluster.
-2. Create a database user with read/write access to the KAVACH database.
-3. Use a database-specific connection string in `MONGO_URI`.
-4. Configure Atlas Network Access for the Render backend.
-5. Confirm the URI does not contain placeholder tokens such as `<user>` or `<password>`.
-6. Confirm the backend logs show `mongodb_connected` before requests are served.
+## MongoDB Atlas
 
-If the backend repeatedly logs MongoDB connection failures, check:
+1. Create a production database user with least required read/write access.
+2. Put the database name in the `MONGO_URI` path.
+3. URL-encode special characters in the password.
+4. Configure Atlas Network Access for the backend host.
+5. Verify backend logs include `mongodb_connected`.
+6. Never commit `MONGO_URI`.
 
-- Atlas username/password
-- Database user permissions
-- Network access allowlist
-- Database name in the URI path
-- Special characters in passwords that need URL encoding
-- Render environment variable value copied without quotes or trailing spaces
+The backend refuses to start the HTTP server if MongoDB cannot connect.
 
 ## CORS and Socket.IO
 
-Production backend CORS must allow exactly:
+Backend CORS must point to the exact Vercel frontend origin:
 
 ```env
-CORS_ORIGIN=https://kavach-1-7749.onrender.com
+CORS_ORIGIN=https://your-vercel-app.vercel.app
 CORS_CREDENTIALS=true
 ```
 
-The backend applies the same CORS policy to Express and Socket.IO. Allowed methods are:
+The same CORS options are used for Express and Socket.IO. Supported methods are:
 
 ```text
 GET, POST, PUT, PATCH, DELETE, OPTIONS
 ```
 
-Allowed headers are:
+Supported headers are:
 
 ```text
 Content-Type, Authorization
 ```
 
-Preflight requests are handled by Express with `OPTIONS` support.
+If the frontend uses a custom domain, add that domain to `CORS_ORIGIN`. Multiple origins can be comma-separated.
 
-## HTTPS and Mixed Content
+## ESP32 Production Telemetry
 
-Production frontend API helpers enforce HTTPS. Production variables must still be configured correctly:
-
-```env
-NEXT_PUBLIC_API_URL=https://kavach-spgh.onrender.com
-NEXT_PUBLIC_SOCKET_URL=https://kavach-spgh.onrender.com
-```
-
-The browser should show API calls to `https://kavach-spgh.onrender.com` and Socket.IO connections upgraded to `wss://kavach-spgh.onrender.com`.
-
-## Seeding and Admin Access
-
-For production, seed or repair the admin user only through an approved one-time process. The valid admin account is:
+The ESP32 should post to the deployed backend:
 
 ```text
-Email: admin@kavach.com
-Password: admin123
+https://your-backend-service.onrender.com/api/iot/sensor
 ```
 
-The stored password must be a bcrypt hash. Rotate this password after the first successful production login.
+For LAN development, local HTTP URLs are still supported by the frontend config and ESP32 sketch. For production, use HTTPS.
 
-## Deployment Checklist
+Expected telemetry verification:
 
-Before deploying:
+1. ESP32 receives HTTP `200` from `/api/iot/sensor`.
+2. MongoDB stores telemetry for `deviceId`.
+3. Backend emits `sensor-update`.
+4. Dashboard Live Sensor Data updates temperature, humidity, status, and timestamp.
 
-- `npm run frontend:lint`
-- `npm run frontend:typecheck`
-- `npm run frontend:build`
-- `npm run backend:test`
-- Confirm `.env.example` has no real secrets
-- Confirm frontend env points to HTTPS backend
-- Confirm backend `CORS_ORIGIN` points to the production frontend
-- Confirm `MONGO_URI` is set in Render and works from backend logs
+## Health Checks
 
-After deploying:
+Public health endpoint:
 
-- Open `/api/health`
-- Open `/api/docs`
-- Log in from the production frontend
-- Confirm API requests use `https://kavach-spgh.onrender.com`
-- Confirm Socket.IO connects over WSS
-- Confirm dashboard, machines, analytics, alerts, audit, profile, notifications, and logout
-- Confirm no browser mixed-content or CORS errors
+```text
+GET /api/health
+```
+
+Use it for Render/Railway health checks and post-deploy smoke tests.
+
+Authenticated diagnostics remain under:
+
+```text
+GET /api/system/health
+```
+
+## Security Checklist
+
+- Use long, different `JWT_SECRET` and `JWT_REFRESH_SECRET` values.
+- Keep `MONGO_URI`, JWT secrets, `DEVICE_SECRET`, `OPENAI_API_KEY`, and restore tokens server-side only.
+- Set `NODE_ENV=production` on the backend.
+- Set exact `CORS_ORIGIN`; do not use `*` in production.
+- Rotate seeded/demo credentials before real use.
+- Keep `IOT_ENABLED=false` unless MQTT is intentionally configured.
+- Keep `ENABLE_SENSOR_SIMULATION=false` in production when using real ESP32 data.
+- Review `npm run verify:production` audit output before release.
+
+## Production Smoke Test
+
+After deployment:
+
+1. Open the Vercel frontend.
+2. Open backend `/api/health`.
+3. Log in.
+4. Confirm dashboard data loads.
+5. Confirm Socket.IO connects with WSS and no CORS errors.
+6. Confirm Machines, IoT, Analytics, Alerts, Copilot, Reports, Settings, and Logout.
+7. Send ESP32 telemetry and confirm the Live Sensor Data card updates.
+8. Check browser console for mixed-content, CORS, and hydration errors.
+9. Check backend logs for MongoDB, unhandled errors, and rate-limit noise.
 
 ## Rollback
 
-Render supports redeploying a previous successful deploy from the service deploy history. Roll back frontend and backend independently if only one service is affected.
+Roll back frontend and backend independently:
 
-Rollback order for API-breaking releases:
-
-1. Roll back backend.
+1. Roll back backend if API health or login fails.
 2. Verify `/api/health`.
-3. Roll back frontend if browser flows still fail.
-4. Confirm login and dashboard again.
-
-## Operational Monitoring
-
-Monitor:
-
-- Backend logs for MongoDB connection attempts and errors
-- HTTP 4xx/5xx rates
-- Socket.IO connection count from `/api/system/health`
-- Atlas connection and query metrics
-- Render deploy and restart events
-- Browser console during production QA
-
-## Security Notes
-
-- Keep JWT secrets long, random, and different from each other.
-- Keep `MONGO_URI` and `DEVICE_SECRET` server-side only.
-- Use HTTPS-only production endpoints.
-- Rotate seeded credentials after initial access.
-- Remove temporary repair endpoints immediately after use.
-- Restrict MongoDB Atlas network access to production infrastructure where possible.
+3. Roll back frontend if browser rendering or client routing fails.
+4. Re-run the production smoke test.

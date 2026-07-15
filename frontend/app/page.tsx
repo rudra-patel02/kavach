@@ -1,26 +1,61 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 
 import OverviewCards from "@/components/dashboard/OverviewCards";
-import AICommandCenter from "@/components/dashboard/AICommandCenter";
-import PlantStatus from "@/components/dashboard/PlantStatus";
-import AIInsights from "@/components/dashboard/AIInsights";
-import LiveAlerts from "@/components/dashboard/LiveAlerts";
 import LiveSensors from "@/components/sensors/LiveSensors";
 
-import DigitalTwin from "@/components/digitalTwin/DigitalTwin";
+const DashboardSectionSkeleton = ({ height = "h-80" }: { height?: string }) => (
+  <div className={`premium-skeleton rounded-2xl ${height}`} />
+);
 
-import AnalyticsCharts from "@/components/charts/AnalyticsChart";
-import MachineHealthChart from "@/components/charts/MAchineHealthChart";
-import EnergyChart from "@/components/charts/EnergyCgart";
-import MachineStatusChart from "@/components/charts/MachineStatusChart";
-
-import Scene from "@/components/three/Scene";
-import OEEGauge from "@/components/dashboard/OEEGauge";
-import AICopilot from "@/components/dashboard/AICopilot";
-import ProductionAnalytics from "@/components/dashboard/ProductionAnalytics";
+const AICommandCenter = dynamic(
+  () => import("@/components/dashboard/AICommandCenter"),
+  { loading: () => <DashboardSectionSkeleton height="h-72" /> }
+);
+const AICopilot = dynamic(() => import("@/components/dashboard/AICopilot"), {
+  loading: () => <DashboardSectionSkeleton height="h-80" />,
+});
+const ProductionAnalytics = dynamic(
+  () => import("@/components/dashboard/ProductionAnalytics"),
+  { loading: () => <DashboardSectionSkeleton height="h-80" /> }
+);
+const DigitalTwin = dynamic(() => import("@/components/digitalTwin/DigitalTwin"), {
+  loading: () => <DashboardSectionSkeleton height="h-[560px]" />,
+  ssr: false,
+});
+const PlantStatus = dynamic(() => import("@/components/dashboard/PlantStatus"), {
+  loading: () => <DashboardSectionSkeleton height="h-[560px]" />,
+});
+const AnalyticsCharts = dynamic(() => import("@/components/charts/AnalyticsChart"), {
+  loading: () => <DashboardSectionSkeleton />,
+});
+const MachineHealthChart = dynamic(
+  () => import("@/components/charts/MAchineHealthChart"),
+  { loading: () => <DashboardSectionSkeleton /> }
+);
+const EnergyChart = dynamic(() => import("@/components/charts/EnergyCgart"), {
+  loading: () => <DashboardSectionSkeleton />,
+});
+const MachineStatusChart = dynamic(
+  () => import("@/components/charts/MachineStatusChart"),
+  { loading: () => <DashboardSectionSkeleton /> }
+);
+const AIInsights = dynamic(() => import("@/components/dashboard/AIInsights"), {
+  loading: () => <DashboardSectionSkeleton height="h-96" />,
+});
+const LiveAlerts = dynamic(() => import("@/components/dashboard/LiveAlerts"), {
+  loading: () => <DashboardSectionSkeleton height="h-96" />,
+});
+const OEEGauge = dynamic(() => import("@/components/dashboard/OEEGauge"), {
+  loading: () => <DashboardSectionSkeleton />,
+});
+const Scene = dynamic(() => import("@/components/three/Scene"), {
+  loading: () => <DashboardSectionSkeleton height="h-[520px]" />,
+  ssr: false,
+});
 
 export default function Home() {
   return (

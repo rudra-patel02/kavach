@@ -7,10 +7,14 @@
     "backend:start": "npm --prefix backend run start",
     "backend:seed": "npm --prefix backend run seed",
     "backend:test": "npm --prefix backend run test",
+    "backend:audit": "npm --prefix backend audit --omit=dev",
     "frontend:dev": "npm --prefix frontend run dev",
     "frontend:build": "npm --prefix frontend run build",
     "frontend:start": "npm --prefix frontend run start",
     "frontend:lint": "npm --prefix frontend run lint",
-    "frontend:typecheck": "npm --prefix frontend run typecheck"
+    "frontend:typecheck": "npm --prefix frontend run typecheck",
+    "frontend:audit": "npm --prefix frontend audit --omit=dev",
+    "verify": "npm run frontend:lint && npm run frontend:typecheck && npm run frontend:build && npm run backend:test",
+    "verify:production": "npm run verify && npm run frontend:audit && npm run backend:audit"
   }
 }
