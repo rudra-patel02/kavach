@@ -211,17 +211,19 @@ const start = async () => {
   app.use(notFoundHandler);
   app.use(globalErrorHandler);
 
-  logStartup("http_server_listen_start", { port });
+  const host = process.env.HOST || "0.0.0.0";
+
+  logStartup("http_server_listen_start", { host, port });
 
   await new Promise((resolve, reject) => {
     server.once("error", reject);
-    server.listen(port, () => {
+    server.listen(port, host, () => {
       server.off("error", reject);
       resolve();
     });
   });
 
-  logStartup("http_server_listening", { port });
+  logStartup("http_server_listening", { host, port });
 
   let stopSensorSimulation = () => {};
   let stopBackupScheduler = () => {};

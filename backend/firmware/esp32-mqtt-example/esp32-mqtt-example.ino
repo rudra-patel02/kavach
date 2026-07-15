@@ -3,13 +3,13 @@
 #include <HTTPClient.h>
 #include <WiFi.h>
 
-const char* WIFI_SSID = "Rudra N's iPhone";
+const char* WIFI_SSID = "Rudra 2.4GHz";
 const char* WIFI_PASSWORD = "12345678990";
-const char* BACKEND_SENSOR_URL = "http://172.20.10.14:5000/api/iot/sensor";
-const char* DEVICE_ID = "esp32-dht11-01";
+const char* BACKEND_SENSOR_URL = "http://172.20.10.2:5000/api/iot/sensor";
+const char* DEVICE_ID = "esp32-dht22-01";
 
 #define DHT_PIN 4
-#define DHT_TYPE DHT11
+#define DHT_TYPE DHT22
 
 DHT dht(DHT_PIN, DHT_TYPE);
 
@@ -208,7 +208,7 @@ void loop() {
     float temperature = dht.readTemperature();
 
     if (isnan(humidity) || isnan(temperature)) {
-      Serial.println("Failed to read DHT11.");
+      Serial.println("Failed to read DHT22.");
       return;
     }
 
