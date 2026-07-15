@@ -5,8 +5,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
+  FileText,
+  Gauge,
   Loader2,
   LogOut,
+  Plus,
   Search,
   Settings,
   UserCircle,
@@ -180,22 +183,40 @@ export default function Navbar() {
 
   const displayName = user?.name || user?.email || "Profile";
   const displayRole = user?.role || "Viewer";
+  const quickActions = [
+    { href: "/machines/add", icon: Plus, label: "Add Machine" },
+    { href: "/reports", icon: FileText, label: "Reports" },
+    { href: "/dashboard/executive", icon: Gauge, label: "Executive" },
+  ];
 
   return (
     <header className="sticky top-0 z-40 border-b border-cyan-400/10 bg-slate-950/72 px-4 py-4 shadow-xl shadow-slate-950/20 backdrop-blur-2xl sm:px-6 lg:px-8">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
 
       <div className="min-w-0">
-        <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300/80">
-          Command Workspace
-        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300/80">
+            Command Workspace
+          </p>
+          <span className="hidden h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-lg shadow-emerald-300/40 sm:inline-block" />
+          <span className="hidden rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-[0.16em] text-emerald-200 sm:inline-block">
+            Live Ops
+          </span>
+        </div>
         <h2 className="mt-1 truncate text-xl font-black text-white sm:text-2xl">
           {breadcrumbs.at(-1)}
         </h2>
 
-        <p className="truncate text-sm text-slate-400">
-          {breadcrumbs.join(" / ")}
-        </p>
+        <div className="mt-1 flex min-w-0 items-center gap-2 truncate text-sm text-slate-400">
+          {breadcrumbs.map((breadcrumb, index) => (
+            <span key={`${breadcrumb}-${index}`} className="flex min-w-0 items-center gap-2">
+              {index > 0 ? <span className="text-slate-600">/</span> : null}
+              <span className={index === breadcrumbs.length - 1 ? "truncate text-slate-200" : "truncate"}>
+                {breadcrumb}
+              </span>
+            </span>
+          ))}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-end gap-3 sm:gap-4">
@@ -299,10 +320,27 @@ export default function Navbar() {
 
         </div>
 
+        <div className="hidden items-center gap-2 2xl:flex">
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+
+            return (
+              <Link
+                key={action.href}
+                href={action.href}
+                title={action.label}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700/70 bg-slate-900/60 text-slate-300 shadow-inner shadow-white/5 transition-all hover:-translate-y-0.5 hover:border-cyan-300/40 hover:bg-cyan-400/10 hover:text-cyan-100"
+              >
+                <Icon size={17} />
+              </Link>
+            );
+          })}
+        </div>
+
         <NotificationCenter />
 
         {user?.activePlantId ? (
-          <div className="hidden rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-3 py-2 text-sm text-slate-300 xl:block">
+          <div className="hidden rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-3 py-2 text-sm text-slate-300 shadow-inner shadow-cyan-300/5 xl:block">
             Plant: <span className="font-semibold text-cyan-200">{user.activePlantId}</span>
           </div>
         ) : null}
