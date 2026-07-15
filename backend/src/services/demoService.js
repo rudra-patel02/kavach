@@ -192,6 +192,13 @@ export const generateDemoData = async () => {
           temperature: 28 + index * 3,
           tenantId: DEMO_TENANT_ID,
           vibration: Number((0.18 + index * 0.08).toFixed(2)),
+          ...(index === 0
+            ? {
+                linkedDeviceId: "esp32-dht11-01",
+                liveTelemetryEnabled: true,
+                telemetrySource: "iot",
+              }
+            : {}),
         };
       }
     )
