@@ -74,3 +74,17 @@ export interface IoTDevicesResponse {
   success: boolean;
   devices: IoTDevice[];
 }
+
+export interface IoTSensorReading {
+  id: string;
+  deviceId: string;
+  machineId: string;
+  temperature: number | null;
+  humidity: number | null;
+  timestamp: string | null;
+}
+
+export interface IoTLatestSensorResponse {
+  success: boolean;
+  reading: IoTSensorReading | null;
+}

@@ -33,6 +33,71 @@ const serializeTelemetry = (telemetry) => ({
     : null,
 });
 
+const roundSensorValue = (value) => Number(Number(value).toFixed(2));
+
+const normalizeDht22Payload = (payload = {}) => {
+  const errors = [];
+  const deviceId = String(payload.deviceId || "").trim();
+  const machineId = String(payload.machineId || deviceId || "esp32-dht22").trim();
+  const timestamp = payload.timestamp ? new Date(payload.timestamp) : new Date();
+  const temperature = Number(payload.temperature);
+  const humidity = Number(payload.humidity);
+
+  if (!deviceId) {
+    errors.push("deviceId is required");
+  }
+
+  if (!Number.isFinite(temperature)) {
+    errors.push("temperature must be numeric");
+  } else if (temperature < -40 || temperature > 80) {
+    errors.push("temperature must be between -40 and 80");
+  }
+
+  if (!Number.isFinite(humidity)) {
+    errors.push("humidity must be numeric");
+  } else if (humidity < 0 || humidity > 100) {
+    errors.push("humidity must be between 0 and 100");
+  }
+
+  if (Number.isNaN(timestamp.getTime())) {
+    errors.push("timestamp must be a valid ISO8601 value");
+  }
+
+  if (errors.length > 0) {
+    const error = new Error(errors.join("; "));
+    error.statusCode = 400;
+    error.details = errors;
+    throw error;
+  }
+
+  return {
+    deviceId,
+    machineId,
+    metrics: {
+      humidity: roundSensorValue(humidity),
+      temperature: roundSensorValue(temperature),
+    },
+    timestamp,
+  };
+};
+
+const serializeDht22Sensor = (telemetry) => {
+  if (!telemetry) {
+    return null;
+  }
+
+  return {
+    deviceId: telemetry.deviceId,
+    humidity: telemetry.metrics?.humidity ?? null,
+    id: String(telemetry._id),
+    machineId: telemetry.machineId,
+    temperature: telemetry.metrics?.temperature ?? null,
+    timestamp: telemetry.timestamp
+      ? new Date(telemetry.timestamp).toISOString()
+      : null,
+  };
+};
+
 export const getIoTOverview = async (req, res) => {
   try {
     const [devices, latestTelemetry, connectionLogs] = await Promise.all([
@@ -175,6 +240,64 @@ export const receiveTelemetry = async (req, res) => {
       details: error.details,
       message: error.message || "Telemetry ingestion failed",
     });
+  }
+};
+
+export const receiveDht22SensorReading = async (req, res) => {
+  try {
+    const reading = normalizeDht22Payload(req.body);
+    const telemetry = await Telemetry.create({
+      deviceId: reading.deviceId,
+      machineId: reading.machineId,
+      metrics: reading.metrics,
+      rawPayload: {
+        deviceId: req.body.deviceId,
+        humidity: req.body.humidity,
+        machineId: req.body.machineId,
+        temperature: req.body.temperature,
+        timestamp: req.body.timestamp,
+      },
+      source: "rest",
+      timestamp: reading.timestamp,
+    });
+
+    getGateway(req)?.emit?.("iot:sensor:update", serializeDht22Sensor(telemetry));
+
+    res.status(201).json({
+      reading: serializeDht22Sensor(telemetry),
+      success: true,
+    });
+  } catch (error) {
+    console.error("DHT22 sensor ingestion failed:", error);
+    res.status(error.statusCode || 500).json({
+      details: error.details,
+      message: error.message || "DHT22 sensor ingestion failed",
+    });
+  }
+};
+
+export const getLatestDht22SensorReading = async (req, res) => {
+  try {
+    const filter = {
+      "metrics.humidity": { $exists: true },
+      "metrics.temperature": { $exists: true },
+    };
+
+    if (req.query.deviceId) {
+      filter.deviceId = String(req.query.deviceId);
+    }
+
+    const telemetry = await Telemetry.findOne(filter)
+      .sort({ timestamp: -1 })
+      .lean();
+
+    res.json({
+      reading: serializeDht22Sensor(telemetry),
+      success: true,
+    });
+  } catch (error) {
+    console.error("Failed to fetch latest DHT22 reading:", error);
+    res.status(500).json({ message: "Failed to fetch latest DHT22 reading" });
   }
 };
 

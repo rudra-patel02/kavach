@@ -7,6 +7,7 @@ import AICommandCenter from "@/components/dashboard/AICommandCenter";
 import PlantStatus from "@/components/dashboard/PlantStatus";
 import AIInsights from "@/components/dashboard/AIInsights";
 import LiveAlerts from "@/components/dashboard/LiveAlerts";
+import LiveSensors from "@/components/sensors/LiveSensors";
 
 import DigitalTwin from "@/components/digitalTwin/DigitalTwin";
 
@@ -31,6 +32,7 @@ export default function Home() {
         {/* AI Command Center */}
         <AICommandCenter />
         <AICopilot />
+        <LiveSensors />
         <ProductionAnalytics />
 
         {/* Digital Twin + Plant Status */}

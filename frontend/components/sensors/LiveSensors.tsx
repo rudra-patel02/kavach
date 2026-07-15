@@ -1,44 +1,109 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Droplets, Thermometer } from "lucide-react";
+import { fetchLatestIoTSensor } from "@/lib/iot";
+import type { IoTSensorReading } from "@/types/iot";
 
 export default function LiveSensors() {
-  const [temperature, setTemperature] = useState(62);
-  const [pressure, setPressure] = useState(12.4);
-  const [health, setHealth] = useState(98);
-  const [vibration, setVibration] = useState(1.2);
+  const [reading, setReading] = useState<IoTSensorReading | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTemperature(Number((60 + Math.random() * 8).toFixed(1)));
-      setPressure(Number((12 + Math.random()).toFixed(2)));
-      setHealth(Math.floor(95 + Math.random() * 5));
-      setVibration(Number((1 + Math.random()).toFixed(2)));
-    }, 1000);
+    let isMounted = true;
 
-    return () => clearInterval(timer);
+    const loadReading = async () => {
+      try {
+        const response = await fetchLatestIoTSensor();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setReading(response.reading);
+        setError(null);
+      } catch (requestError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : "Unable to load sensor data"
+        );
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadReading();
+    const timer = window.setInterval(loadReading, 5000);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(timer);
+    };
   }, []);
 
+  const updatedAt = reading?.timestamp
+    ? new Date(reading.timestamp).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "Waiting";
+
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-      <div className="bg-slate-900 rounded-xl p-5 border border-slate-700">
-        <h3 className="text-gray-400 text-sm">Temperature</h3>
-        <p className="text-cyan-400 text-3xl font-bold">{temperature}°C</p>
+    <div className="rounded-xl border border-slate-800 bg-slate-900 p-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-wide text-cyan-300">
+            ESP32 DHT22
+          </p>
+          <h2 className="mt-2 text-2xl font-bold text-white">
+            Live Sensor Data
+          </h2>
+        </div>
+
+        <div className="rounded-full border border-cyan-400/30 px-3 py-1 text-sm text-cyan-200">
+          {isLoading ? "Connecting" : reading ? "Live" : "No reading"}
+        </div>
       </div>
 
-      <div className="bg-slate-900 rounded-xl p-5 border border-slate-700">
-        <h3 className="text-gray-400 text-sm">Pressure</h3>
-        <p className="text-yellow-400 text-3xl font-bold">{pressure} Bar</p>
+      {error ? (
+        <p className="mt-4 rounded-lg border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-100">
+          {error}
+        </p>
+      ) : null}
+
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        <div className="rounded-lg border border-slate-700 bg-slate-950/50 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-sm text-slate-400">Temperature</h3>
+            <Thermometer size={22} className="text-orange-400" />
+          </div>
+          <p className="mt-3 text-4xl font-bold text-orange-400">
+            {reading?.temperature ?? "--"} C
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-slate-700 bg-slate-950/50 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-sm text-slate-400">Humidity</h3>
+            <Droplets size={22} className="text-cyan-400" />
+          </div>
+          <p className="mt-3 text-4xl font-bold text-cyan-400">
+            {reading?.humidity ?? "--"}%
+          </p>
+        </div>
       </div>
 
-      <div className="bg-slate-900 rounded-xl p-5 border border-slate-700">
-        <h3 className="text-gray-400 text-sm">Health</h3>
-        <p className="text-green-400 text-3xl font-bold">{health}%</p>
-      </div>
-
-      <div className="bg-slate-900 rounded-xl p-5 border border-slate-700">
-        <h3 className="text-gray-400 text-sm">Vibration</h3>
-        <p className="text-red-400 text-3xl font-bold">{vibration} mm/s</p>
+      <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-400">
+        <span>Device: {reading?.deviceId || "Waiting for ESP32"}</span>
+        <span>Updated: {updatedAt}</span>
       </div>
     </div>
   );

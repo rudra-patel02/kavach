@@ -6,7 +6,9 @@ import {
   getDevices,
   getDeviceTelemetry,
   getIoTOverview,
+  getLatestDht22SensorReading,
   publishDeviceCommand,
+  receiveDht22SensorReading,
   receiveDeviceHeartbeat,
   receiveTelemetry,
   registerIoTDevice,
@@ -33,12 +35,14 @@ const manageRoles = [
 
 router.post("/devices/register", deviceAuthMiddleware, registerIoTDevice);
 router.post("/telemetry", deviceAuthMiddleware, receiveTelemetry);
+router.post("/sensor", receiveDht22SensorReading);
 router.post(
   "/devices/:deviceId/heartbeat",
   deviceAuthMiddleware,
   receiveDeviceHeartbeat
 );
 
+router.get("/latest", getLatestDht22SensorReading);
 router.get("/", authMiddleware, roleMiddleware(readRoles), getIoTOverview);
 router.get("/devices", authMiddleware, roleMiddleware(readRoles), getDevices);
 router.get(
