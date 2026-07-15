@@ -10,6 +10,11 @@ import type { IoTSensorReading } from "@/types/iot";
 
 const ESP32_DEVICE_ID = "esp32-dht22-01";
 
+const formatSensorValue = (value: number | null | undefined, suffix: string) =>
+  typeof value === "number" && Number.isFinite(value)
+    ? `${value.toFixed(1)}${suffix}`
+    : "--";
+
 export default function LiveSensors() {
   const [reading, setReading] = useState<IoTSensorReading | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,18 +57,21 @@ export default function LiveSensors() {
         return;
       }
 
+      const telemetryTimestamp =
+        machine.lastLiveTelemetryAt ||
+        machine.lastSeen ||
+        machine.lastHeartbeat ||
+        new Date().toISOString();
+
       setReading({
         deviceId: machine.linkedDeviceId,
         humidity: machine.humidity ?? null,
         id: machine._id,
         machineId: machine.machineId,
         temperature: machine.temperature ?? null,
-        timestamp:
-          machine.lastLiveTelemetryAt ||
-          machine.lastHeartbeat ||
-          new Date().toISOString(),
-        connectionStatus: "online",
-        lastSeen: machine.lastLiveTelemetryAt || machine.lastHeartbeat || null,
+        timestamp: telemetryTimestamp,
+        connectionStatus: machine.connectionStatus || "online",
+        lastSeen: machine.lastSeen || telemetryTimestamp,
       });
       setError(null);
       setIsLoading(false);
@@ -125,7 +133,7 @@ export default function LiveSensors() {
             </div>
           </div>
           <p className="mt-3 text-4xl font-black text-orange-300">
-            {reading?.temperature ?? "--"} C
+            {formatSensorValue(reading?.temperature, " C")}
           </p>
         </div>
 
@@ -137,7 +145,7 @@ export default function LiveSensors() {
             </div>
           </div>
           <p className="mt-3 text-4xl font-black text-cyan-300">
-            {reading?.humidity ?? "--"}%
+            {formatSensorValue(reading?.humidity, "%")}
           </p>
         </div>
       </div>

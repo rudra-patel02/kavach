@@ -92,6 +92,8 @@ export interface MachineData {
   linkedDeviceId?: string;
   lastLiveTelemetryAt?: string;
   lastHeartbeat?: string;
+  lastSeen?: string | null;
+  connectionStatus?: "online" | "offline" | "unknown";
   aiPrediction?: MachinePrediction;
   maintenanceHistory?: {
     workOrderId?: string;
