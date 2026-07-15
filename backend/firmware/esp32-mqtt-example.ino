@@ -1,94 +1,107 @@
+#include <ArduinoJson.h>
+#include <DHT.h>
+#include <HTTPClient.h>
 #include <WiFi.h>
-#include <PubSubClient.h>
 
 const char* WIFI_SSID = "YOUR_WIFI";
 const char* WIFI_PASSWORD = "YOUR_PASSWORD";
-const char* MQTT_HOST = "192.168.1.10";
-const int MQTT_PORT = 1883;
-const char* DEVICE_SECRET = "replace-with-device-shared-secret";
-const char* DEVICE_ID = "esp32-001";
-const char* MACHINE_ID = "M-101";
+const char* BACKEND_SENSOR_URL = "http://192.168.1.10:5000/api/iot/sensor";
+const char* DEVICE_ID = "esp32-dht11-01";
 
-WiFiClient wifiClient;
-PubSubClient mqtt(wifiClient);
-unsigned long lastPublish = 0;
+const int DHT_PIN = 4;
+const int DHT_TYPE = DHT11;
+const unsigned long SENSOR_INTERVAL_MS = 5000;
+
+DHT dht(DHT_PIN, DHT_TYPE);
+unsigned long lastSensorRead = 0;
 
 void connectWifi() {
+  if (WiFi.status() == WL_CONNECTED) {
+    return;
+  }
+
+  Serial.print("Connecting to Wi-Fi");
+  WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
   while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
     delay(500);
   }
+
+  Serial.println();
+  Serial.print("Wi-Fi connected. IP address: ");
+  Serial.println(WiFi.localIP());
 }
 
-void connectMqtt() {
-  while (!mqtt.connected()) {
-    mqtt.connect(DEVICE_ID);
-    delay(1000);
+void sendSensorReading(float temperature, float humidity) {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Wi-Fi disconnected. Reconnecting before POST...");
+    connectWifi();
   }
-}
 
-void publishRegistration() {
-  String payload = "{";
-  payload += "\"deviceId\":\"" + String(DEVICE_ID) + "\",";
-  payload += "\"machineId\":\"" + String(MACHINE_ID) + "\",";
-  payload += "\"deviceType\":\"ESP32\",";
-  payload += "\"firmwareVersion\":\"1.0.0\",";
-  payload += "\"deviceSecret\":\"" + String(DEVICE_SECRET) + "\",";
-  payload += "\"supportedSensors\":[\"temperature\",\"humidity\",\"pressure\",\"current\",\"voltage\",\"vibration\"]";
-  payload += "}";
-  mqtt.publish("kavach/device/register", payload.c_str(), true);
-}
+  StaticJsonDocument<160> payload;
+  payload["deviceId"] = DEVICE_ID;
+  payload["temperature"] = temperature;
+  payload["humidity"] = humidity;
 
-void publishHeartbeat() {
-  String topic = "kavach/device/" + String(DEVICE_ID) + "/heartbeat";
-  String payload = "{";
-  payload += "\"deviceId\":\"" + String(DEVICE_ID) + "\",";
-  payload += "\"batteryLevel\":96,";
-  payload += "\"signalStrength\":" + String(WiFi.RSSI()) + ",";
-  payload += "\"healthStatus\":\"healthy\",";
-  payload += "\"deviceSecret\":\"" + String(DEVICE_SECRET) + "\"";
-  payload += "}";
-  mqtt.publish(topic.c_str(), payload.c_str());
-}
+  String requestBody;
+  serializeJson(payload, requestBody);
 
-void publishTelemetry() {
-  float temperature = 62.4;
-  float humidity = 38.0;
-  float pressure = 5.2;
-  float current = 8.5;
-  float voltage = 229.0;
-  float vibration = 1.6;
-  String topic = "kavach/device/" + String(DEVICE_ID) + "/telemetry";
-  String payload = "{";
-  payload += "\"deviceId\":\"" + String(DEVICE_ID) + "\",";
-  payload += "\"machineId\":\"" + String(MACHINE_ID) + "\",";
-  payload += "\"temperature\":" + String(temperature, 1) + ",";
-  payload += "\"humidity\":" + String(humidity, 1) + ",";
-  payload += "\"pressure\":" + String(pressure, 2) + ",";
-  payload += "\"current\":" + String(current, 2) + ",";
-  payload += "\"voltage\":" + String(voltage, 1) + ",";
-  payload += "\"vibration\":" + String(vibration, 2) + ",";
-  payload += "\"deviceSecret\":\"" + String(DEVICE_SECRET) + "\"";
-  payload += "}";
-  mqtt.publish(topic.c_str(), payload.c_str());
+  HTTPClient http;
+  http.begin(BACKEND_SENSOR_URL);
+  http.addHeader("Content-Type", "application/json");
+
+  Serial.print("POST ");
+  Serial.println(BACKEND_SENSOR_URL);
+  Serial.print("Payload: ");
+  Serial.println(requestBody);
+
+  int responseCode = http.POST(requestBody);
+  String responseBody = http.getString();
+
+  Serial.print("HTTP response code: ");
+  Serial.println(responseCode);
+  Serial.print("HTTP response body: ");
+  Serial.println(responseBody);
+
+  http.end();
 }
 
 void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  dht.begin();
   connectWifi();
-  mqtt.setServer(MQTT_HOST, MQTT_PORT);
-  connectMqtt();
-  publishRegistration();
 }
 
 void loop() {
-  if (!mqtt.connected()) {
-    connectMqtt();
+  if (WiFi.status() != WL_CONNECTED) {
+    connectWifi();
   }
-  mqtt.loop();
 
-  if (millis() - lastPublish > 2000) {
-    publishHeartbeat();
-    publishTelemetry();
-    lastPublish = millis();
+  unsigned long now = millis();
+
+  if (now - lastSensorRead < SENSOR_INTERVAL_MS) {
+    return;
   }
+
+  lastSensorRead = now;
+
+  float humidity = dht.readHumidity();
+  float temperature = dht.readTemperature();
+
+  if (isnan(humidity) || isnan(temperature)) {
+    Serial.println("Failed to read from DHT11 sensor.");
+    return;
+  }
+
+  Serial.print("Temperature: ");
+  Serial.print(temperature);
+  Serial.print(" C, Humidity: ");
+  Serial.print(humidity);
+  Serial.println("%");
+
+  sendSensorReading(temperature, humidity);
 }

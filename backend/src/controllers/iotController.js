@@ -268,10 +268,10 @@ export const receiveDht22SensorReading = async (req, res) => {
       success: true,
     });
   } catch (error) {
-    console.error("DHT22 sensor ingestion failed:", error);
+    console.error("DHT sensor ingestion failed:", error);
     res.status(error.statusCode || 500).json({
       details: error.details,
-      message: error.message || "DHT22 sensor ingestion failed",
+      message: error.message || "DHT sensor ingestion failed",
     });
   }
 };
@@ -296,8 +296,10 @@ export const getLatestDht22SensorReading = async (req, res) => {
       success: true,
     });
   } catch (error) {
-    console.error("Failed to fetch latest DHT22 reading:", error);
-    res.status(500).json({ message: "Failed to fetch latest DHT22 reading" });
+    console.error("Failed to fetch latest DHT sensor reading:", error);
+    res.status(500).json({
+      message: "Failed to fetch latest DHT sensor reading",
+    });
   }
 };
 

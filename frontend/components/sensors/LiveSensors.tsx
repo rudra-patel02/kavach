@@ -61,7 +61,7 @@ export default function LiveSensors() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wide text-cyan-300">
-            ESP32 DHT22
+            ESP32 DHT11
           </p>
           <h2 className="mt-2 text-2xl font-bold text-white">
             Live Sensor Data
