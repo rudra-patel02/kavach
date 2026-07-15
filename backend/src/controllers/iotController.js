@@ -1,5 +1,7 @@
 import ConnectionLog from "../models/connectionLog.js";
+import Device from "../models/device.js";
 import HeartbeatLog from "../models/heartbeatLog.js";
+import Machine from "../models/machine.js";
 import Telemetry from "../models/telemetry.js";
 import {
   getDeviceById,
@@ -35,10 +37,9 @@ const serializeTelemetry = (telemetry) => ({
 
 const roundSensorValue = (value) => Number(Number(value).toFixed(2));
 
-const normalizeDht22Payload = (payload = {}) => {
+const normalizeDhtSensorPayload = (payload = {}) => {
   const errors = [];
   const deviceId = String(payload.deviceId || "").trim();
-  const machineId = String(payload.machineId || deviceId || "esp32-dht22").trim();
   const timestamp = payload.timestamp ? new Date(payload.timestamp) : new Date();
   const temperature = Number(payload.temperature);
   const humidity = Number(payload.humidity);
@@ -72,7 +73,6 @@ const normalizeDht22Payload = (payload = {}) => {
 
   return {
     deviceId,
-    machineId,
     metrics: {
       humidity: roundSensorValue(humidity),
       temperature: roundSensorValue(temperature),
@@ -81,7 +81,7 @@ const normalizeDht22Payload = (payload = {}) => {
   };
 };
 
-const serializeDht22Sensor = (telemetry) => {
+const serializeDhtSensor = (telemetry) => {
   if (!telemetry) {
     return null;
   }
@@ -95,6 +95,23 @@ const serializeDht22Sensor = (telemetry) => {
     timestamp: telemetry.timestamp
       ? new Date(telemetry.timestamp).toISOString()
       : null,
+  };
+};
+
+const buildSensorMachinePayload = (machine, device) => {
+  const value =
+    machine && typeof machine.toObject === "function" ? machine.toObject() : machine;
+
+  if (!value) {
+    return null;
+  }
+
+  return {
+    ...value,
+    connectionStatus: device?.connectionStatus || "online",
+    lastSeen: device?.lastSeen
+      ? new Date(device.lastSeen).toISOString()
+      : value.lastLiveTelemetryAt || value.lastHeartbeat || null,
   };
 };
 
@@ -243,28 +260,75 @@ export const receiveTelemetry = async (req, res) => {
   }
 };
 
-export const receiveDht22SensorReading = async (req, res) => {
+export const receiveDhtSensorReading = async (req, res) => {
   try {
-    const reading = normalizeDht22Payload(req.body);
+    const reading = normalizeDhtSensorPayload(req.body);
+    const now = reading.timestamp;
+    const device = await Device.findOne({ deviceId: reading.deviceId });
+    const machine = device
+      ? await Machine.findOne({ machineId: device.machineId })
+      : await Machine.findOne({ linkedDeviceId: reading.deviceId });
+
+    if (!machine) {
+      return res.status(404).json({
+        message: "Machine not found for deviceId",
+        success: false,
+      });
+    }
+
+    if (device) {
+      device.connectionStatus = "online";
+      device.healthStatus = "healthy";
+      device.lastSeen = now;
+      device.telemetryRate = 12;
+
+      device.supportedSensors = Array.isArray(device.supportedSensors)
+        ? device.supportedSensors
+        : [];
+
+      if (!device.supportedSensors.includes("temperature")) {
+        device.supportedSensors.push("temperature");
+      }
+
+      if (!device.supportedSensors.includes("humidity")) {
+        device.supportedSensors.push("humidity");
+      }
+
+      await device.save();
+    }
+
+    machine.temperature = reading.metrics.temperature;
+    machine.humidity = reading.metrics.humidity;
+    machine.lastHeartbeat = now;
+    machine.lastLiveTelemetryAt = now;
+    machine.linkedDeviceId = reading.deviceId;
+    machine.liveTelemetryEnabled = true;
+    machine.telemetrySource = "iot";
+
+    await machine.save();
+
     const telemetry = await Telemetry.create({
       deviceId: reading.deviceId,
-      machineId: reading.machineId,
+      machineId: machine.machineId,
       metrics: reading.metrics,
       rawPayload: {
         deviceId: req.body.deviceId,
         humidity: req.body.humidity,
-        machineId: req.body.machineId,
         temperature: req.body.temperature,
-        timestamp: req.body.timestamp,
       },
       source: "rest",
-      timestamp: reading.timestamp,
+      timestamp: now,
     });
+    const machinePayload = buildSensorMachinePayload(machine, device);
+    const updatedMachines = await Machine.find().sort({ machineId: 1 }).lean();
+    const gateway = getGateway(req);
 
-    getGateway(req)?.emit?.("iot:sensor:update", serializeDht22Sensor(telemetry));
+    gateway?.emit?.("sensor-update", machinePayload);
+    gateway?.emit?.("iot:sensor:update", serializeDhtSensor(telemetry));
+    gateway?.emit?.("machineUpdate", updatedMachines);
 
-    res.status(201).json({
-      reading: serializeDht22Sensor(telemetry),
+    res.json({
+      message: "Sensor data received",
       success: true,
     });
   } catch (error) {
@@ -276,7 +340,7 @@ export const receiveDht22SensorReading = async (req, res) => {
   }
 };
 
-export const getLatestDht22SensorReading = async (req, res) => {
+export const getLatestDhtSensorReading = async (req, res) => {
   try {
     const filter = {
       "metrics.humidity": { $exists: true },
@@ -292,7 +356,7 @@ export const getLatestDht22SensorReading = async (req, res) => {
       .lean();
 
     res.json({
-      reading: serializeDht22Sensor(telemetry),
+      reading: serializeDhtSensor(telemetry),
       success: true,
     });
   } catch (error) {

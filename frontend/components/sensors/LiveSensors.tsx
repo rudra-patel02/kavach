@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Droplets, Thermometer } from "lucide-react";
 import { fetchLatestIoTSensor } from "@/lib/iot";
+import socket, { SOCKET_EVENTS } from "@/lib/socket";
+import type { MachineData } from "@/types/machine";
 import type { IoTSensorReading } from "@/types/iot";
 
 export default function LiveSensors() {
@@ -42,10 +44,32 @@ export default function LiveSensors() {
 
     loadReading();
     const timer = window.setInterval(loadReading, 5000);
+    const handleSensorUpdate = (machine: MachineData) => {
+      if (!machine?.linkedDeviceId) {
+        return;
+      }
+
+      setReading({
+        deviceId: machine.linkedDeviceId,
+        humidity: machine.humidity ?? null,
+        id: machine._id,
+        machineId: machine.machineId,
+        temperature: machine.temperature ?? null,
+        timestamp:
+          machine.lastLiveTelemetryAt ||
+          machine.lastHeartbeat ||
+          new Date().toISOString(),
+      });
+      setError(null);
+      setIsLoading(false);
+    };
+
+    socket.on(SOCKET_EVENTS.SENSOR_UPDATE, handleSensorUpdate);
 
     return () => {
       isMounted = false;
       window.clearInterval(timer);
+      socket.off(SOCKET_EVENTS.SENSOR_UPDATE, handleSensorUpdate);
     };
   }, []);
 
