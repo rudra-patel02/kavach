@@ -115,6 +115,49 @@ const buildSensorMachinePayload = (machine, device) => {
   };
 };
 
+const getOrCreateSensorMachine = async (deviceId, metrics, timestamp) => {
+  let device = await Device.findOne({ deviceId });
+  let machine = device
+    ? await Machine.findOne({ machineId: device.machineId })
+    : await Machine.findOne({
+        $or: [{ linkedDeviceId: deviceId }, { machineId: deviceId }],
+      });
+
+  if (!machine) {
+    const machineId = device?.machineId || deviceId;
+
+    machine = await Machine.create({
+      health: 100,
+      humidity: metrics.humidity,
+      lastHeartbeat: timestamp,
+      lastLiveTelemetryAt: timestamp,
+      linkedDeviceId: deviceId,
+      liveTelemetryEnabled: true,
+      machineId,
+      name: `ESP32 Sensor ${deviceId}`,
+      status: "Running",
+      telemetrySource: "iot",
+      temperature: metrics.temperature,
+    });
+  }
+
+  if (!device) {
+    device = await Device.create({
+      connectionStatus: "online",
+      deviceId,
+      deviceType: "ESP32",
+      healthStatus: "healthy",
+      lastSeen: timestamp,
+      machineId: machine.machineId,
+      protocol: "REST",
+      supportedSensors: ["temperature", "humidity"],
+      telemetryRate: 12,
+    });
+  }
+
+  return { device, machine };
+};
+
 export const getIoTOverview = async (req, res) => {
   try {
     const [devices, latestTelemetry, connectionLogs] = await Promise.all([
@@ -264,17 +307,11 @@ export const receiveDhtSensorReading = async (req, res) => {
   try {
     const reading = normalizeDhtSensorPayload(req.body);
     const now = reading.timestamp;
-    const device = await Device.findOne({ deviceId: reading.deviceId });
-    const machine = device
-      ? await Machine.findOne({ machineId: device.machineId })
-      : await Machine.findOne({ linkedDeviceId: reading.deviceId });
-
-    if (!machine) {
-      return res.status(404).json({
-        message: "Machine not found for deviceId",
-        success: false,
-      });
-    }
+    const { device, machine } = await getOrCreateSensorMachine(
+      reading.deviceId,
+      reading.metrics,
+      now
+    );
 
     if (device) {
       device.connectionStatus = "online";
