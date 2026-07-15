@@ -24,6 +24,14 @@ const toSafeUser = (user) => {
   return safeUser;
 };
 
+const queueAuditLog = (payload) => {
+  setImmediate(() => {
+    createAuditLog(payload).catch((error) => {
+      console.error("Queued audit log failed:", error.message);
+    });
+  });
+};
+
 const getJwtSecret = () => {
   if (!process.env.JWT_SECRET) {
     throw new Error("JWT_SECRET is required");
@@ -204,7 +212,7 @@ export const login = async (req, res) => {
     const password = String(req.body.password || "");
 
     if (!email || !password) {
-      await createAuditLog({
+      queueAuditLog({
         action: "LOGIN_FAILED",
         metadata: { email, reason: "missing_credentials" },
         req,
@@ -225,7 +233,7 @@ export const login = async (req, res) => {
     if (!user) {
       const failureCount = recordAuthFailure(req);
 
-      await createAuditLog({
+      queueAuditLog({
         action: "LOGIN_FAILED",
         metadata: { email, failureCount, reason: "invalid_credentials" },
         req,
@@ -247,7 +255,7 @@ export const login = async (req, res) => {
     if (!valid) {
       const failureCount = recordAuthFailure(req);
 
-      await createAuditLog({
+      queueAuditLog({
         action: "LOGIN_FAILED",
         metadata: { email, failureCount, reason: "invalid_credentials" },
         req,
@@ -274,7 +282,7 @@ export const login = async (req, res) => {
     await user.save();
     clearAuthFailures(req);
 
-    await createAuditLog({
+    queueAuditLog({
       action: "LOGIN_SUCCESS",
       req: {
         headers: req.headers,

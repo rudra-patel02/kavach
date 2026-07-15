@@ -42,8 +42,12 @@ export default function LoginPage() {
       return;
     }
 
+    let timeoutId: number | undefined;
+
     try {
       setLoading(true);
+      const controller = new AbortController();
+      timeoutId = window.setTimeout(() => controller.abort(), 15000);
 
       const res = await fetch(apiUrl("/api/auth/login"), {
         method: "POST",
@@ -54,6 +58,7 @@ export default function LoginPage() {
           email,
           password,
         }),
+        signal: controller.signal,
       });
 
       const data = await res.json();
@@ -74,6 +79,9 @@ export default function LoginPage() {
     } catch {
       setError("Unable to connect to server.");
     } finally {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
       setLoading(false);
     }
   };
