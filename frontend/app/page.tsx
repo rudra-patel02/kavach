@@ -25,7 +25,7 @@ import ProductionAnalytics from "@/components/dashboard/ProductionAnalytics";
 export default function Home() {
   return (
     <DashboardLayout>
-      <div className="space-y-8 surface-enter">
+      <div className="page-stack space-y-8 surface-enter">
 
         <motion.section
           initial={{ opacity: 0, y: 18 }}
@@ -113,11 +113,11 @@ export default function Home() {
         </div>
         <div className="grid grid-cols-12 gap-6">
 
-  <div className="col-span-12">
-    <OEEGauge />
-  </div>
+          <div className="col-span-12">
+            <OEEGauge />
+          </div>
 
-</div>
+        </div>
 
         {/* 3D Preview */}
         <div className="grid grid-cols-12 gap-6">

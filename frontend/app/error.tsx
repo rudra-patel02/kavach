@@ -10,10 +10,12 @@ export default function GlobalError({
   reset: () => void;
 }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-white">
-      <section className="w-full max-w-xl rounded-xl border border-red-400/30 bg-red-500/10 p-6">
+    <div className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-white industrial-shell">
+      <section className="premium-card w-full max-w-xl rounded-2xl p-6">
         <div className="flex items-center gap-3 text-red-100">
-          <AlertTriangle size={22} />
+          <span className="rounded-xl border border-red-400/25 bg-red-500/10 p-3 text-red-200">
+            <AlertTriangle size={22} />
+          </span>
           <h1 className="text-xl font-bold">Something went wrong</h1>
         </div>
         <p className="mt-3 text-sm text-red-100/80">
@@ -22,7 +24,7 @@ export default function GlobalError({
         <button
           type="button"
           onClick={reset}
-          className="mt-5 inline-flex items-center gap-2 rounded-lg border border-red-300/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-50 transition-colors hover:bg-red-500/20"
+          className="mt-5 inline-flex items-center gap-2 rounded-xl border border-red-300/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-50 transition-all hover:-translate-y-0.5 hover:bg-red-500/20"
         >
           <RefreshCcw size={16} />
           Retry

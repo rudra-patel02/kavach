@@ -610,7 +610,7 @@ export default function NotificationCenter() {
   return (
     <div ref={panelRef} className="relative">
       {toastNotification ? (
-        <div className="fixed right-4 top-20 z-[60] w-[calc(100vw-2rem)] max-w-sm rounded-2xl border border-cyan-400/30 bg-slate-950/95 p-4 text-slate-100 shadow-2xl shadow-black/40 backdrop-blur">
+        <div className="notification-panel-enter premium-card fixed right-4 top-20 z-[60] w-[calc(100vw-2rem)] max-w-sm rounded-2xl p-4 text-slate-100">
           <div className="flex gap-3">
             <span
               className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ${
@@ -636,7 +636,7 @@ export default function NotificationCenter() {
         onClick={() => setIsOpen((currentIsOpen) => !currentIsOpen)}
         aria-label="Open notifications"
         aria-expanded={isOpen}
-        className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-700 bg-slate-900 text-slate-300 transition-all duration-200 hover:border-cyan-400/50 hover:bg-cyan-500/10 hover:text-cyan-200"
+        className="relative inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700/70 bg-slate-900/70 text-slate-300 shadow-inner shadow-white/5 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400/50 hover:bg-cyan-500/10 hover:text-cyan-200"
       >
         <Bell size={20} />
         {unreadCount > 0 ? (
@@ -647,8 +647,8 @@ export default function NotificationCenter() {
       </button>
 
       {isOpen ? (
-        <div className="notification-panel-enter fixed right-4 top-20 z-50 w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 shadow-2xl shadow-black/40 sm:absolute sm:right-0 sm:top-14 sm:w-[440px]">
-          <div className="border-b border-slate-800 bg-slate-900/95 p-4">
+        <div className="notification-panel-enter premium-card fixed right-4 top-20 z-50 w-[calc(100vw-2rem)] overflow-hidden rounded-2xl sm:absolute sm:right-0 sm:top-14 sm:w-[440px]">
+          <div className="border-b border-cyan-400/10 bg-slate-950/70 p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
@@ -669,7 +669,7 @@ export default function NotificationCenter() {
                 type="button"
                 onClick={() => setIsOpen(false)}
                 aria-label="Close notifications"
-                className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+                className="rounded-xl p-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
               >
                 <X size={18} />
               </button>
@@ -680,7 +680,7 @@ export default function NotificationCenter() {
                 type="button"
                 onClick={handleMarkAllRead}
                 disabled={unreadCount === 0 || isMarkingAll}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-sm font-semibold text-cyan-100 transition-colors hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-45"
+                className="inline-flex items-center justify-center gap-2 rounded-lg premium-button px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-45"
               >
                 {isMarkingAll ? (
                   <Loader2 size={16} className="animate-spin" />
@@ -694,7 +694,7 @@ export default function NotificationCenter() {
                 type="button"
                 onClick={handleClearAll}
                 disabled={notifications.length === 0 || isClearing}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-100 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-45"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-100 transition-all hover:-translate-y-0.5 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-45"
               >
                 {isClearing ? (
                   <Loader2 size={16} className="animate-spin" />
@@ -708,7 +708,7 @@ export default function NotificationCenter() {
                 type="button"
                 onClick={() => void handleRequestDesktopNotifications()}
                 disabled={desktopPermission === "unsupported"}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-100 transition-colors hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-45"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-100 transition-all hover:-translate-y-0.5 hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-45"
               >
                 <BellRing size={16} />
                 {desktopPermission === "granted" ? "Desktop on" : "Desktop"}
@@ -716,7 +716,7 @@ export default function NotificationCenter() {
             </div>
 
             <div className="mt-4 grid gap-2">
-              <label className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-300 focus-within:border-cyan-400/50">
+              <label className="premium-input flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-300">
                 <Search size={16} className="shrink-0 text-slate-500" />
                 <input
                   value={searchTerm}
@@ -734,7 +734,7 @@ export default function NotificationCenter() {
                       event.target.value as NotificationSeverity | "all"
                     )
                   }
-                  className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 outline-none transition-colors focus:border-cyan-400/50"
+                  className="premium-input rounded-lg px-3 py-2 text-sm text-slate-200 outline-none"
                   aria-label="Filter notifications by severity"
                 >
                   <option value="all">All severities</option>
@@ -750,7 +750,7 @@ export default function NotificationCenter() {
                   onChange={(event) =>
                     setCategoryFilter(event.target.value as NotificationType | "all")
                   }
-                  className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200 outline-none transition-colors focus:border-cyan-400/50"
+                  className="premium-input rounded-lg px-3 py-2 text-sm text-slate-200 outline-none"
                   aria-label="Filter notifications by category"
                 >
                   <option value="all">All categories</option>
@@ -816,7 +816,7 @@ export default function NotificationCenter() {
                   return (
                     <article
                       key={notification.id}
-                      className={`notification-item-enter rounded-xl border p-4 transition-all duration-200 hover:border-slate-600 ${
+                    className={`notification-item-enter rounded-xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400/25 ${
                         notification.read
                           ? "border-slate-800 bg-slate-900/75"
                           : "border-cyan-400/25 bg-cyan-500/10 shadow-lg shadow-cyan-950/20"
@@ -872,7 +872,7 @@ export default function NotificationCenter() {
                             disabled={notification.read || isPending}
                             title="Mark as read"
                             aria-label="Mark notification as read"
-                            className="rounded-lg border border-slate-700 p-2 text-slate-300 transition-colors hover:border-cyan-400/40 hover:bg-cyan-500/10 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-35"
+                            className="rounded-lg border border-slate-700 p-2 text-slate-300 transition-all hover:-translate-y-0.5 hover:border-cyan-400/40 hover:bg-cyan-500/10 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-35"
                           >
                             {isPending && !notification.read ? (
                               <Loader2 size={15} className="animate-spin" />
@@ -889,7 +889,7 @@ export default function NotificationCenter() {
                             disabled={isPending}
                             title="Archive notification"
                             aria-label="Archive notification"
-                            className="rounded-lg border border-slate-700 p-2 text-slate-300 transition-colors hover:border-amber-400/40 hover:bg-amber-500/10 hover:text-amber-100 disabled:cursor-not-allowed disabled:opacity-35"
+                            className="rounded-lg border border-slate-700 p-2 text-slate-300 transition-all hover:-translate-y-0.5 hover:border-amber-400/40 hover:bg-amber-500/10 hover:text-amber-100 disabled:cursor-not-allowed disabled:opacity-35"
                           >
                             {isPending ? (
                               <Loader2 size={15} className="animate-spin" />
@@ -906,7 +906,7 @@ export default function NotificationCenter() {
                             disabled={isPending}
                             title="Delete notification"
                             aria-label="Delete notification"
-                            className="rounded-lg border border-slate-700 p-2 text-slate-300 transition-colors hover:border-red-400/40 hover:bg-red-500/10 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-35"
+                            className="rounded-lg border border-slate-700 p-2 text-slate-300 transition-all hover:-translate-y-0.5 hover:border-red-400/40 hover:bg-red-500/10 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-35"
                           >
                             {isPending ? (
                               <Loader2 size={15} className="animate-spin" />
@@ -927,7 +927,7 @@ export default function NotificationCenter() {
                 type="button"
                 onClick={() => void handleLoadMore()}
                 disabled={isLoadingMore}
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-200 transition-colors hover:border-cyan-400/40 hover:bg-cyan-500/10 disabled:cursor-not-allowed disabled:opacity-45"
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg premium-button px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-45"
               >
                 {isLoadingMore ? (
                   <Loader2 size={16} className="animate-spin" />

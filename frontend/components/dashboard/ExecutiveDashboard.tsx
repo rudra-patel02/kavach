@@ -165,16 +165,16 @@ export function ExecutiveDashboardSkeleton() {
       {Array.from({ length: 12 }).map((_, index) => (
         <div
           key={index}
-          className="h-44 rounded-xl border border-slate-800 bg-slate-900/85 p-5"
+          className="premium-card h-44 rounded-2xl p-5"
         >
           <div className="flex items-center justify-between">
-            <div className="h-4 w-28 animate-pulse rounded bg-slate-800" />
-            <div className="h-11 w-11 animate-pulse rounded-lg bg-slate-800" />
+            <div className="premium-skeleton h-4 w-28 rounded" />
+            <div className="premium-skeleton h-11 w-11 rounded-lg" />
           </div>
-          <div className="mt-6 h-8 w-24 animate-pulse rounded bg-slate-800" />
+          <div className="premium-skeleton mt-6 h-8 w-24 rounded" />
           <div className="mt-7 flex items-end justify-between">
-            <div className="h-6 w-16 animate-pulse rounded-full bg-slate-800" />
-            <div className="h-8 w-24 animate-pulse rounded bg-slate-800" />
+            <div className="premium-skeleton h-6 w-16 rounded-full" />
+            <div className="premium-skeleton h-8 w-24 rounded" />
           </div>
         </div>
       ))}

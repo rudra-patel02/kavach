@@ -73,13 +73,14 @@ export default function MachinesPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 text-white">
-        <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="page-stack space-y-6 text-white surface-enter">
+        <section className="premium-card rounded-2xl p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-cyan-300">
+            <p className="page-eyebrow">
               Assets
             </p>
-            <h1 className="mt-2 text-3xl font-bold md:text-4xl">
+            <h1 className="mt-2 text-3xl font-black tracking-tight md:text-4xl">
               Machine Management
             </h1>
             <p className="mt-2 text-sm text-slate-400">
@@ -90,11 +91,12 @@ export default function MachinesPage() {
           <button
             type="button"
             onClick={() => router.push("/machines/add")}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition-colors hover:bg-cyan-500/20"
+            className="premium-button inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold"
           >
             <Plus size={18} />
             Add Machine
           </button>
+          </div>
         </section>
 
         {error ? (
@@ -103,7 +105,7 @@ export default function MachinesPage() {
           </div>
         ) : null}
 
-        <label className="flex items-center rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 focus-within:border-cyan-400/60">
+        <label className="premium-input flex items-center rounded-xl px-4 py-3">
           <Search size={18} className="text-slate-500" />
           <input
             type="text"
@@ -114,11 +116,11 @@ export default function MachinesPage() {
           />
         </label>
 
-      <div className="overflow-x-auto rounded-xl bg-slate-900 border border-slate-700">
+      <div className="premium-card overflow-x-auto rounded-2xl">
 
-        <table className="min-w-[980px] w-full">
+        <table className="min-w-[980px] w-full text-sm">
 
-          <thead className="bg-slate-800">
+          <thead className="bg-slate-950/70 text-xs uppercase tracking-[0.16em] text-slate-500">
             <tr>
               <th className="text-left p-4">Machine ID</th>
               <th className="text-left p-4">Machine</th>
@@ -159,7 +161,7 @@ export default function MachinesPage() {
               filteredMachines.map((machine) => (
                 <tr
                   key={machine._id}
-                  className="border-b border-slate-800 hover:bg-slate-800 transition"
+                  className="border-b border-slate-800/80 transition hover:bg-cyan-400/5"
                 >
                   <td className="p-4">{machine.machineId}</td>
 
@@ -169,14 +171,14 @@ export default function MachinesPage() {
 
                   <td className="p-4">
                     <span
-                      className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                      className={`status-pill ${
                         machine.status === "Running"
-                          ? "bg-green-600"
+                          ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
                           : machine.status === "Warning"
-                          ? "bg-yellow-500 text-black"
+                          ? "border-amber-400/30 bg-amber-500/10 text-amber-100"
                           : machine.status === "Critical"
-                          ? "bg-red-600"
-                          : "bg-gray-600"
+                          ? "border-red-400/30 bg-red-500/10 text-red-200"
+                          : "border-slate-500/30 bg-slate-700/50 text-slate-300"
                       }`}
                     >
                       {machine.status}
@@ -209,12 +211,12 @@ export default function MachinesPage() {
 
                   <td className="p-4">
                     <span
-                      className={`px-3 py-1 rounded-full text-sm font-bold ${
+                      className={`status-pill ${
                         machine.aiPrediction?.failureRisk === "High"
-                          ? "bg-red-600"
+                          ? "border-red-400/30 bg-red-500/10 text-red-200"
                           : machine.aiPrediction?.failureRisk === "Medium"
-                          ? "bg-yellow-500 text-black"
-                          : "bg-green-600"
+                          ? "border-amber-400/30 bg-amber-500/10 text-amber-100"
+                          : "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
                       }`}
                     >
                       {machine.aiPrediction?.failureRisk ?? "Low"}
@@ -236,7 +238,7 @@ export default function MachinesPage() {
                   <td className="p-4">
                     <Link
                       href={`/machines/${machine.machineId}`}
-                      className="bg-cyan-600 px-3 py-1 rounded hover:bg-cyan-700"
+                      className="premium-button rounded-lg px-3 py-1.5 text-sm font-semibold"
                     >
                       View
                     </Link>
@@ -250,8 +252,8 @@ export default function MachinesPage() {
 
       </div>
 
-      <section>
-        <h2 className="mb-4 text-2xl font-bold">
+      <section className="premium-card rounded-2xl p-5">
+        <h2 className="mb-4 text-2xl font-black">
           Digital Twin Factory
         </h2>
 

@@ -26,33 +26,33 @@ const alerts = [
 
 export default function AlertPanel() {
   return (
-    <div className="bg-slate-900 rounded-xl p-6 mt-6 border border-slate-700">
-      <h2 className="text-2xl font-bold mb-4">Live Alerts</h2>
+    <div className="premium-card mt-6 rounded-2xl p-6">
+      <h2 className="mb-4 text-2xl font-black">Live Alerts</h2>
 
       {alerts.map((alert) => (
         <div
           key={alert.id}
-          className="border-b border-slate-700 py-3 flex justify-between items-center"
+          className="flex items-center justify-between gap-4 border-b border-slate-800/80 py-3 transition-colors last:border-0 hover:bg-cyan-400/5"
         >
           <div>
             <p className="font-semibold">{alert.machine}</p>
-            <p className="text-gray-400 text-sm">{alert.message}</p>
+            <p className="text-sm text-slate-400">{alert.message}</p>
           </div>
 
           <div className="text-right">
             <span
-              className={`px-3 py-1 rounded text-sm ${
+              className={`status-pill ${
                 alert.level === "Critical"
-                  ? "bg-red-600"
+                  ? "border-red-400/30 bg-red-500/10 text-red-200"
                   : alert.level === "Warning"
-                  ? "bg-yellow-500 text-black"
-                  : "bg-cyan-600"
+                  ? "border-amber-400/30 bg-amber-500/10 text-amber-100"
+                  : "border-cyan-400/30 bg-cyan-500/10 text-cyan-100"
               }`}
             >
               {alert.level}
             </span>
 
-            <p className="text-xs text-gray-400 mt-2">
+            <p className="mt-2 text-xs text-slate-500">
               {alert.time}
             </p>
           </div>

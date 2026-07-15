@@ -49,7 +49,19 @@ export default function DashboardLayout({ allowedRoles, children }: Props) {
   }, [effectiveToken, isAuthReady, router]);
 
   if (!isAuthReady || !effectiveToken) {
-    return <div className="min-h-screen bg-slate-950 industrial-shell" />;
+    return (
+      <div className="min-h-screen bg-slate-950 industrial-shell p-6">
+        <div className="page-stack space-y-6">
+          <div className="premium-skeleton h-12 w-72 rounded-2xl" />
+          <div className="grid gap-4 md:grid-cols-4">
+            {[0, 1, 2, 3].map((item) => (
+              <div key={item} className="premium-skeleton h-32 rounded-2xl" />
+            ))}
+          </div>
+          <div className="premium-skeleton h-[520px] rounded-3xl" />
+        </div>
+      </div>
+    );
   }
 
   if (!isAllowed) {
@@ -59,7 +71,7 @@ export default function DashboardLayout({ allowedRoles, children }: Props) {
         <div className="min-w-0 flex-1">
           <Navbar />
           <main className="p-4 sm:p-6 lg:p-8">
-            <section className="rounded-xl border border-red-400/30 bg-red-500/10 p-6 text-red-100">
+            <section className="premium-card page-stack rounded-2xl p-6 text-red-100">
               <h1 className="text-2xl font-bold">Access denied</h1>
               <p className="mt-2 text-sm">
                 Your current role does not have permission to open this page.

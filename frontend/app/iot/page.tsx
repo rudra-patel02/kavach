@@ -183,14 +183,15 @@ export default function IoTManagementPage() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-[calc(100vh-9rem)] space-y-6 text-white">
-        <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div className="page-stack min-h-[calc(100vh-9rem)] space-y-6 text-white surface-enter">
+        <section className="premium-card rounded-2xl p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="mb-3 flex items-center gap-3 text-sm font-semibold uppercase text-cyan-300">
+            <div className="page-eyebrow mb-3 flex items-center gap-3">
               <RadioTower size={18} />
               Industrial IoT
             </div>
-            <h1 className="text-3xl font-bold md:text-4xl">
+            <h1 className="text-3xl font-black tracking-tight md:text-4xl">
               Device Management
             </h1>
             <p className="mt-2 max-w-3xl text-slate-400">
@@ -205,8 +206,8 @@ export default function IoTManagementPage() {
               onClick={() => setAutoRefresh((current) => !current)}
               className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${
                 autoRefresh
-                  ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-100"
-                  : "border-slate-700 bg-slate-900 text-slate-300"
+                  ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-100 hover:bg-emerald-500/20"
+                  : "border-slate-700 bg-slate-900/70 text-slate-300 hover:border-cyan-400/30 hover:bg-cyan-500/10"
               }`}
             >
               <Activity size={16} />
@@ -215,7 +216,7 @@ export default function IoTManagementPage() {
             <button
               type="button"
               onClick={() => void loadOverview()}
-              className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition-colors hover:bg-cyan-500/20"
+              className="premium-button inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold"
             >
               {isLoading ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -224,6 +225,7 @@ export default function IoTManagementPage() {
               )}
               Refresh
             </button>
+          </div>
           </div>
         </section>
 
@@ -261,7 +263,7 @@ export default function IoTManagementPage() {
             return (
               <article
                 key={item.label}
-                className="rounded-2xl border border-slate-800 bg-slate-900/85 p-5 shadow-2xl shadow-black/20"
+                className="premium-card rounded-2xl p-5"
               >
                 <div className="flex items-center justify-between gap-4">
                   <div>
@@ -279,9 +281,9 @@ export default function IoTManagementPage() {
           })}
         </section>
 
-        <section className="rounded-2xl border border-slate-800 bg-slate-950 p-5">
+        <section className="premium-card rounded-2xl p-5">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <label className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-300 focus-within:border-cyan-400/50">
+            <label className="premium-input flex min-w-0 flex-1 items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-300">
               <Search size={17} className="shrink-0 text-slate-500" />
               <input
                 value={search}
@@ -295,7 +297,7 @@ export default function IoTManagementPage() {
               onChange={(event) =>
                 setStatusFilter(event.target.value as IoTDeviceStatus | "all")
               }
-              className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-200 outline-none focus:border-cyan-400/50"
+              className="premium-input rounded-xl px-4 py-3 text-sm text-slate-200 outline-none"
               aria-label="Filter devices by status"
             >
               <option value="all">All statuses</option>
@@ -312,18 +314,18 @@ export default function IoTManagementPage() {
               Array.from({ length: 4 }).map((_, index) => (
                 <div
                   key={index}
-                  className="h-64 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/70"
+                  className="premium-skeleton h-64 rounded-2xl"
                 />
               ))
             ) : filteredDevices.length === 0 ? (
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-8 text-center text-slate-400 md:col-span-2">
+              <div className="premium-card rounded-2xl p-8 text-center text-slate-400 md:col-span-2">
                 No devices match the current filter.
               </div>
             ) : (
               filteredDevices.map((device) => (
                 <article
                   key={device.deviceId}
-                  className="rounded-2xl border border-slate-800 bg-slate-900/85 p-5 shadow-2xl shadow-black/20 transition-all duration-300 hover:-translate-y-1 hover:border-cyan-400/30"
+                  className="premium-card rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
@@ -380,7 +382,7 @@ export default function IoTManagementPage() {
                       return (
                         <div
                           key={metric.label}
-                          className="rounded-xl border border-slate-800 bg-slate-950/70 p-3"
+                          className="premium-tile rounded-xl p-3"
                         >
                           <div className="flex items-center gap-2 text-xs text-slate-500">
                             <Icon size={14} />
@@ -405,13 +407,13 @@ export default function IoTManagementPage() {
           </div>
 
           <aside className="space-y-4">
-            <section className="rounded-2xl border border-slate-800 bg-slate-900/85 p-5">
+            <section className="premium-card rounded-2xl p-5">
               <h2 className="font-bold text-white">Status Timeline</h2>
               <div className="mt-4 space-y-3">
                 {(overview?.statusTimeline || []).slice(0, 8).map((item) => (
                   <div
                     key={`${item.deviceId}-${item.at}-${item.event}`}
-                    className="rounded-xl border border-slate-800 bg-slate-950/70 p-3"
+                    className="premium-tile rounded-xl p-3"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-sm font-semibold text-cyan-200">
@@ -430,13 +432,13 @@ export default function IoTManagementPage() {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-slate-800 bg-slate-900/85 p-5">
+            <section className="premium-card rounded-2xl p-5">
               <h2 className="font-bold text-white">Edge Support</h2>
               <div className="mt-4 space-y-3">
                 {(overview?.protocolAdapters || []).map((device) => (
                   <div
                     key={device.deviceType}
-                    className="rounded-xl border border-slate-800 bg-slate-950/70 p-3"
+                    className="premium-tile rounded-xl p-3"
                   >
                     <p className="text-sm font-semibold text-white">
                       {device.deviceType}
