@@ -5,8 +5,9 @@
 - [ ] Production MongoDB connection is configured in the backend host.
 - [ ] `JWT_SECRET` and `JWT_REFRESH_SECRET` are unique production secrets with at least 32 characters.
 - [ ] `CORS_ORIGIN` is set to the exact frontend production origin.
-- [ ] Frontend `NEXT_PUBLIC_API_URL` points to the backend production URL.
+- [ ] Frontend `NEXT_PUBLIC_API_URL` is blank unless intentionally bypassing Next.js rewrites.
 - [ ] Frontend `NEXT_PUBLIC_SOCKET_URL` points to the backend production URL.
+- [ ] Frontend `API_URL` points to the backend production URL for Next.js `/api/*` rewrites.
 - [ ] IoT and MQTT variables are configured only if device ingestion is enabled.
 - [ ] `ENABLE_SENSOR_SIMULATION=false` unless running an approved demo environment.
 - [ ] Optional AI provider variables are configured only if external AI calls are intended.
@@ -35,7 +36,7 @@
 - [ ] CORS and cookie behavior are verified on the final production domains.
 - [ ] Logs and monitoring are enabled for frontend and backend services.
 - [ ] Database backup schedule is enabled and tested.
-- [ ] Rollback plan is documented for the release.
+- [ ] Rollback plan below has assigned owners and tested access to Vercel/Render/Railway/MongoDB.
 
 ## Security
 
@@ -53,3 +54,13 @@
 - [ ] Verify dashboard, machines, work orders, alerts, reports, settings, and system pages.
 - [ ] Export one report or backup in a controlled environment.
 - [ ] Confirm backend logs show no startup/runtime errors.
+
+## Rollback Plan
+
+1. Freeze new changes and capture the failing deployment URL, backend revision, frontend revision, and timestamp.
+2. If `/api/health`, login, or database-backed APIs fail, roll back the backend service first.
+3. If pages fail to render, navigation breaks, or client assets are bad while APIs are healthy, roll back the frontend deployment.
+4. If a migration-free config change caused the issue, restore the previous hosting environment variables and redeploy the last known good revision.
+5. If IoT ingestion causes instability, set `IOT_ENABLED=false` and disable MQTT ingestion while keeping REST health and dashboards online.
+6. Re-run the post-release smoke test after rollback.
+7. Keep the database unchanged unless a verified backup/restore plan has been approved for the incident.
