@@ -42,7 +42,8 @@ Use the existing `frontend/vercel.json`.
 Set these Vercel environment variables for Production, Preview, and Development as appropriate:
 
 ```env
-NEXT_PUBLIC_API_URL=https://your-backend-service.onrender.com
+# Keep blank to use same-origin /api through Next.js rewrites.
+NEXT_PUBLIC_API_URL=
 NEXT_PUBLIC_SOCKET_URL=https://your-backend-service.onrender.com
 API_URL=https://your-backend-service.onrender.com
 ```
@@ -53,7 +54,7 @@ The frontend config:
 
 - keeps local/private HTTP URLs usable for ESP32 LAN testing
 - upgrades public HTTP backend URLs to HTTPS
-- rewrites `/api/*` to the backend when `API_URL` or `NEXT_PUBLIC_API_URL` is configured
+- rewrites `/api/*` to the backend when `API_URL` is configured
 - disables `X-Powered-By`
 - disables production browser source maps
 - adds browser security headers
@@ -108,7 +109,7 @@ PUBLIC_API_BASE_URL=https://your-railway-backend.up.railway.app
 Then set Vercel:
 
 ```env
-NEXT_PUBLIC_API_URL=https://your-railway-backend.up.railway.app
+NEXT_PUBLIC_API_URL=
 NEXT_PUBLIC_SOCKET_URL=https://your-railway-backend.up.railway.app
 API_URL=https://your-railway-backend.up.railway.app
 ```

@@ -94,7 +94,8 @@ Use `.env.example` as the full reference. Do not commit real secrets.
 Frontend production must include:
 
 ```env
-NEXT_PUBLIC_API_URL=https://your-backend-service.onrender.com
+# Keep blank to use same-origin /api through Next.js rewrites.
+NEXT_PUBLIC_API_URL=
 NEXT_PUBLIC_SOCKET_URL=https://your-backend-service.onrender.com
 API_URL=https://your-backend-service.onrender.com
 ```

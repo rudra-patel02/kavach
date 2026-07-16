@@ -25,7 +25,7 @@ services:
       MONGO_URI: mongodb://mongo:27017/kavach
       JWT_SECRET: replace-with-a-random-secret-at-least-32-characters-long
       JWT_REFRESH_SECRET: replace-with-a-second-random-secret-at-least-32-characters
-      CORS_ORIGIN: ${FRONTEND_ORIGIN:-https://kavach-1-7749.onrender.com}
+      CORS_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost,http://localhost:3000}
       CORS_CREDENTIALS: ${CORS_CREDENTIALS:-true}
       ENABLE_SENSOR_SIMULATION: "true"
       SENSOR_INTERVAL_MS: 1500
@@ -56,16 +56,18 @@ services:
     build:
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://kavach-spgh.onrender.com}
-        NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-https://kavach-spgh.onrender.com}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
+        NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-http://localhost}
+        API_URL: ${API_URL:-http://backend:5000}
     restart: unless-stopped
     depends_on:
       backend:
         condition: service_healthy
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://kavach-spgh.onrender.com}
-      NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-https://kavach-spgh.onrender.com}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
+      NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-http://localhost}
+      API_URL: ${API_URL:-http://backend:5000}
     ports:
       - "3000:3000"
 

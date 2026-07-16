@@ -35,7 +35,7 @@ const manageRoles = [
 
 router.post("/devices/register", deviceAuthMiddleware, registerIoTDevice);
 router.post("/telemetry", deviceAuthMiddleware, receiveTelemetry);
-router.post("/sensor", receiveDhtSensorReading);
+router.post("/sensor", deviceAuthMiddleware, receiveDhtSensorReading);
 router.post(
   "/devices/:deviceId/heartbeat",
   deviceAuthMiddleware,

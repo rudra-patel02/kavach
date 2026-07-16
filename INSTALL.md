@@ -65,15 +65,17 @@ frontend/.env.local
 Minimum frontend values:
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:5000
+NEXT_PUBLIC_API_URL=
 NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
+API_URL=http://localhost:5000
 ```
 
 For production builds, use HTTPS URLs:
 
 ```env
-NEXT_PUBLIC_API_URL=https://kavach-spgh.onrender.com
+NEXT_PUBLIC_API_URL=
 NEXT_PUBLIC_SOCKET_URL=https://kavach-spgh.onrender.com
+API_URL=https://kavach-spgh.onrender.com
 ```
 
 ## Database Setup
@@ -218,8 +220,9 @@ CORS_ORIGIN=https://kavach-1-7749.onrender.com
 Production frontend variables must use HTTPS:
 
 ```env
-NEXT_PUBLIC_API_URL=https://kavach-spgh.onrender.com
+NEXT_PUBLIC_API_URL=
 NEXT_PUBLIC_SOCKET_URL=https://kavach-spgh.onrender.com
+API_URL=https://kavach-spgh.onrender.com
 ```
 
 ### Socket.IO does not connect
