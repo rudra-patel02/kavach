@@ -28,7 +28,8 @@ npm run verify:production
 
 ## Frontend on Vercel
 
-Use the existing `frontend/vercel.json`.
+Do not set a custom Output Directory for the frontend. Vercel's Next.js framework preset
+uses the internal `.next` build output automatically.
 
 | Setting | Value |
 | --- | --- |
@@ -36,7 +37,7 @@ Use the existing `frontend/vercel.json`.
 | Root directory | `frontend` |
 | Install command | `npm ci` |
 | Build command | `npm run build` |
-| Output directory | `.next` |
+| Output directory | Leave empty / default |
 | Node.js | `22.x` from `frontend/package.json` |
 
 Set these Vercel environment variables for Production, Preview, and Development as appropriate:
