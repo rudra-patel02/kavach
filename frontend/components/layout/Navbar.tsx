@@ -21,6 +21,7 @@ import { clearStoredAuth, useStoredUser } from "@/lib/auth";
 import { globalSearch } from "@/lib/search";
 import type { GlobalSearchResult } from "@/types/search";
 import NotificationCenter from "./NotificationCenter";
+import ThemeModeControl from "./ThemeModeControl";
 
 const getStoredRecentActions = () => {
   if (typeof window === "undefined") {
@@ -338,6 +339,8 @@ export default function Navbar() {
         </div>
 
         <NotificationCenter />
+
+        <ThemeModeControl compact />
 
         {user?.activePlantId ? (
           <div className="hidden rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-3 py-2 text-sm text-slate-300 shadow-inner shadow-cyan-300/5 xl:block">
