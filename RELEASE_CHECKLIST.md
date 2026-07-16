@@ -6,7 +6,7 @@
 - [ ] `JWT_SECRET` and `JWT_REFRESH_SECRET` are unique production secrets with at least 32 characters.
 - [ ] `CORS_ORIGIN` is set to the exact frontend production origin.
 - [ ] Frontend `NEXT_PUBLIC_API_URL` is blank unless intentionally bypassing Next.js rewrites.
-- [ ] Frontend `NEXT_PUBLIC_SOCKET_URL` points to the backend production URL.
+- [ ] Frontend `NEXT_PUBLIC_SOCKET_URL` is blank for same-origin Docker/nginx deployments, or points to the backend production URL for split hosting.
 - [ ] Frontend `API_URL` points to the backend production URL for Next.js `/api/*` rewrites.
 - [ ] IoT and MQTT variables are configured only if device ingestion is enabled.
 - [ ] `ENABLE_SENSOR_SIMULATION=false` unless running an approved demo environment.
