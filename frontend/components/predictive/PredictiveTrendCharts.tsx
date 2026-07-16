@@ -69,6 +69,7 @@ function TrendChart({ chart }: { chart: ChartDefinition }) {
                 stroke={chart.color}
                 strokeWidth={3}
                 fill={`url(#${gradientId})`}
+                isAnimationActive={false}
               />
             </AreaChart>
           ) : (
@@ -90,6 +91,7 @@ function TrendChart({ chart }: { chart: ChartDefinition }) {
                 stroke={chart.color}
                 strokeWidth={3}
                 dot={{ r: 4, fill: chart.color }}
+                isAnimationActive={false}
               />
             </LineChart>
           )}

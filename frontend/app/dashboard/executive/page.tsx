@@ -79,7 +79,7 @@ function ChartPanel({
                   color: "#e2e8f0",
                 }}
               />
-              <Bar dataKey="value" fill={color} radius={[6, 6, 0, 0]} />
+              <Bar dataKey="value" fill={color} isAnimationActive={false} radius={[6, 6, 0, 0]} />
             </BarChart>
           ) : type === "area" ? (
             <AreaChart data={data}>
@@ -98,6 +98,7 @@ function ChartPanel({
                 dataKey="value"
                 fill={color}
                 fillOpacity={0.2}
+                isAnimationActive={false}
                 stroke={color}
                 strokeWidth={3}
                 type="monotone"
@@ -119,6 +120,7 @@ function ChartPanel({
               <Line
                 dataKey="value"
                 dot={false}
+                isAnimationActive={false}
                 stroke={color}
                 strokeWidth={3}
                 type="monotone"

@@ -173,7 +173,7 @@ export default function FactoryScene({
 
         {/* Factory */}
         <FactoryBuilding />
-        <ConveyorBelt />
+        <ConveyorBelt running={isPlantRunning} />
         <Conveyor running={machines[2]?.status === "Running"} />
         <Tank running={machines[0]?.status === "Running"} />
         <Pipe running={isPlantRunning} />

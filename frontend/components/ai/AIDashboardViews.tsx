@@ -429,8 +429,8 @@ function FailureProbabilityChart({ machines }: { machines: AIMachineSummary[] })
               color: "#e2e8f0",
             }}
           />
-          <Bar dataKey="peak" fill="#ef4444" radius={[6, 6, 0, 0]} />
-          <Bar dataKey="bearingFailure" fill="#f97316" radius={[6, 6, 0, 0]} />
+          <Bar dataKey="peak" fill="#ef4444" isAnimationActive={false} radius={[6, 6, 0, 0]} />
+          <Bar dataKey="bearingFailure" fill="#f97316" isAnimationActive={false} radius={[6, 6, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </ChartPanel>
@@ -457,6 +457,7 @@ function RulTrendChart({ machines }: { machines: AIMachineSummary[] }) {
             dataKey="hours"
             fill="#38bdf8"
             fillOpacity={0.22}
+            isAnimationActive={false}
             stroke="#38bdf8"
             strokeWidth={3}
             type="monotone"
@@ -483,8 +484,8 @@ function HealthTrendChart({ machines }: { machines: AIMachineSummary[] }) {
               color: "#e2e8f0",
             }}
           />
-          <Line dataKey="health" dot stroke="#22c55e" strokeWidth={3} type="monotone" />
-          <Line dataKey="risk" dot stroke="#f97316" strokeWidth={3} type="monotone" />
+          <Line dataKey="health" dot isAnimationActive={false} stroke="#22c55e" strokeWidth={3} type="monotone" />
+          <Line dataKey="risk" dot isAnimationActive={false} stroke="#f97316" strokeWidth={3} type="monotone" />
         </LineChart>
       </ResponsiveContainer>
     </ChartPanel>
@@ -507,7 +508,7 @@ function AnomalyTimelineChart({ machines }: { machines: AIMachineSummary[] }) {
               color: "#e2e8f0",
             }}
           />
-          <Bar dataKey="score" radius={[6, 6, 0, 0]}>
+          <Bar dataKey="score" isAnimationActive={false} radius={[6, 6, 0, 0]}>
             {buildAnomalyData(machines).map((entry) => (
               <Cell key={entry.name} fill={severityColor[entry.severity]} />
             ))}
@@ -534,8 +535,8 @@ function MaintenanceCostChart({ machines }: { machines: AIMachineSummary[] }) {
               color: "#e2e8f0",
             }}
           />
-          <Bar dataKey="cost" fill="#a78bfa" radius={[6, 6, 0, 0]} />
-          <Bar dataKey="downtime" fill="#f59e0b" radius={[6, 6, 0, 0]} />
+          <Bar dataKey="cost" fill="#a78bfa" isAnimationActive={false} radius={[6, 6, 0, 0]} />
+          <Bar dataKey="downtime" fill="#f59e0b" isAnimationActive={false} radius={[6, 6, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </ChartPanel>
@@ -572,7 +573,7 @@ function RiskMatrixChart({ machines }: { machines: AIMachineSummary[] }) {
               color: "#e2e8f0",
             }}
           />
-          <Scatter data={buildRiskMatrixData(machines)}>
+          <Scatter data={buildRiskMatrixData(machines)} isAnimationActive={false}>
             {buildRiskMatrixData(machines).map((entry) => (
               <Cell key={entry.name} fill={severityColor[entry.severity]} />
             ))}
@@ -1014,8 +1015,8 @@ export function MachineIntelligencePageContent() {
                           color: "#e2e8f0",
                         }}
                       />
-                      <Line dataKey="health" stroke="#22c55e" strokeWidth={3} type="monotone" />
-                      <Line dataKey="risk" stroke="#f97316" strokeWidth={3} type="monotone" />
+                      <Line dataKey="health" isAnimationActive={false} stroke="#22c55e" strokeWidth={3} type="monotone" />
+                      <Line dataKey="risk" isAnimationActive={false} stroke="#f97316" strokeWidth={3} type="monotone" />
                     </LineChart>
                   </ResponsiveContainer>
                 </ChartPanel>
@@ -1037,6 +1038,7 @@ export function MachineIntelligencePageContent() {
                         dataKey="remainingUsefulLifeHours"
                         fill="#38bdf8"
                         fillOpacity={0.18}
+                        isAnimationActive={false}
                         stroke="#38bdf8"
                         strokeWidth={3}
                         type="monotone"
@@ -1118,9 +1120,9 @@ export function FailureForecastPageContent() {
                   color: "#e2e8f0",
                 }}
               />
-              <Bar dataKey="motorFailure" fill={failureColors.motorFailure} radius={[6, 6, 0, 0]} />
-              <Bar dataKey="bearingFailure" fill={failureColors.bearingFailure} radius={[6, 6, 0, 0]} />
-              <Bar dataKey="pumpFailure" fill={failureColors.pumpFailure} radius={[6, 6, 0, 0]} />
+              <Bar dataKey="motorFailure" fill={failureColors.motorFailure} isAnimationActive={false} radius={[6, 6, 0, 0]} />
+              <Bar dataKey="bearingFailure" fill={failureColors.bearingFailure} isAnimationActive={false} radius={[6, 6, 0, 0]} />
+              <Bar dataKey="pumpFailure" fill={failureColors.pumpFailure} isAnimationActive={false} radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </ChartPanel>

@@ -213,6 +213,7 @@ export default function MachineDetails() {
               <Line
                 type="monotone"
                 dataKey="value"
+                isAnimationActive={false}
                 stroke="#06b6d4"
                 strokeWidth={3}
               />

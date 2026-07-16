@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Loader2, Plus, Search } from "lucide-react";
 import FactoryScene from "@/components/3d/FactoryScene";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { fetchMachines } from "@/lib/machines";
-import socket from "@/lib/socket";
+import { useMachineFeed } from "@/hooks/useMachineFeed";
 import { useRouter } from "next/navigation";
 
 type Machine = {
@@ -26,42 +25,11 @@ type Machine = {
 
 export default function MachinesPage() {
   const [search, setSearch] = useState("");
-  const [machines, setMachines] = useState<Machine[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const machines = useMachineFeed() as Machine[];
+  const loading = machines.length === 0;
   const router = useRouter();
 
-  useEffect(() => {
-    const loadMachines = async () => {
-      try {
-        const data = await fetchMachines();
-
-        setMachines(Array.isArray(data) ? data : []);
-        setError(null);
-      } catch (error) {
-        setError(
-          error instanceof Error ? error.message : "Unable to load machines"
-        );
-        setMachines([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadMachines();
-
-    const handleMachineUpdate = (updatedMachines: Machine[]) => {
-      setMachines(updatedMachines);
-    };
-
-    socket.on("machineUpdate", handleMachineUpdate);
-
-    return () => {
-      socket.off("machineUpdate", handleMachineUpdate);
-    };
-  }, []);
-
-  const filteredMachines = machines.filter((machine) => {
+  const filteredMachines = useMemo(() => machines.filter((machine) => {
     const searchText = search.toLowerCase();
 
     return (
@@ -69,7 +37,7 @@ export default function MachinesPage() {
       machine.machineId?.toLowerCase().includes(searchText) ||
       machine.department?.toLowerCase().includes(searchText)
     );
-  });
+  }), [machines, search]);
 
   return (
     <DashboardLayout>
@@ -98,12 +66,6 @@ export default function MachinesPage() {
           </button>
           </div>
         </section>
-
-        {error ? (
-          <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
-            {error}
-          </div>
-        ) : null}
 
         <label className="premium-input flex items-center rounded-xl px-4 py-3">
           <Search size={18} className="text-slate-500" />

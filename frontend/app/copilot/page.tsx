@@ -22,10 +22,9 @@ import CopilotMessage, {
 import CopilotRightPanel from "@/components/copilot/CopilotRightPanel";
 import TypingIndicator from "@/components/copilot/TypingIndicator";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { useMachineFeed } from "@/hooks/useMachineFeed";
 import { fetchCopilotReport, streamCopilotMessage } from "@/lib/copilot";
-import { fetchMachines } from "@/lib/machines";
 import { downloadReportPdf } from "@/lib/reports";
-import socket from "@/lib/socket";
 import type { CopilotReport } from "@/types/copilot";
 import type { MachineData } from "@/types/machine";
 
@@ -111,7 +110,7 @@ export default function CopilotPage() {
     },
   ]);
   const [typedContent, setTypedContent] = useState<Record<string, string>>({});
-  const [machines, setMachines] = useState<MachineData[]>([]);
+  const machines = useMachineFeed();
   const [isLoading, setIsLoading] = useState(false);
   const [isReportLoading, setIsReportLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -388,42 +387,18 @@ export default function CopilotPage() {
   }, [addAssistantMessage, isReportLoading]);
 
   useEffect(() => {
-    fetchMachines()
-      .then((data) => {
-        setMachines(data);
-        machineSnapshotRef.current = buildSnapshot(data);
-      })
-      .catch((error) => {
-        addAssistantMessage(
-          `I could not load live machine telemetry. ${
-            error instanceof Error ? error.message : "Check the backend service."
-          }`
-        );
-      });
-  }, [addAssistantMessage]);
+    const previousSnapshot = machineSnapshotRef.current;
+    const hadPreviousSnapshot = previousSnapshot.size > 0;
+    const newCriticalMachines = hadPreviousSnapshot
+      ? machines.filter((machine) => {
+          const previous = previousSnapshot.get(getMachineKey(machine));
+          return isCriticalState(machine) && !previous?.critical;
+        })
+      : [];
 
-  useEffect(() => {
-    const handleMachineUpdate = (data: MachineData[]) => {
-      const previousSnapshot = machineSnapshotRef.current;
-      const hadPreviousSnapshot = previousSnapshot.size > 0;
-      const newCriticalMachines = hadPreviousSnapshot
-        ? data.filter((machine) => {
-            const previous = previousSnapshot.get(getMachineKey(machine));
-            return isCriticalState(machine) && !previous?.critical;
-          })
-        : [];
-
-      setMachines(data);
-      machineSnapshotRef.current = buildSnapshot(data);
-      newCriticalMachines.forEach(addCriticalEventMessage);
-    };
-
-    socket.on("machineUpdate", handleMachineUpdate);
-
-    return () => {
-      socket.off("machineUpdate", handleMachineUpdate);
-    };
-  }, [addCriticalEventMessage]);
+    machineSnapshotRef.current = buildSnapshot(machines);
+    newCriticalMachines.forEach(addCriticalEventMessage);
+  }, [addCriticalEventMessage, machines]);
 
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });

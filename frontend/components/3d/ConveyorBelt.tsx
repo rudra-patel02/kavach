@@ -4,12 +4,14 @@ import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import * as THREE from "three";
 
-export default function ConveyorBelt() {
+export default function ConveyorBelt({ running = true }: { running?: boolean }) {
   const box1 = useRef<THREE.Mesh>(null!);
   const box2 = useRef<THREE.Mesh>(null!);
   const box3 = useRef<THREE.Mesh>(null!);
 
   useFrame(() => {
+    if (!running) return;
+
     [box1, box2, box3].forEach((box) => {
       if (!box.current) return;
 

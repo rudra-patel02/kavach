@@ -320,8 +320,8 @@ function DashboardView({ dashboard }: { dashboard: EnterpriseDashboard }) {
               <XAxis dataKey="time" stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
               <Tooltip contentStyle={{ background: "#020617", border: "1px solid #334155", borderRadius: 8, color: "#e2e8f0" }} />
-              <Line dataKey="health" stroke="#22c55e" strokeWidth={3} type="monotone" />
-              <Line dataKey="risk" stroke="#f97316" strokeWidth={3} type="monotone" />
+              <Line dataKey="health" isAnimationActive={false} stroke="#22c55e" strokeWidth={3} type="monotone" />
+              <Line dataKey="risk" isAnimationActive={false} stroke="#f97316" strokeWidth={3} type="monotone" />
             </LineChart>
           </ResponsiveContainer>
         </ChartPanel>
@@ -332,7 +332,7 @@ function DashboardView({ dashboard }: { dashboard: EnterpriseDashboard }) {
               <XAxis dataKey="time" stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
               <Tooltip contentStyle={{ background: "#020617", border: "1px solid #334155", borderRadius: 8, color: "#e2e8f0" }} />
-              <Area dataKey="maintenanceCost" fill="#a78bfa" fillOpacity={0.2} stroke="#a78bfa" strokeWidth={3} type="monotone" />
+              <Area dataKey="maintenanceCost" fill="#a78bfa" fillOpacity={0.2} isAnimationActive={false} stroke="#a78bfa" strokeWidth={3} type="monotone" />
             </AreaChart>
           </ResponsiveContainer>
         </ChartPanel>
@@ -377,7 +377,7 @@ function FleetView({ dashboard }: { dashboard: EnterpriseDashboard }) {
               <XAxis dataKey="name" stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
               <Tooltip contentStyle={{ background: "#020617", border: "1px solid #334155", borderRadius: 8, color: "#e2e8f0" }} />
-              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+              <Bar dataKey="value" isAnimationActive={false} radius={[6, 6, 0, 0]}>
                 {distribution.map((entry) => (
                   <Cell key={entry.name} fill={distributionColors[entry.name]} />
                 ))}
@@ -393,7 +393,7 @@ function FleetView({ dashboard }: { dashboard: EnterpriseDashboard }) {
               <YAxis dataKey="y" name="Health" stroke="#94a3b8" unit="%" type="number" />
               <ZAxis dataKey="z" range={[80, 420]} />
               <Tooltip cursor={{ strokeDasharray: "3 3" }} contentStyle={{ background: "#020617", border: "1px solid #334155", borderRadius: 8, color: "#e2e8f0" }} />
-              <Scatter data={asArray(fleet.riskHeatmap)} fill="#38bdf8" />
+              <Scatter data={asArray(fleet.riskHeatmap)} fill="#38bdf8" isAnimationActive={false} />
             </ScatterChart>
           </ResponsiveContainer>
         </ChartPanel>
@@ -404,7 +404,7 @@ function FleetView({ dashboard }: { dashboard: EnterpriseDashboard }) {
               <XAxis dataKey="time" stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
               <Tooltip contentStyle={{ background: "#020617", border: "1px solid #334155", borderRadius: 8, color: "#e2e8f0" }} />
-              <Area dataKey="value" fill="#f97316" fillOpacity={0.22} stroke="#f97316" strokeWidth={3} type="monotone" />
+              <Area dataKey="value" fill="#f97316" fillOpacity={0.22} isAnimationActive={false} stroke="#f97316" strokeWidth={3} type="monotone" />
             </AreaChart>
           </ResponsiveContainer>
         </ChartPanel>
@@ -415,7 +415,7 @@ function FleetView({ dashboard }: { dashboard: EnterpriseDashboard }) {
               <XAxis dataKey="time" stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
               <Tooltip contentStyle={{ background: "#020617", border: "1px solid #334155", borderRadius: 8, color: "#e2e8f0" }} />
-              <Bar dataKey="value" fill="#22d3ee" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="value" fill="#22d3ee" isAnimationActive={false} radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </ChartPanel>
@@ -457,8 +457,8 @@ function ExecutiveView({ dashboard }: { dashboard: EnterpriseDashboard }) {
               <XAxis dataKey="name" stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
               <Tooltip contentStyle={{ background: "#020617", border: "1px solid #334155", borderRadius: 8, color: "#e2e8f0" }} />
-              <Bar dataKey="maintenanceCost" fill="#a78bfa" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="downtimeCost" fill="#ef4444" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="maintenanceCost" fill="#a78bfa" isAnimationActive={false} radius={[6, 6, 0, 0]} />
+              <Bar dataKey="downtimeCost" fill="#ef4444" isAnimationActive={false} radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </ChartPanel>

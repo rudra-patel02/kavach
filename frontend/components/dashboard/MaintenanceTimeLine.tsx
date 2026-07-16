@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Wrench } from "lucide-react";
-import { fetchMachines } from "@/lib/machines";
-import socket from "@/lib/socket";
+import { useMachineFeed } from "@/hooks/useMachineFeed";
 
 type Machine = {
   name: string;
@@ -12,25 +10,7 @@ type Machine = {
 };
 
 export default function MaintenanceTimeline() {
-  const [machines, setMachines] = useState<Machine[]>([]);
-
-  useEffect(() => {
-    fetchMachines()
-      .then((data: Machine[]) => {
-        setMachines(data);
-      })
-      .catch(() => setMachines([]));
-
-    const handleMachineUpdate = (updatedMachines: Machine[]) => {
-      setMachines(updatedMachines);
-    };
-
-    socket.on("machineUpdate", handleMachineUpdate);
-
-    return () => {
-      socket.off("machineUpdate", handleMachineUpdate);
-    };
-  }, []);
+  const machines = useMachineFeed() as Machine[];
 
   const schedule = machines
     .filter((machine) => machine.health < 90)
