@@ -21,7 +21,7 @@ const data = [
 
 export default function AnalyticsCharts() {
   return (
-    <div className="premium-card rounded-2xl p-6">
+    <div className="premium-card chart-frame rounded-2xl p-6">
       <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300/80">
         Throughput
       </p>
@@ -29,7 +29,7 @@ export default function AnalyticsCharts() {
         Production Analytics
       </h2>
 
-      <div style={{ width: "100%", height: 300 }}>
+      <div className="rounded-xl border border-slate-800/80 bg-slate-950/35 p-2" style={{ width: "100%", height: 300 }}>
         <ResponsiveContainer>
           <LineChart data={data}>
             <CartesianGrid stroke="rgba(148,163,184,0.14)" strokeDasharray="4 6" />
@@ -52,6 +52,7 @@ export default function AnalyticsCharts() {
               dataKey="production"
               stroke="#22d3ee"
               strokeWidth={4}
+              activeDot={{ r: 6, fill: "#67e8f9", stroke: "#ecfeff", strokeWidth: 2 }}
               dot={false}
             />
           </LineChart>

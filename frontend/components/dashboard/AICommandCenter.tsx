@@ -131,11 +131,11 @@ export default function AICommandCenter() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.07, duration: 0.42 }}
               whileHover={{ y: -4 }}
-              className={`premium-tile surface-enter rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1 hover:bg-slate-900/80 ${card.border}`}
+              className={`premium-tile metric-card surface-enter rounded-2xl p-5 transition-all duration-300 hover:bg-slate-900/80 ${card.border}`}
               style={{ animationDelay: `${index * 70}ms` }}
             >
               <div className="flex items-center justify-between gap-4">
-                <div className="rounded-xl border border-slate-700/70 bg-slate-950/70 p-3">
+                <div className="rounded-xl border border-slate-700/70 bg-slate-950/70 p-3 shadow-inner shadow-white/5">
                   <Icon size={24} className={card.color} />
                 </div>
 

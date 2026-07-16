@@ -143,7 +143,7 @@ export default function OverviewCards() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.06, duration: 0.42 }}
             whileHover={{ y: -4 }}
-            className="premium-card surface-enter rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 hover:border-cyan-300/30"
+            className="premium-card metric-card surface-enter rounded-2xl p-6 transition-all duration-300 hover:border-cyan-300/30"
             style={{ animationDelay: `${index * 60}ms` }}
           >
             <div className="flex items-center justify-between gap-4">
@@ -152,7 +152,7 @@ export default function OverviewCards() {
                   {card.title}
                 </p>
 
-                <h2 className={`mt-4 text-4xl font-black tracking-tight ${card.color}`}>
+                <h2 className={`mt-4 text-4xl font-black tracking-tight drop-shadow-[0_0_22px_rgba(34,211,238,0.12)] ${card.color}`}>
                   {card.value}
                 </h2>
                 <p className="mt-2 truncate text-sm font-medium text-slate-400">
@@ -160,11 +160,11 @@ export default function OverviewCards() {
                 </p>
               </div>
 
-              <div className={`rounded-2xl bg-gradient-to-br ${card.accent} p-3 shadow-lg shadow-slate-950/30`}>
+              <div className={`rounded-2xl bg-gradient-to-br ${card.accent} p-3 shadow-lg shadow-slate-950/30 ring-1 ring-white/20`}>
                 <Icon size={26} className="shrink-0 text-slate-950" />
               </div>
             </div>
-            <div className="mt-6 flex items-end gap-1.5">
+            <div className="mt-6 flex items-end gap-1.5 rounded-xl border border-slate-800/80 bg-slate-950/35 p-2">
               {card.sparkline.map((height, sparkIndex) => (
                 <div
                   key={`${card.title}-${sparkIndex}`}

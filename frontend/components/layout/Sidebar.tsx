@@ -90,13 +90,13 @@ export default function Sidebar() {
     <motion.aside
       animate={{ width: isCollapsed ? 96 : 288 }}
       transition={{ duration: 0.28, ease: "easeInOut" }}
-      className="sticky top-0 hidden h-screen shrink-0 flex-col border-r border-cyan-400/10 bg-slate-950/80 shadow-2xl shadow-cyan-950/10 backdrop-blur-2xl lg:flex"
+      className="sticky top-0 z-20 hidden h-screen shrink-0 flex-col border-r border-cyan-400/10 bg-slate-950/72 shadow-2xl shadow-cyan-950/10 backdrop-blur-2xl lg:flex"
     >
 
       <div className="border-b border-cyan-400/10 p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="mb-5 h-1 w-16 rounded-full bg-cyan-400 shadow-lg shadow-cyan-400/30" />
+            <div className="mb-5 h-1 w-16 rounded-full bg-gradient-to-r from-cyan-300 via-emerald-300 to-violet-300 shadow-lg shadow-cyan-400/30" />
             <AnimatePresence initial={false}>
               {!isCollapsed ? (
                 <motion.div
@@ -106,7 +106,7 @@ export default function Sidebar() {
                   exit={{ opacity: 0, x: -8 }}
                   transition={{ duration: 0.18 }}
                 >
-                  <h1 className="text-3xl font-black tracking-[0.18em] text-cyan-200">
+                  <h1 className="text-hologram text-3xl font-black tracking-[0.18em]">
                     KAVACH
                   </h1>
 
@@ -121,7 +121,7 @@ export default function Sidebar() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.92 }}
                   transition={{ duration: 0.18 }}
-                  className="text-2xl font-black tracking-[0.12em] text-cyan-200"
+                  className="text-hologram text-2xl font-black tracking-[0.12em]"
                 >
                   K
                 </motion.h1>
@@ -169,7 +169,7 @@ export default function Sidebar() {
                   } ${
                     isActive
                       ? "border-cyan-300/30 bg-cyan-400/10 text-cyan-100 shadow-lg shadow-cyan-950/30"
-                      : "border-transparent text-slate-400 hover:border-cyan-400/20 hover:bg-cyan-400/10 hover:text-cyan-100"
+                      : "border-transparent text-slate-400 hover:border-cyan-400/20 hover:bg-cyan-400/10 hover:text-cyan-100 hover:shadow-lg hover:shadow-cyan-950/20"
                   }`}
                 >
                   {isActive ? (

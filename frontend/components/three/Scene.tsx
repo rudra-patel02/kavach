@@ -36,7 +36,15 @@ export default function Scene() {
   }, []);
 
   return (
-    <div className="premium-card h-[500px] w-full overflow-hidden rounded-2xl">
+    <div className="premium-card chart-frame h-[520px] w-full overflow-hidden rounded-2xl">
+      <div className="pointer-events-none absolute left-5 top-5 z-10 rounded-xl border border-cyan-300/20 bg-slate-950/70 px-4 py-3 backdrop-blur-xl">
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-200">
+          Digital Twin
+        </p>
+        <p className="mt-1 text-sm text-slate-300">
+          Factory telemetry layer
+        </p>
+      </div>
       <Canvas camera={{ position: [8, 6, 8], fov: 45 }}>
         <Lights />
 

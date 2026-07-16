@@ -190,7 +190,7 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-cyan-400/10 bg-slate-950/72 px-4 py-4 shadow-xl shadow-slate-950/20 backdrop-blur-2xl sm:px-6 lg:px-8">
+    <header className="glass-nav sticky top-0 z-40 px-4 py-4 sm:px-6 lg:px-8">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
 
       <div className="min-w-0">
@@ -222,7 +222,7 @@ export default function Navbar() {
       <div className="flex flex-wrap items-center justify-end gap-3 sm:gap-4">
 
         <div ref={searchRef} className="relative order-last w-full sm:order-none sm:w-auto">
-          <div className="flex items-center rounded-xl border border-slate-700/70 bg-slate-900/70 px-4 py-2 shadow-inner shadow-black/20 transition-colors focus-within:border-cyan-300/50">
+          <div className="premium-tile flex items-center rounded-xl px-4 py-2 shadow-inner shadow-black/20 transition-colors focus-within:border-cyan-300/50">
 
             {isSearching ? (
               <Loader2 size={18} className="animate-spin text-cyan-300" />
@@ -260,7 +260,7 @@ export default function Navbar() {
             (isSearchFocused &&
               query.trim().length < 2 &&
               recentActions.length > 0)) ? (
-            <div className="premium-card absolute right-0 top-12 z-50 w-full overflow-hidden rounded-xl sm:w-[440px]">
+            <div className="premium-card notification-panel-enter absolute right-0 top-12 z-50 w-full overflow-hidden rounded-xl sm:w-[440px]">
               {error ? (
                 <div className="px-4 py-3 text-sm text-red-100">{error}</div>
               ) : query.trim().length < 2 && recentActions.length > 0 ? (
@@ -329,7 +329,7 @@ export default function Navbar() {
                 key={action.href}
                 href={action.href}
                 title={action.label}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700/70 bg-slate-900/60 text-slate-300 shadow-inner shadow-white/5 transition-all hover:-translate-y-0.5 hover:border-cyan-300/40 hover:bg-cyan-400/10 hover:text-cyan-100"
+                className="premium-tile flex h-10 w-10 items-center justify-center rounded-xl text-slate-300 transition-all hover:-translate-y-0.5 hover:border-cyan-300/40 hover:text-cyan-100"
               >
                 <Icon size={17} />
               </Link>
