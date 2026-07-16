@@ -18,24 +18,27 @@ export default function Machine({
   const gearRef = useRef<THREE.Mesh>(null);
 
   useFrame((state) => {
+    const isActive = machine?.status === "Running" || selected || hovered;
+
+    if (!isActive) {
+      return;
+    }
+
     const t = state.clock.getElapsedTime();
 
-    // Floating animation
     if (groupRef.current) {
       groupRef.current.position.y =
         0.6 + Math.sin(t * 6) * 0.02;
 
-      // Rotate only when machine is running
       if (machine?.status === "Running") {
         groupRef.current.rotation.y += 0.01;
       }
     }
 
-    // Gear rotation
     if (gearRef.current) {
       if (machine?.status === "Running") {
         gearRef.current.rotation.z += 0.08;
-      } else {
+      } else if (hovered || selected) {
         gearRef.current.rotation.z += 0.02;
       }
     }

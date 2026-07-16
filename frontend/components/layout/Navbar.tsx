@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -20,8 +21,14 @@ import { apiUrl } from "@/lib/api";
 import { clearStoredAuth, useStoredUser } from "@/lib/auth";
 import { globalSearch } from "@/lib/search";
 import type { GlobalSearchResult } from "@/types/search";
-import NotificationCenter from "./NotificationCenter";
 import ThemeModeControl from "./ThemeModeControl";
+
+const NotificationCenter = dynamic(() => import("./NotificationCenter"), {
+  loading: () => (
+    <div className="premium-tile h-11 w-11 rounded-xl" aria-hidden="true" />
+  ),
+  ssr: false,
+});
 
 const getStoredRecentActions = () => {
   if (typeof window === "undefined") {
@@ -52,6 +59,7 @@ export default function Navbar() {
   const searchRef = useRef<HTMLDivElement | null>(null);
   const profileRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const searchRequestRef = useRef(0);
 
   const breadcrumbs = useMemo(() => {
     const segments = pathname.split("/").filter(Boolean);
@@ -76,12 +84,23 @@ export default function Navbar() {
     }
 
     const timer = window.setTimeout(() => {
+      const requestId = searchRequestRef.current + 1;
+      searchRequestRef.current = requestId;
+
       globalSearch(searchText)
         .then((response) => {
+          if (requestId !== searchRequestRef.current) {
+            return;
+          }
+
           setResults(response.results);
           setError(null);
         })
         .catch((requestError: unknown) => {
+          if (requestId !== searchRequestRef.current) {
+            return;
+          }
+
           setError(
             requestError instanceof Error
               ? requestError.message
@@ -90,7 +109,9 @@ export default function Navbar() {
           setResults([]);
         })
         .finally(() => {
-          setIsSearching(false);
+          if (requestId === searchRequestRef.current) {
+            setIsSearching(false);
+          }
         });
     }, 250);
 
@@ -121,6 +142,7 @@ export default function Navbar() {
     setIsSearching(searchText.length >= 2);
 
     if (searchText.length < 2) {
+      searchRequestRef.current += 1;
       setResults([]);
       setError(null);
     }

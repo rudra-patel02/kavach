@@ -16,11 +16,16 @@ export default function StatusLight({
   size?: number;
 }) {
   const materialRef = useRef<THREE.MeshStandardMaterial>(null);
+  const shouldPulse = color !== "#94a3b8" && color !== "#64748b";
 
   useFrame(({ clock }) => {
+    if (!shouldPulse) {
+      return;
+    }
+
     if (materialRef.current) {
       materialRef.current.emissiveIntensity =
-        (Math.sin(clock.getElapsedTime() * 5) * 0.5 + 1) * intensity;
+        (Math.sin(clock.getElapsedTime() * 5) * 0.35 + 1) * intensity;
     }
   });
 

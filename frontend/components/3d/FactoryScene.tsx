@@ -139,9 +139,9 @@ export default function FactoryScene({
           position: [9, 7, 11],
           fov: 45,
         }}
-        dpr={[1, 1.5]}
-        performance={{ min: 0.5 }}
-        shadows
+        dpr={[1, 1.25]}
+        performance={{ debounce: 240, min: 0.6 }}
+        gl={{ antialias: true, powerPreference: "high-performance" }}
       >
         <color attach="background" args={["#0F172A"]} />
 
@@ -149,12 +149,9 @@ export default function FactoryScene({
         <ambientLight intensity={0.45} color="#94a3b8" />
 
         <directionalLight
-          castShadow
           position={[10, 12, 8]}
           intensity={2.8}
           color="#ffffff"
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
         />
 
         <pointLight position={[0, 5, 0]} intensity={2} color="#38bdf8" />

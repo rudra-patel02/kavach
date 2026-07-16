@@ -27,6 +27,12 @@ const getStoredMode = (): ThemeMode => {
 
 export const applyKavachTheme = (mode: ThemeMode) => {
   const resolvedTheme = mode === "auto" ? getAutoTheme() : mode;
+  const currentMode = document.documentElement.dataset.themeMode;
+  const currentTheme = document.documentElement.dataset.theme;
+
+  if (currentMode === mode && currentTheme === resolvedTheme) {
+    return;
+  }
 
   localStorage.setItem(THEME_MODE_KEY, mode);
   localStorage.setItem(LEGACY_THEME_KEY, resolvedTheme);

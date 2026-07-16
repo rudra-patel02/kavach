@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
@@ -12,11 +13,19 @@ import {
   Loader2,
   X,
 } from "lucide-react";
-import FactoryScene from "@/components/3d/FactoryScene";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useEnterpriseTelemetry } from "@/hooks/useEnterpriseTelemetry";
 import { createWorkOrder } from "@/lib/workorders";
 import type { EnterpriseMachineProfile } from "@/lib/enterpriseAnalytics";
+
+const FactoryScene = dynamic(() => import("@/components/3d/FactoryScene"), {
+  loading: () => (
+    <div className="flex h-full min-h-[520px] items-center justify-center bg-slate-950 text-sm font-semibold text-slate-400">
+      Loading digital twin
+    </div>
+  ),
+  ssr: false,
+});
 
 const formatNumber = (value: number | undefined, digits = 1) =>
   Number.isFinite(Number(value)) ? Number(value).toFixed(digits) : "--";

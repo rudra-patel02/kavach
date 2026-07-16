@@ -52,6 +52,7 @@ export function useEnterpriseTelemetry() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const predictiveRefreshRef = useRef<number | null>(null);
+  const isMountedRef = useRef(true);
 
   const loadTelemetry = useCallback(async () => {
     const [
@@ -65,6 +66,10 @@ export function useEnterpriseTelemetry() {
       fetchNotifications(),
       fetchWorkOrders(),
     ]);
+
+    if (!isMountedRef.current) {
+      return;
+    }
 
     if (machineResult.status === "fulfilled") {
       setMachines(Array.isArray(machineResult.value) ? machineResult.value : []);
@@ -107,9 +112,17 @@ export function useEnterpriseTelemetry() {
     predictiveRefreshRef.current = window.setTimeout(() => {
       fetchPredictiveOverview()
         .then((response) => {
+          if (!isMountedRef.current) {
+            return;
+          }
+
           setOverview(response.overview);
         })
         .catch((requestError: unknown) => {
+          if (!isMountedRef.current) {
+            return;
+          }
+
           setError(
             requestError instanceof Error
               ? requestError.message
@@ -120,11 +133,13 @@ export function useEnterpriseTelemetry() {
   }, []);
 
   useEffect(() => {
+    isMountedRef.current = true;
     const loadTimer = window.setTimeout(() => {
       void loadTelemetry();
     }, 0);
 
     return () => {
+      isMountedRef.current = false;
       window.clearTimeout(loadTimer);
     };
   }, [loadTelemetry]);
