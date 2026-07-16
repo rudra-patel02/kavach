@@ -41,7 +41,12 @@ export default function MachineHealthChart() {
                 color: "#e2e8f0",
               }}
             />
-            <Bar dataKey="health" fill="#34d399" radius={[8, 8, 0, 0]} />
+            <Bar
+              dataKey="health"
+              fill="#34d399"
+              radius={[8, 8, 0, 0]}
+              isAnimationActive={false}
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>

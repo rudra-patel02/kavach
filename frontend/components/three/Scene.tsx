@@ -3,7 +3,6 @@ import Warehouse from "./Warehouse";
 
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
-import { useEffect, useState } from "react";
 
 import Ground from "./Ground";
 import Lights from "./Lights";
@@ -13,27 +12,12 @@ import Tank from "./Tank";
 import Pipe from "./Pipe";
 import Conveyor from "./Conveyor";
 
-import socket from "@/lib/socket";
-import { fetchMachines } from "@/lib/machines";
-import type { MachineData } from "@/types/machine";
+import { useMemo } from "react";
+import { useMachineFeed } from "@/hooks/useMachineFeed";
 
 export default function Scene() {
-  const [machines, setMachines] = useState<MachineData[]>([]);
-
-  useEffect(() => {
-    fetchMachines()
-      .then((data) => setMachines(data));
-
-    const handleMachineUpdate = (data: MachineData[]) => {
-      setMachines(data);
-    };
-
-    socket.on("machineUpdate", handleMachineUpdate);
-
-    return () => {
-      socket.off("machineUpdate", handleMachineUpdate);
-    };
-  }, []);
+  const machines = useMachineFeed();
+  const visibleMachines = useMemo(() => machines.slice(0, 5), [machines]);
 
   return (
     <div className="premium-card chart-frame h-[520px] w-full overflow-hidden rounded-2xl">
@@ -45,7 +29,12 @@ export default function Scene() {
           Factory telemetry layer
         </p>
       </div>
-      <Canvas camera={{ position: [8, 6, 8], fov: 45 }}>
+      <Canvas
+        camera={{ position: [8, 6, 8], fov: 45 }}
+        dpr={[1, 1.5]}
+        frameloop="demand"
+        performance={{ min: 0.5 }}
+      >
         <Lights />
 
         <Ground />
@@ -60,7 +49,7 @@ export default function Scene() {
 
         <Conveyor />
 
-        {machines.map((machine, index) => {
+        {visibleMachines.map((machine, index) => {
           const positions: [number, number, number][] = [
   [1, 0.5, 1],
   [-1, 0.5, -1],
@@ -82,6 +71,8 @@ export default function Scene() {
           enablePan
           enableZoom
           enableRotate
+          enableDamping
+          dampingFactor={0.08}
           maxPolarAngle={Math.PI / 2.1}
         />
       </Canvas>

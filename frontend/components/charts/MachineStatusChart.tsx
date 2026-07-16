@@ -36,6 +36,7 @@ export default function MachineStatusChart() {
               innerRadius={70}
               outerRadius={110}
               paddingAngle={4}
+              isAnimationActive={false}
             >
               {data.map((entry) => (
                 <Cell key={entry.name} fill={entry.color} />

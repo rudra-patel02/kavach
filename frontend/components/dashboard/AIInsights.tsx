@@ -1,37 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { BrainCircuit } from "lucide-react";
-import { fetchMachines } from "@/lib/machines";
-import socket from "@/lib/socket";
-import type { MachineData } from "@/types/machine";
+import { useMachineFeed } from "@/hooks/useMachineFeed";
 
 export default function AIInsights() {
-  const [machines, setMachines] = useState<MachineData[]>([]);
+  const machines = useMachineFeed();
 
-  useEffect(() => {
-    fetchMachines().then((data) => setMachines(data));
-
-    const handleMachineUpdate = (data: MachineData[]) => {
-      setMachines(data);
-    };
-
-    socket.on("machineUpdate", handleMachineUpdate);
-
-    return () => {
-      socket.off("machineUpdate", handleMachineUpdate);
-    };
-  }, []);
-
-  const insights: {
+  const insights = useMemo(() => {
+    const nextInsights: {
     title: string;
     message: string;
     color: string;
-  }[] = [];
+    }[] = [];
 
-  machines.forEach((machine) => {
+    machines.forEach((machine) => {
     if (machine.temperature > 90) {
-      insights.push({
+      nextInsights.push({
         title: `${machine.name} Temperature`,
         message: `Temperature reached ${machine.temperature.toFixed(
           1
@@ -41,7 +26,7 @@ export default function AIInsights() {
     }
 
     if (machine.vibration > 0.7) {
-      insights.push({
+      nextInsights.push({
         title: `${machine.name} Vibration`,
         message: `High vibration detected (${machine.vibration.toFixed(
           2
@@ -51,7 +36,7 @@ export default function AIInsights() {
     }
 
     if (machine.health < 60) {
-      insights.push({
+      nextInsights.push({
         title: `${machine.name} Health`,
         message: `Machine health is ${machine.health.toFixed(
           0
@@ -61,7 +46,7 @@ export default function AIInsights() {
     }
 
     if (machine.power > 80) {
-      insights.push({
+      nextInsights.push({
         title: `${machine.name} Energy`,
         message: `Power usage is unusually high (${machine.power.toFixed(
           0
@@ -69,15 +54,18 @@ export default function AIInsights() {
         color: "border-blue-400/50",
       });
     }
-  });
+    });
 
-  if (insights.length === 0) {
-    insights.push({
+    if (nextInsights.length === 0) {
+      nextInsights.push({
       title: "Factory Status",
       message: "All monitored machines are operating within normal limits.",
       color: "border-emerald-400/50",
-    });
-  }
+      });
+    }
+
+    return nextInsights;
+  }, [machines]);
 
   return (
     <div className="premium-card rounded-2xl p-6">

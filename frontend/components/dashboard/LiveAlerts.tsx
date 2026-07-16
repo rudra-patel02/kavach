@@ -1,37 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
-import { fetchMachines } from "@/lib/machines";
-import socket from "@/lib/socket";
-import type { MachineData } from "@/types/machine";
+import { useMachineFeed } from "@/hooks/useMachineFeed";
 
 export default function LiveAlerts() {
-  const [machines, setMachines] = useState<MachineData[]>([]);
+  const machines = useMachineFeed();
 
-  useEffect(() => {
-    fetchMachines().then((data) => setMachines(data));
-
-    const handleMachineUpdate = (data: MachineData[]) => {
-      setMachines(data);
-    };
-
-    socket.on("machineUpdate", handleMachineUpdate);
-
-    return () => {
-      socket.off("machineUpdate", handleMachineUpdate);
-    };
-  }, []);
-
-  const alerts: {
+  const alerts = useMemo(() => {
+    const nextAlerts: {
     status: string;
     color: string;
     message: string;
-  }[] = [];
+    }[] = [];
 
-  machines.forEach((machine) => {
+    machines.forEach((machine) => {
     if (machine.status === "Critical") {
-      alerts.push({
+      nextAlerts.push({
         status: "CRITICAL",
         color: "text-red-300 border-red-400/30 bg-red-500/10",
         message: `${machine.name} requires immediate attention.`,
@@ -39,7 +24,7 @@ export default function LiveAlerts() {
     }
 
     if (machine.status === "Warning") {
-      alerts.push({
+      nextAlerts.push({
         status: "WARNING",
         color: "text-yellow-300 border-yellow-400/30 bg-yellow-500/10",
         message: `${machine.name} is showing abnormal behaviour.`,
@@ -47,7 +32,7 @@ export default function LiveAlerts() {
     }
 
     if (machine.temperature > 90) {
-      alerts.push({
+      nextAlerts.push({
         status: "TEMP",
         color: "text-orange-300 border-orange-400/30 bg-orange-500/10",
         message: `${machine.name} temperature is ${machine.temperature.toFixed(
@@ -57,7 +42,7 @@ export default function LiveAlerts() {
     }
 
     if (machine.health < 50) {
-      alerts.push({
+      nextAlerts.push({
         status: "HEALTH",
         color: "text-pink-300 border-pink-400/30 bg-pink-500/10",
         message: `${machine.name} health dropped to ${machine.health.toFixed(
@@ -65,15 +50,18 @@ export default function LiveAlerts() {
         )}%.`,
       });
     }
-  });
+    });
 
-  if (alerts.length === 0) {
-    alerts.push({
+    if (nextAlerts.length === 0) {
+      nextAlerts.push({
       status: "SUCCESS",
       color: "text-emerald-300 border-emerald-400/30 bg-emerald-500/10",
       message: "All factory systems are operating normally.",
-    });
-  }
+      });
+    }
+
+    return nextAlerts;
+  }, [machines]);
 
   return (
     <div className="premium-card rounded-2xl p-6">

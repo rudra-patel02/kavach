@@ -11,38 +11,13 @@ import {
   Sparkles,
   Wrench,
 } from "lucide-react";
-import { fetchMachines } from "@/lib/machines";
-import socket from "@/lib/socket";
-
-type Machine = {
-  name: string;
-  status: string;
-  temperature: number;
-  health: number;
-  aiPrediction?: {
-    recommendation?: string;
-  };
-};
+import { useMachineFeed } from "@/hooks/useMachineFeed";
 
 export default function AICopilot() {
-  const [machines, setMachines] = useState<Machine[]>([]);
+  const machines = useMachineFeed();
   const [question, setQuestion] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const thinkingTimerRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    fetchMachines().then(setMachines);
-
-    const handleMachineUpdate = (data: Machine[]) => {
-      setMachines(data);
-    };
-
-    socket.on("machineUpdate", handleMachineUpdate);
-
-    return () => {
-      socket.off("machineUpdate", handleMachineUpdate);
-    };
-  }, []);
 
   useEffect(
     () => () => {

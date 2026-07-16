@@ -1,32 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { BarChart3 } from "lucide-react";
-import { fetchMachines } from "@/lib/machines";
-import socket from "@/lib/socket";
-
-type Machine = {
-  status: string;
-  health: number;
-  temperature: number;
-};
+import { useMachineFeed } from "@/hooks/useMachineFeed";
 
 export default function ProductionAnalytics() {
-  const [machines, setMachines] = useState<Machine[]>([]);
-
-  useEffect(() => {
-    fetchMachines().then(setMachines);
-
-    const handleUpdate = (data: Machine[]) => {
-      setMachines(data);
-    };
-
-    socket.on("machineUpdate", handleUpdate);
-
-    return () => {
-      socket.off("machineUpdate", handleUpdate);
-    };
-  }, []);
+  const machines = useMachineFeed();
 
   const running = machines.filter((m) => m.status === "Running").length;
   const warning = machines.filter((m) => m.status === "Warning").length;
@@ -48,13 +27,13 @@ export default function ProductionAnalytics() {
         ).toFixed(1)
       : "0";
 
-  const metrics = [
+  const metrics = useMemo(() => [
     ["Running", running, "text-emerald-300"],
     ["Warning", warning, "text-yellow-300"],
     ["Critical", critical, "text-red-300"],
     ["Avg Health", `${avgHealth}%`, "text-cyan-300"],
     ["Avg Temp", `${avgTemp} C`, "text-orange-300"],
-  ];
+  ], [avgHealth, avgTemp, critical, running, warning]);
 
   return (
     <div className="premium-card rounded-2xl p-6">

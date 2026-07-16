@@ -51,7 +51,11 @@ export default function LiveSensors() {
     };
 
     loadReading();
-    const timer = window.setInterval(loadReading, 5000);
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        loadReading();
+      }
+    }, 15000);
     const handleSensorUpdate = (machine: MachineData) => {
       if (machine?.linkedDeviceId !== ESP32_DEVICE_ID) {
         return;

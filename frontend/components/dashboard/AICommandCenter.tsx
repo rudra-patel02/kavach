@@ -1,42 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import CountUp from "react-countup";
 import { motion } from "framer-motion";
 import { AlertTriangle, Bot, TrendingUp, Zap } from "lucide-react";
-import { fetchMachines } from "@/lib/machines";
+import { useMachineFeed } from "@/hooks/useMachineFeed";
 import LiveBadge from "./LiveBadge";
-import socket from "@/lib/socket";
-import type { MachineData } from "@/types/machine";
 
 export default function AICommandCenter() {
-  const [machines, setMachines] = useState<MachineData[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchMachines()
-      .then((data) => {
-        setMachines(data);
-        setError(null);
-      })
-      .catch((requestError: unknown) => {
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : "Unable to load AI metrics"
-        );
-      });
-
-    const handleMachineUpdate = (data: MachineData[]) => {
-      setMachines(data);
-    };
-
-    socket.on("machineUpdate", handleMachineUpdate);
-
-    return () => {
-      socket.off("machineUpdate", handleMachineUpdate);
-    };
-  }, []);
+  const machines = useMachineFeed();
 
   const avgHealth =
     machines.length > 0
@@ -63,7 +35,7 @@ export default function AICommandCenter() {
         )
       : 0;
 
-  const cards = [
+  const cards = useMemo(() => [
     {
       border: "border-green-500/30",
       color: "text-green-400",
@@ -96,7 +68,7 @@ export default function AICommandCenter() {
       value: avgEfficiency,
       unit: "%",
     },
-  ];
+  ], [avgEfficiency, avgHealth, failureRisk]);
 
   return (
     <section className="premium-card rounded-2xl p-6 lg:p-7">
@@ -113,12 +85,6 @@ export default function AICommandCenter() {
 
         <LiveBadge />
       </div>
-
-      {error ? (
-        <div className="mb-4 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
-          {error}
-        </div>
-      ) : null}
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
         {cards.map((card, index) => {

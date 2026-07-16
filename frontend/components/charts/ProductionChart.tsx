@@ -21,15 +21,15 @@ const data = [
 
 export default function ProductionChart() {
   return (
-    <div className="bg-[#111827] rounded-2xl p-6 shadow-lg h-full">
-      <h2 className="text-xl font-semibold text-white mb-5">
+    <div className="premium-card chart-frame h-full rounded-2xl p-6">
+      <h2 className="mb-5 text-xl font-black text-white">
         Live Production
       </h2>
 
-      <div className="h-72">
+      <div className="h-72 rounded-xl border border-slate-800/80 bg-slate-950/35 p-2">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
-            <CartesianGrid stroke="#374151" strokeDasharray="3 3" />
+            <CartesianGrid stroke="rgba(148,163,184,0.14)" strokeDasharray="4 6" />
 
             <XAxis dataKey="time" stroke="#9CA3AF" />
 
@@ -43,6 +43,7 @@ export default function ProductionChart() {
               stroke="#22d3ee"
               strokeWidth={3}
               dot={{ r: 4 }}
+              isAnimationActive={false}
             />
           </LineChart>
         </ResponsiveContainer>

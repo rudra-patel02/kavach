@@ -56,6 +56,7 @@ export default function EnergyChart() {
               stroke="#38bdf8"
               fill="url(#energyFill)"
               strokeWidth={3}
+              isAnimationActive={false}
             />
           </AreaChart>
         </ResponsiveContainer>

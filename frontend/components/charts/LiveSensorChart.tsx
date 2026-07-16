@@ -22,15 +22,16 @@ const data = [
 
 export default function LiveSensorChart() {
   return (
-    <div className="bg-slate-900 rounded-xl p-6 mt-6 border border-slate-700">
+    <div className="premium-card chart-frame mt-6 rounded-2xl p-6">
 
       <h2 className="text-xl font-bold text-white mb-4">
         Temperature Trend
       </h2>
 
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={data}>
-          <CartesianGrid stroke="#334155" />
+      <div className="rounded-xl border border-slate-800/80 bg-slate-950/35 p-2">
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={data}>
+            <CartesianGrid stroke="rgba(148,163,184,0.14)" strokeDasharray="4 6" />
           <XAxis dataKey="time" stroke="#94a3b8" />
           <YAxis stroke="#94a3b8" />
           <Tooltip />
@@ -39,9 +40,11 @@ export default function LiveSensorChart() {
             dataKey="temp"
             stroke="#06b6d4"
             strokeWidth={3}
+            isAnimationActive={false}
           />
-        </LineChart>
-      </ResponsiveContainer>
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
 
     </div>
   );

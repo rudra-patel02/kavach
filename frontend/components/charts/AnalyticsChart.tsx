@@ -54,6 +54,7 @@ export default function AnalyticsCharts() {
               strokeWidth={4}
               activeDot={{ r: 6, fill: "#67e8f9", stroke: "#ecfeff", strokeWidth: 2 }}
               dot={false}
+              isAnimationActive={false}
             />
           </LineChart>
         </ResponsiveContainer>

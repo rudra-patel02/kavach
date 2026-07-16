@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   Activity,
@@ -10,28 +10,10 @@ import {
   Thermometer,
   Zap,
 } from "lucide-react";
-import { fetchMachines } from "@/lib/machines";
-import socket from "@/lib/socket";
-import type { MachineData } from "@/types/machine";
+import { useMachineFeed } from "@/hooks/useMachineFeed";
 
 export default function OverviewCards() {
-  const [machines, setMachines] = useState<MachineData[]>([]);
-
-  useEffect(() => {
-    fetchMachines()
-      .then((data) => setMachines(data))
-      .catch(() => setMachines([]));
-
-    const handleMachineUpdate = (data: MachineData[]) => {
-      setMachines(data);
-    };
-
-    socket.on("machineUpdate", handleMachineUpdate);
-
-    return () => {
-      socket.off("machineUpdate", handleMachineUpdate);
-    };
-  }, []);
+  const machines = useMachineFeed();
 
   const totalMachines = machines.length;
 
@@ -68,7 +50,7 @@ export default function OverviewCards() {
   const criticalRatio =
     totalMachines > 0 ? Math.min((criticalAlerts / totalMachines) * 100, 100) : 0;
 
-  const cards = [
+  const cards = useMemo(() => [
     {
       accent: "from-cyan-300 to-blue-400",
       color: "text-cyan-300",
@@ -129,7 +111,7 @@ export default function OverviewCards() {
       trend: "Model assurance",
       value: "96%",
     },
-  ];
+  ], [avgHealth, avgHealthNumber, avgTemperature, avgTemperatureNumber, criticalAlerts, criticalRatio, energy, energyNumber, totalMachines]);
 
   return (
     <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
