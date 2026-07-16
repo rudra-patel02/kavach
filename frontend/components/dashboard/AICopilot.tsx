@@ -106,13 +106,13 @@ export default function AICopilot() {
       transition={{ duration: 0.45 }}
       className="premium-card relative overflow-hidden rounded-2xl p-5 sm:p-6"
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.14),transparent_36%),radial-gradient(circle_at_bottom_right,rgba(168,85,247,0.13),transparent_34%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(34,211,238,0.11),transparent_38%),linear-gradient(225deg,rgba(16,185,129,0.08),transparent_36%)]" />
 
       <div className="relative mb-5 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="relative rounded-2xl border border-cyan-400/25 bg-cyan-400/10 p-3 shadow-lg shadow-cyan-950/30">
             <Bot size={24} className="text-cyan-200" />
-            <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-slate-950 bg-emerald-300 shadow-lg shadow-emerald-300/40" />
+            <span className="absolute -right-1 -top-1 h-3 w-3 rounded-md border-2 border-slate-950 bg-emerald-300 shadow-lg shadow-emerald-300/40" />
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300/80">
@@ -189,6 +189,7 @@ export default function AICopilot() {
         <input
           value={question}
           onChange={(e) => updateQuestion(e.target.value)}
+          aria-label="Ask AI Copilot"
           placeholder="Ask: Which machine needs maintenance?"
           className="min-w-0 flex-1 bg-transparent text-white outline-none placeholder:text-slate-500"
         />

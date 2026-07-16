@@ -18,7 +18,7 @@ export default function DigitalTwin() {
       transition={{ duration: 0.48 }}
       className="premium-card relative overflow-hidden rounded-2xl p-5 sm:p-6"
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(34,211,238,0.16),transparent_34%),radial-gradient(circle_at_84%_18%,rgba(16,185,129,0.12),transparent_30%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,rgba(34,211,238,0.13),transparent_36%),linear-gradient(225deg,rgba(16,185,129,0.09),transparent_34%)]" />
       <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/60 to-transparent" />
 
       <div className="relative mb-5 flex flex-wrap items-center justify-between gap-4">
@@ -83,8 +83,8 @@ export default function DigitalTwin() {
 
         <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
           {[
-            ["Scene Depth", "Dynamic lighting and orbital inspection"],
-            ["Asset Focus", "Hover machines for health and AI context"],
+            ["Scene Depth", "Layered plant geometry, calibrated light, spatial context"],
+            ["Asset Focus", "Machine health, risk color, telemetry context"],
             ["Operations View", "Status color, risk, and telemetry overlays"],
           ].map(([title, copy], index) => (
             <motion.div

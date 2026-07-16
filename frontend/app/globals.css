@@ -220,7 +220,11 @@ body {
   width: 38%;
   pointer-events: none;
   background: linear-gradient(90deg, transparent, rgba(103, 232, 249, 0.12), transparent);
-  animation: hologram-sweep 8s ease-in-out infinite;
+  opacity: 0;
+}
+
+.premium-card:hover::after {
+  animation: hologram-sweep 2.8s ease-in-out;
 }
 
 .premium-card > * {

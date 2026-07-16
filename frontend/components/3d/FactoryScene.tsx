@@ -139,6 +139,8 @@ export default function FactoryScene({
           position: [9, 7, 11],
           fov: 45,
         }}
+        dpr={[1, 1.5]}
+        performance={{ min: 0.5 }}
         shadows
       >
         <color attach="background" args={["#0F172A"]} />
@@ -151,8 +153,8 @@ export default function FactoryScene({
           position={[10, 12, 8]}
           intensity={2.8}
           color="#ffffff"
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
         />
 
         <pointLight position={[0, 5, 0]} intensity={2} color="#38bdf8" />
@@ -260,6 +262,8 @@ export default function FactoryScene({
           enableRotate
           enableZoom
           enablePan
+          enableDamping
+          dampingFactor={0.08}
           minDistance={6}
           maxDistance={18}
           minPolarAngle={Math.PI / 4}
