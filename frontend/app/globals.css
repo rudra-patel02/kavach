@@ -185,6 +185,88 @@ body {
   animation: circuit-pan 28s linear infinite;
 }
 
+.cinematic-shell {
+  background:
+    linear-gradient(120deg, rgba(2, 6, 23, 0.76), rgba(8, 47, 73, 0.4) 42%, rgba(2, 6, 23, 0.84)),
+    #020617;
+}
+
+.industrial-twin-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(2, 6, 23, 0.02), rgba(2, 6, 23, 0.42) 58%, rgba(2, 6, 23, 0.88)),
+    radial-gradient(circle at 30% 18%, rgba(34, 211, 238, 0.18), transparent 32%),
+    radial-gradient(circle at 78% 22%, rgba(16, 185, 129, 0.14), transparent 34%);
+}
+
+.industrial-twin-bg canvas {
+  min-height: 100vh;
+}
+
+.industrial-twin-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(2, 6, 23, 0.74), transparent 22%, transparent 72%, rgba(2, 6, 23, 0.62)),
+    linear-gradient(180deg, rgba(2, 6, 23, 0.22), transparent 42%, rgba(2, 6, 23, 0.9)),
+    radial-gradient(circle at center, transparent 38%, rgba(2, 6, 23, 0.68) 100%);
+}
+
+.industrial-twin-hud {
+  position: absolute;
+  inset: 1.25rem;
+  border: 1px solid rgba(103, 232, 249, 0.08);
+  border-radius: 1.5rem;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.025),
+    inset 0 0 90px rgba(34, 211, 238, 0.035);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.92), transparent 82%);
+}
+
+.industrial-twin-hud::before,
+.industrial-twin-hud::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(34, 211, 238, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px, 72px 72px;
+}
+
+.industrial-twin-hud::after {
+  background: linear-gradient(100deg, transparent 0%, rgba(103, 232, 249, 0.12) 48%, transparent 56%);
+  transform: translateX(-120%);
+  animation: hologram-sweep 8s ease-in-out infinite;
+}
+
+.industrial-twin-hud span {
+  position: absolute;
+  width: 8rem;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(103, 232, 249, 0.78), transparent);
+}
+
+.industrial-twin-hud span:nth-child(1) {
+  left: 2rem;
+  top: 2rem;
+}
+
+.industrial-twin-hud span:nth-child(2) {
+  right: 2rem;
+  top: 2rem;
+}
+
+.industrial-twin-hud span:nth-child(3) {
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 .premium-card {
   position: relative;
   contain: paint;

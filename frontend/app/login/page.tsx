@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import IndustrialTwinBackground from "@/components/layout/IndustrialTwinBackground";
 import { apiUrl } from "@/lib/api";
 import { notifyAuthChanged, useStoredToken } from "@/lib/auth";
 
@@ -88,7 +89,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="industrial-shell relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-5 py-10">
+    <div className="cinematic-shell relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-5 py-10">
+      <IndustrialTwinBackground />
       <div className="login-grid items-center">
         <section className="login-aside holographic-panel rounded-2xl p-8">
           <div className="flex items-center gap-3">

@@ -11,6 +11,7 @@ import {
 } from "@/lib/auth";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
+import IndustrialTwinBackground from "./IndustrialTwinBackground";
 
 interface Props {
   children: ReactNode;
@@ -84,7 +85,8 @@ export default function DashboardLayout({ allowedRoles, children }: Props) {
   }
 
   return (
-    <div className="relative flex min-h-screen overflow-hidden bg-slate-950 industrial-shell">
+    <div className="relative flex min-h-screen overflow-hidden bg-slate-950 cinematic-shell">
+      <IndustrialTwinBackground />
       <div className="pointer-events-none fixed left-0 top-0 z-0 h-px w-full bg-gradient-to-r from-transparent via-cyan-300/40 to-transparent" />
       <div className="pointer-events-none fixed bottom-0 left-0 z-0 h-px w-full bg-gradient-to-r from-emerald-300/20 via-transparent to-cyan-300/20" />
       <Sidebar />
