@@ -166,6 +166,10 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     const timer = window.setInterval(() => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+
       setActiveInsightIndex((currentIndex) =>
         insights.length ? (currentIndex + 1) % insights.length : 0
       );

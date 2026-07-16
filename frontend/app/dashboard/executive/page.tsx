@@ -200,6 +200,10 @@ export default function ExecutiveDashboardPage() {
 
   useEffect(() => {
     const interval = window.setInterval(() => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+
       void loadDashboard({ silent: true });
     }, POLL_INTERVAL_MS);
 

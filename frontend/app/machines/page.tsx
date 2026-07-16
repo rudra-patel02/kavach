@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Loader2, Plus, Search } from "lucide-react";
 import FactoryScene from "@/components/3d/FactoryScene";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { useMachineFeed } from "@/hooks/useMachineFeed";
+import { useMachineFeed, useMachineFeedReady } from "@/hooks/useMachineFeed";
 import { useRouter } from "next/navigation";
 
 type Machine = {
@@ -26,7 +26,8 @@ type Machine = {
 export default function MachinesPage() {
   const [search, setSearch] = useState("");
   const machines = useMachineFeed() as Machine[];
-  const loading = machines.length === 0;
+  const feedReady = useMachineFeedReady();
+  const loading = !feedReady;
   const router = useRouter();
 
   const filteredMachines = useMemo(() => machines.filter((machine) => {

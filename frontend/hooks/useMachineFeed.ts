@@ -6,6 +6,7 @@ import socket from "@/lib/socket";
 import type { MachineData } from "@/types/machine";
 
 let machinesSnapshot: MachineData[] = [];
+let hasLoadedSnapshot = false;
 let loadPromise: Promise<void> | null = null;
 let socketSubscribed = false;
 const listeners = new Set<() => void>();
@@ -16,6 +17,7 @@ const emitChange = () => {
 
 const setMachinesSnapshot = (nextMachines: MachineData[]) => {
   machinesSnapshot = nextMachines;
+  hasLoadedSnapshot = true;
   emitChange();
 };
 
@@ -60,6 +62,8 @@ const subscribe = (listener: () => void) => {
 
 const getSnapshot = () => machinesSnapshot;
 const getServerSnapshot = () => [];
+const getLoadedSnapshot = () => hasLoadedSnapshot;
+const getServerLoadedSnapshot = () => false;
 
 export const useMachineFeed = () => {
   const machines = useSyncExternalStore(
@@ -76,3 +80,6 @@ export const useMachineFeed = () => {
 
   return machines;
 };
+
+export const useMachineFeedReady = () =>
+  useSyncExternalStore(subscribe, getLoadedSnapshot, getServerLoadedSnapshot);

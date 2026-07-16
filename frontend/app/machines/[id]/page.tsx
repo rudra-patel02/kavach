@@ -53,28 +53,32 @@ export default function MachineDetails() {
   }, [id]);
 
   useEffect(() => {
-  const interval = setInterval(() => {
-    setLiveHealth((prev) => {
-      let value = prev + Math.floor(Math.random() * 5) - 2;
+    const interval = window.setInterval(() => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
 
-      if (value > 100) value = 100;
-      if (value < 30) value = 30;
+      setLiveHealth((prev) => {
+        let value = prev + Math.floor(Math.random() * 5) - 2;
 
-      return value;
-    });
+        if (value > 100) value = 100;
+        if (value < 30) value = 30;
 
-    setLiveTemperature((prev) => {
-      let value = prev + Math.floor(Math.random() * 5) - 2;
+        return value;
+      });
 
-      if (value > 110) value = 110;
-      if (value < 40) value = 40;
+      setLiveTemperature((prev) => {
+        let value = prev + Math.floor(Math.random() * 5) - 2;
 
-      return value;
-    });
-  }, 2000);
+        if (value > 110) value = 110;
+        if (value < 40) value = 40;
 
-  return () => clearInterval(interval);
-}, []);
+        return value;
+      });
+    }, 2000);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   if (isLoading) {
     return (

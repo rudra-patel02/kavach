@@ -94,6 +94,10 @@ export default function IoTManagementPage() {
     }
 
     const timer = window.setInterval(() => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+
       void loadOverview();
     }, 15000);
 
