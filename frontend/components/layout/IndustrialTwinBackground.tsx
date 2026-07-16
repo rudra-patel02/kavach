@@ -165,6 +165,38 @@ function SmokeStack({ position }: { position: [number, number, number] }) {
   );
 }
 
+function IndustrialFloorRails() {
+  return (
+    <group position={[0, -1.485, -3.5]}>
+      {[-5.4, -3.6, -1.8, 0, 1.8, 3.6, 5.4].map((x) => (
+        <mesh key={`rail-${x}`} position={[x, 0.02, 0]}>
+          <boxGeometry args={[0.018, 0.018, 6.45]} />
+          <meshStandardMaterial
+            color="#164e63"
+            emissive="#0891b2"
+            emissiveIntensity={0.16}
+            metalness={0.62}
+            roughness={0.3}
+          />
+        </mesh>
+      ))}
+
+      {[-2.6, 0, 2.6].map((z) => (
+        <mesh key={`track-${z}`} position={[0, 0.025, z]}>
+          <boxGeometry args={[12.2, 0.018, 0.018]} />
+          <meshStandardMaterial
+            color="#064e3b"
+            emissive="#10b981"
+            emissiveIntensity={0.12}
+            metalness={0.58}
+            roughness={0.34}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 function FactoryCity() {
   const group = useRef<THREE.Group>(null);
   const buildingData = useMemo(
@@ -207,7 +239,7 @@ function FactoryCity() {
         <meshStandardMaterial color="#020617" metalness={0.45} roughness={0.52} />
       </mesh>
 
-      <gridHelper args={[13, 26, "#22d3ee", "#1e293b"]} position={[0, -1.49, -3.5]} />
+      <IndustrialFloorRails />
 
       {buildingData.map(([x, y, z, sx, sy, sz], index) => (
         <group key={`${x}-${z}`} position={[x, y, z]}>
