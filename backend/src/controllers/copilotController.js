@@ -4,6 +4,7 @@ import {
 } from "../services/copilotAnalysisService.js";
 import { loadCopilotContext } from "../services/copilotContextService.js";
 import { validateCopilotChatPayload } from "../validators/copilotValidator.js";
+import { sendErrorResponse } from "../utils/httpErrorResponse.js";
 
 export const chatWithCopilot = async (req, res) => {
   try {
@@ -48,13 +49,8 @@ export const chatWithCopilot = async (req, res) => {
     });
   } catch (error) {
     console.error("Copilot chat failed:", error);
-    const statusCode = error.statusCode || 500;
-
-    res.status(statusCode).json({
-      message:
-        statusCode < 500
-          ? error.message
-          : "Failed to generate copilot response",
+    sendErrorResponse(res, error, {
+      fallbackMessage: "Failed to generate copilot response",
     });
   }
 };
@@ -70,8 +66,8 @@ export const getCopilotReport = async (req, res) => {
     });
   } catch (error) {
     console.error("Copilot report failed:", error);
-    res.status(500).json({
-      message: "Failed to generate copilot report",
+    sendErrorResponse(res, error, {
+      fallbackMessage: "Failed to generate copilot report",
     });
   }
 };

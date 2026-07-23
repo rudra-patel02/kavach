@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { refreshMachineFeed } from "@/hooks/useMachineFeed";
 import { createMachine as createMachineRequest } from "@/lib/machines";
 
 export default function AddMachinePage() {
@@ -34,6 +35,7 @@ export default function AddMachinePage() {
 
     try {
       await createMachineRequest(form);
+      await refreshMachineFeed();
 
       router.push("/machines");
     } catch (err) {
@@ -109,7 +111,7 @@ export default function AddMachinePage() {
           <option>Running</option>
           <option>Warning</option>
           <option>Critical</option>
-          <option>Stopped</option>
+          <option>Offline</option>
         </select>
 
         <button

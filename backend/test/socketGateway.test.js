@@ -25,6 +25,7 @@ const createFakeIo = () => {
 test("builds stable plant and machine room names", () => {
   assert.equal(getPlantRoom("west"), "plant:west");
   assert.equal(getMachineRoom("M001"), "machine:M001");
+  assert.equal(SOCKET_EVENTS.SENSOR_UPDATE, "sensor-update");
 });
 
 test("broadcasts machine snapshots to legacy, plant, and machine channels", () => {

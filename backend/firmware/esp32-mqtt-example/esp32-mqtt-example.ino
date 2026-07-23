@@ -3,10 +3,11 @@
 #include <HTTPClient.h>
 #include <WiFi.h>
 
-const char* WIFI_SSID = "Rudra 2.4GHz";
-const char* WIFI_PASSWORD = "12345678990";
+const char* WIFI_SSID = "replace-with-wifi-ssid";
+const char* WIFI_PASSWORD = "replace-with-wifi-password";
 const char* BACKEND_SENSOR_URL = "https://kavach-spgh.onrender.com/api/iot/sensor";
 const char* DEVICE_ID = "esp32-dht22-01";
+const char* DEVICE_SECRET = "replace-with-device-shared-secret";
 
 #define DHT_PIN 4
 #define DHT_TYPE DHT22
@@ -172,6 +173,7 @@ void sendSensorReading(float temperature, float humidity) {
 
   http.begin(BACKEND_SENSOR_URL);
   http.addHeader("Content-Type", "application/json");
+  http.addHeader("x-device-secret", DEVICE_SECRET);
 
   Serial.println("Sending Data...");
   Serial.println(json);

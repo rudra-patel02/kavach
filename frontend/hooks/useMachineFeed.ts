@@ -21,8 +21,8 @@ const setMachinesSnapshot = (nextMachines: MachineData[]) => {
   emitChange();
 };
 
-const loadMachines = () => {
-  if (!loadPromise) {
+const loadMachines = (force = false) => {
+  if (force || !loadPromise) {
     loadPromise = fetchMachines()
       .then(setMachinesSnapshot)
       .catch(() => setMachinesSnapshot([]))
@@ -33,6 +33,8 @@ const loadMachines = () => {
 
   return loadPromise;
 };
+
+export const refreshMachineFeed = () => loadMachines(true);
 
 const handleMachineUpdate = (nextMachines: MachineData[]) => {
   setMachinesSnapshot(nextMachines);
@@ -46,7 +48,7 @@ const subscribe = (listener: () => void) => {
     socketSubscribed = true;
   }
 
-  if (machinesSnapshot.length === 0) {
+  if (!hasLoadedSnapshot) {
     void loadMachines();
   }
 
@@ -73,7 +75,7 @@ export const useMachineFeed = () => {
   );
 
   useEffect(() => {
-    if (machines.length === 0) {
+    if (!hasLoadedSnapshot) {
       void loadMachines();
     }
   }, [machines.length]);

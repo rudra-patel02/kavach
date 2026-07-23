@@ -7,6 +7,7 @@ import {
   getPagination,
   setPaginationHeaders,
 } from "../utils/pagination.js";
+import { sendErrorResponse } from "../utils/httpErrorResponse.js";
 
 const getMachineLookup = (id) => {
   const identifier = String(id || "").trim();
@@ -103,7 +104,7 @@ export const getMachines = async (req, res) => {
     res.status(200).json(machines);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Failed to fetch machines" });
+    sendErrorResponse(res, err, { fallbackMessage: "Failed to fetch machines" });
   }
 };
 
@@ -129,48 +130,50 @@ export const getMachineById = async (req, res) => {
     res.status(200).json(machine);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server Error" });
+    sendErrorResponse(res, err, { fallbackMessage: "Failed to fetch machine" });
   }
 };
 
 // Create machine
+export const buildMachineCreatePayload = (req) => ({
+  machineId: req.body.machineId,
+  name: req.body.name,
+  department: req.body.department,
+  tenantId: req.body.tenantId || req.user?.tenantId || req.tenantContext?.tenantId || "",
+  organizationId: req.body.organizationId || req.user?.organizationId || "",
+  plantId: req.body.plantId || req.tenantContext?.plantId || req.user?.activePlantId || "",
+  departmentId: req.body.departmentId || "",
+  productionLineId: req.body.productionLineId || "",
+  machineGroupId: req.body.machineGroupId || "",
+  status: req.body.status,
+
+  health: 100,
+  temperature: 25,
+  vibration: 0.2,
+  pressure: 1.0,
+  power: 0,
+  current: 0,
+  voltage: 415,
+  energyConsumed: 0,
+  efficiency: 100,
+  rpm: 1450,
+  humidity: 45,
+  downtime: 0,
+  oee: 100,
+  remainingUsefulLifeHours: 720,
+  predictedFailureProbability: 2,
+
+  aiPrediction: {
+    failureRisk: "Low",
+    maintenancePriority: "Low",
+    maintenanceInDays: 30,
+    recommendation: "Machine operating normally.",
+  },
+});
+
 export const createMachine = async (req, res) => {
   try {
-    const machine = await Machine.create({
-      machineId: req.body.machineId,
-      name: req.body.name,
-      department: req.body.department,
-      tenantId: req.body.tenantId || req.user?.tenantId || req.tenantContext?.tenantId || "",
-      organizationId: req.body.organizationId || req.user?.organizationId || "",
-      plantId: req.body.plantId || req.user?.activePlantId || "",
-      departmentId: req.body.departmentId || "",
-      productionLineId: req.body.productionLineId || "",
-      machineGroupId: req.body.machineGroupId || "",
-      status: req.body.status,
-
-      health: 100,
-      temperature: 25,
-      vibration: 0.2,
-      pressure: 1.0,
-      power: 0,
-      current: 0,
-      voltage: 415,
-      energyConsumed: 0,
-      efficiency: 100,
-      rpm: 1450,
-      humidity: 45,
-      downtime: 0,
-      oee: 100,
-      remainingUsefulLifeHours: 720,
-      predictedFailureProbability: 2,
-
-      aiPrediction: {
-        failureRisk: "Low",
-        maintenancePriority: "Low",
-        maintenanceInDays: 30,
-        recommendation: "Machine operating normally.",
-      },
-    });
+    const machine = await Machine.create(buildMachineCreatePayload(req));
 
     await createAuditLog({
       action: "MACHINE_CREATED",
@@ -183,9 +186,7 @@ export const createMachine = async (req, res) => {
     res.status(201).json(machine);
   } catch (err) {
     console.error(err);
-    res.status(500).json({
-      message: "Unable to create machine",
-    });
+    sendErrorResponse(res, err, { fallbackMessage: "Unable to create machine" });
   }
 };
 
@@ -223,9 +224,7 @@ export const updateMachine = async (req, res) => {
     res.json(machine);
   } catch (err) {
     console.error(err);
-    res.status(500).json({
-      message: "Unable to update machine",
-    });
+    sendErrorResponse(res, err, { fallbackMessage: "Unable to update machine" });
   }
 };
 
@@ -256,8 +255,6 @@ export const deleteMachine = async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({
-      message: "Unable to delete machine",
-    });
+    sendErrorResponse(res, err, { fallbackMessage: "Unable to delete machine" });
   }
 };

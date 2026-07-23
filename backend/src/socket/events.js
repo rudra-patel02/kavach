@@ -20,6 +20,7 @@ export const SOCKET_EVENTS = {
   DEVICE_ONLINE: "device:online",
   DEVICE_OFFLINE: "device:offline",
   DEVICE_HEARTBEAT: "device:heartbeat",
+  SENSOR_UPDATE: "sensor-update",
   SENSOR_ALERT: "sensor:alert",
   ALERT_CREATED: "alert:created",
   NOTIFICATION_CREATED: "notification:created",

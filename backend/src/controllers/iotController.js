@@ -18,6 +18,8 @@ import {
   getTelemetryHistory,
   processTelemetryPacket,
 } from "../iot/telemetryProcessor.js";
+import { SOCKET_EVENTS } from "../socket/events.js";
+import { sendErrorResponse } from "../utils/httpErrorResponse.js";
 
 const getGateway = (req) => req.app.get("machineGateway") || req.app.get("io");
 
@@ -195,7 +197,7 @@ export const getIoTOverview = async (req, res) => {
     });
   } catch (error) {
     console.error("Failed to fetch IoT overview:", error);
-    res.status(500).json({ message: "Failed to fetch IoT overview" });
+    sendErrorResponse(res, error, { fallbackMessage: "Failed to fetch IoT overview" });
   }
 };
 
@@ -208,7 +210,7 @@ export const getDevices = async (req, res) => {
     });
   } catch (error) {
     console.error("Failed to fetch devices:", error);
-    res.status(500).json({ message: "Failed to fetch devices" });
+    sendErrorResponse(res, error, { fallbackMessage: "Failed to fetch devices" });
   }
 };
 
@@ -245,7 +247,7 @@ export const getDevice = async (req, res) => {
     });
   } catch (error) {
     console.error("Failed to fetch device:", error);
-    res.status(500).json({ message: "Failed to fetch device" });
+    sendErrorResponse(res, error, { fallbackMessage: "Failed to fetch device" });
   }
 };
 
@@ -362,7 +364,7 @@ export const receiveDhtSensorReading = async (req, res) => {
     const updatedMachines = await Machine.find().sort({ machineId: 1 }).lean();
     const gateway = getGateway(req);
 
-    gateway?.emit?.("sensor-update", machinePayload);
+    gateway?.emit?.(SOCKET_EVENTS.SENSOR_UPDATE, machinePayload);
     gateway?.emit?.("iot:sensor:update", serializeDhtSensor(telemetry));
     gateway?.emit?.("machineUpdate", updatedMachines);
 
@@ -403,8 +405,8 @@ export const getLatestDhtSensorReading = async (req, res) => {
     });
   } catch (error) {
     console.error("Failed to fetch latest DHT sensor reading:", error);
-    res.status(500).json({
-      message: "Failed to fetch latest DHT sensor reading",
+    sendErrorResponse(res, error, {
+      fallbackMessage: "Failed to fetch latest DHT sensor reading",
     });
   }
 };
@@ -433,7 +435,9 @@ export const getDeviceTelemetry = async (req, res) => {
     });
   } catch (error) {
     console.error("Failed to fetch telemetry history:", error);
-    res.status(500).json({ message: "Failed to fetch telemetry history" });
+    sendErrorResponse(res, error, {
+      fallbackMessage: "Failed to fetch telemetry history",
+    });
   }
 };
 
@@ -475,6 +479,6 @@ export const publishDeviceCommand = async (req, res) => {
     });
   } catch (error) {
     console.error("Failed to publish device command:", error);
-    res.status(500).json({ message: error.message || "Command publish failed" });
+    sendErrorResponse(res, error, { fallbackMessage: "Command publish failed" });
   }
 };
