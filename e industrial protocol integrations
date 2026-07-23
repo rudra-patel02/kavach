@@ -1,0 +1,24 @@
+[33mcommit 40022107ee7717a6f6338ba0aede4461963f137b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Rudra <rudra.work02@gmail.com>
+Date:   Thu Jul 23 19:50:51 2026 +0530
+
+    Add push notification, report automation, and predictive simulation APIs
+
+ backend/src/controllers/notificationController.js | 129 [32m+++++++++++++++++[m
+ backend/src/controllers/reportController.js       |  65 [32m+++++++++[m
+ backend/src/models/pushSubscription.js            |  68 [32m+++++++++[m
+ backend/src/models/reportDeliveryLog.js           |  71 [32m++++++++++[m
+ backend/src/routes/notificationRoutes.js          |   8 [32m++[m
+ backend/src/routes/reportRoutes.js                |  11 [32m++[m
+ backend/src/services/pushNotificationService.js   |  60 [32m++++++++[m
+ backend/src/services/reportAutomationService.js   |  70 [32m+++++++++[m
+ backend/test/pushNotificationService.test.js      |  67 [32m+++++++++[m
+ backend/test/reportAutomationService.test.js      |  34 [32m+++++[m
+ frontend/app/predictive/page.tsx                  | 165 [32m+++++++++++++++++++++[m[31m-[m
+ frontend/app/smart-factory/page.tsx               | 110 [32m+++++++++++++++[m
+ frontend/components/layout/NotificationCenter.tsx |  90 [32m+++++++++++[m[31m-[m
+ frontend/lib/notifications.ts                     |  34 [32m+++++[m
+ frontend/lib/predictive.ts                        |  14 [32m++[m
+ frontend/lib/smartFactory.ts                      |  22 [32m+++[m
+ frontend/types/predictive.ts                      |  25 [32m++++[m
+ 17 files changed, 1037 insertions(+), 6 deletions(-)
