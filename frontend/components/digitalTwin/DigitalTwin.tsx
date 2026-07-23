@@ -2,13 +2,24 @@
 
 import { motion } from "framer-motion";
 import { Box, Factory, Layers3, Radar, Sparkles, Zap } from "lucide-react";
+import { useMemo, useState } from "react";
 import FactoryScene from "@/components/3d/FactoryScene";
+import { useEnterpriseTelemetry } from "@/hooks/useEnterpriseTelemetry";
 
 export default function DigitalTwin() {
+  const { profiles, kpis, enhancedAlerts } = useEnterpriseTelemetry();
+  const [selectedMachineId, setSelectedMachineId] = useState<string | null>(null);
+  const selectedProfile = useMemo(
+    () =>
+      profiles.find((profile) => profile.machine.machineId === selectedMachineId) ||
+      profiles[0] ||
+      null,
+    [profiles, selectedMachineId]
+  );
   const twinMetrics = [
-    { icon: Radar, label: "Telemetry", value: "Live", tone: "text-emerald-300" },
-    { icon: Layers3, label: "Model", value: "3D", tone: "text-cyan-300" },
-    { icon: Zap, label: "Signals", value: "AI", tone: "text-amber-300" },
+    { icon: Radar, label: "Telemetry", value: profiles.length ? "Live" : "Demo", tone: "text-emerald-300" },
+    { icon: Layers3, label: "Assets", value: String(kpis.totalMachines || profiles.length || 4), tone: "text-cyan-300" },
+    { icon: Zap, label: "Alarms", value: String(enhancedAlerts.length), tone: "text-amber-300" },
   ];
 
   return (
@@ -77,15 +88,20 @@ export default function DigitalTwin() {
           <div className="pointer-events-none absolute inset-0 z-10 rounded-2xl ring-1 ring-inset ring-white/5" />
           <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(15,23,42,0.28),transparent_38%,rgba(8,145,178,0.08))]" />
           <div className="relative h-full">
-            <FactoryScene />
+            <FactoryScene
+              profiles={profiles}
+              selectedMachineId={selectedMachineId}
+              onMachineSelect={(profile) => setSelectedMachineId(profile.machine.machineId)}
+              showSensorOverlays={false}
+            />
           </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
           {[
-            ["Scene Depth", "Layered plant geometry, calibrated light, spatial context"],
-            ["Asset Focus", "Machine health, risk color, telemetry context"],
-            ["Operations View", "Status color, risk, and telemetry overlays"],
+            ["OEE", `${kpis.overallOee || 0}%`],
+            ["Average Health", `${kpis.averageHealth || 0}%`],
+            ["Energy", `${kpis.totalEnergy || 0} kWh`],
           ].map(([title, copy], index) => (
             <motion.div
               key={title}
@@ -96,9 +112,28 @@ export default function DigitalTwin() {
             >
               <div className="mb-4 h-1 w-12 rounded-full bg-gradient-to-r from-cyan-300 to-emerald-300 shadow-lg shadow-cyan-300/20" />
               <h3 className="font-bold text-white">{title}</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-400">{copy}</p>
+              <p className="mt-2 text-2xl font-black text-white">{copy}</p>
             </motion.div>
           ))}
+
+          {selectedProfile ? (
+            <motion.div
+              initial={{ opacity: 0, x: 14 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.44, duration: 0.36 }}
+              className="premium-tile rounded-2xl p-4 sm:col-span-3 xl:col-span-1"
+            >
+              <div className="mb-4 h-1 w-12 rounded-full bg-gradient-to-r from-amber-300 to-red-300 shadow-lg shadow-amber-300/20" />
+              <h3 className="truncate font-bold text-white">
+                {selectedProfile.machine.name}
+              </h3>
+              <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
+                <span className="text-slate-400">Risk {selectedProfile.riskScore}</span>
+                <span className="text-slate-400">RUL {selectedProfile.remainingUsefulLifeHours}h</span>
+                <span className="text-slate-400">Alerts {selectedProfile.criticalAlerts.length}</span>
+              </div>
+            </motion.div>
+          ) : null}
         </div>
       </div>
     </motion.section>

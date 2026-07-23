@@ -52,6 +52,9 @@ const statusBadgeClass = (status?: string) => {
 
 export default function PlantPage() {
   const {
+    enhancedAlerts,
+    insights,
+    kpis,
     profiles,
     isLoading,
     error,
@@ -145,12 +148,78 @@ export default function PlantPage() {
               setSelectedMachineId(profile.machine.machineId);
               setActionMessage(null);
             }}
+            showSensorOverlays
           />
 
-          <div className="pointer-events-none absolute left-4 top-4 rounded-xl border border-slate-700 bg-slate-950/80 px-4 py-3 text-sm text-slate-300 shadow-2xl shadow-black/30 backdrop-blur">
+          <div className="pointer-events-none absolute left-4 top-4 max-w-xl rounded-xl border border-slate-700 bg-slate-950/82 px-4 py-3 text-sm text-slate-300 shadow-2xl shadow-black/30 backdrop-blur">
             <div className="font-semibold text-white">Live Socket.IO Twin</div>
             <div className="mt-1">
               {profiles.length} monitored assets | click a machine for details
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+              {[
+                ["OEE", `${kpis.overallOee}%`],
+                ["Health", `${kpis.averageHealth}%`],
+                ["Energy", `${kpis.totalEnergy} kWh`],
+                ["Alarms", kpis.criticalAlerts],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-lg border border-white/10 bg-slate-900/80 px-3 py-2">
+                  <div className="text-[10px] uppercase text-slate-500">{label}</div>
+                  <div className="mt-1 font-bold text-white">{value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <aside className="pointer-events-none absolute bottom-4 right-4 w-[min(24rem,calc(100%-2rem))] rounded-xl border border-cyan-400/20 bg-slate-950/82 p-4 text-sm text-slate-300 shadow-2xl shadow-black/30 backdrop-blur">
+            <div className="flex items-center justify-between gap-3">
+              <div className="font-semibold text-white">Twin Alarms</div>
+              <div className="rounded-full border border-red-400/30 bg-red-500/10 px-2 py-1 text-xs font-bold text-red-100">
+                {enhancedAlerts.length}
+              </div>
+            </div>
+            <div className="mt-3 space-y-2">
+              {enhancedAlerts.slice(0, 3).map((alert) => (
+                <div key={alert.id} className="rounded-lg border border-slate-800 bg-slate-900/80 p-2">
+                  <div className="font-semibold text-white">{alert.machine || alert.machineId || "Plant"}</div>
+                  <div className="mt-1 line-clamp-1 text-xs text-slate-400">{alert.message}</div>
+                </div>
+              ))}
+              {enhancedAlerts.length === 0 ? (
+                <div className="rounded-lg border border-emerald-400/20 bg-emerald-500/10 p-2 text-emerald-100">
+                  No active alarms in the twin.
+                </div>
+              ) : null}
+            </div>
+          </aside>
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/75 p-5">
+            <h2 className="font-bold text-white">Production Flow</h2>
+            <div className="mt-4 grid gap-3 md:grid-cols-4">
+              {[
+                ["Running", kpis.running],
+                ["Warning", kpis.warning],
+                ["Critical", kpis.critical],
+                ["Work Orders", kpis.activeWorkOrders],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+                  <p className="text-xs uppercase text-slate-500">{label}</p>
+                  <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/75 p-5">
+            <h2 className="font-bold text-white">AI Twin Insights</h2>
+            <div className="mt-4 space-y-3">
+              {insights.slice(0, 3).map((insight) => (
+                <div key={insight} className="rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-sm text-slate-300">
+                  {insight}
+                </div>
+              ))}
             </div>
           </div>
         </section>

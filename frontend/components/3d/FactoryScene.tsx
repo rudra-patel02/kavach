@@ -1,8 +1,9 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { Html, OrbitControls } from "@react-three/drei";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import * as THREE from "three";
 
 import Ground from "./Ground";
 import Machine from "./Machine";
@@ -36,6 +37,7 @@ interface FactorySceneProps {
   profiles?: EnterpriseMachineProfile[];
   selectedMachineId?: string | null;
   onMachineSelect?: (profile: EnterpriseMachineProfile) => void;
+  showSensorOverlays?: boolean;
 }
 
 const fallbackMachines: MachineType[] = [
@@ -100,10 +102,140 @@ const formatMachineMetric = (
   return `${value}${suffix}`;
 };
 
+const getSeverityColor = (profile?: EnterpriseMachineProfile) => {
+  const status = profile?.machine.status;
+  const severity = profile?.ai?.anomaly?.severity || profile?.machine.aiAnomalySeverity;
+  const risk = Number(profile?.riskScore || profile?.failureProbability || 0);
+
+  if (status === "Critical" || severity === "Critical" || risk >= 80) {
+    return "#ef4444";
+  }
+
+  if (status === "Warning" || severity === "High" || risk >= 60) {
+    return "#f97316";
+  }
+
+  if (severity === "Medium" || risk >= 35) {
+    return "#facc15";
+  }
+
+  return "#22c55e";
+};
+
+const ProductionFlow = ({ running }: { running: boolean }) => {
+  const points = useMemo(
+    () => [
+      new THREE.Vector3(-5.2, 0.82, -0.85),
+      new THREE.Vector3(-2.6, 0.82, -0.85),
+      new THREE.Vector3(0, 0.82, -0.85),
+      new THREE.Vector3(2.7, 0.82, -0.85),
+      new THREE.Vector3(5.2, 0.82, -0.85),
+    ],
+    []
+  );
+  const curve = useMemo(() => new THREE.CatmullRomCurve3(points), [points]);
+  const geometry = useMemo(() => new THREE.TubeGeometry(curve, 80, 0.025, 8, false), [curve]);
+
+  return (
+    <group>
+      <mesh geometry={geometry}>
+        <meshStandardMaterial
+          color="#22d3ee"
+          emissive="#0891b2"
+          emissiveIntensity={running ? 1.1 : 0.25}
+          transparent
+          opacity={running ? 0.72 : 0.3}
+        />
+      </mesh>
+      {[0, 0.2, 0.4, 0.6, 0.8].map((offset) => (
+        <FlowPulse key={offset} curve={curve} offset={offset} running={running} />
+      ))}
+    </group>
+  );
+};
+
+const FlowPulse = ({
+  curve,
+  offset,
+  running,
+}: {
+  curve: THREE.CatmullRomCurve3;
+  offset: number;
+  running: boolean;
+}) => {
+  const ref = useRef<THREE.Mesh | null>(null);
+
+  useFrame(({ clock }) => {
+    if (!ref.current || !running) {
+      return;
+    }
+
+    const point = curve.getPoint((clock.getElapsedTime() * 0.12 + offset) % 1);
+    ref.current.position.copy(point);
+  });
+
+  return (
+    <mesh ref={ref}>
+      <sphereGeometry args={[0.08, 18, 18]} />
+      <meshStandardMaterial
+        color="#67e8f9"
+        emissive="#22d3ee"
+        emissiveIntensity={1.8}
+      />
+    </mesh>
+  );
+};
+
+const AlarmMarker = ({ profile }: { profile?: EnterpriseMachineProfile }) => {
+  const alarmCount = (profile?.criticalAlerts.length || 0) + (profile?.openWorkOrders.length || 0);
+
+  if (!profile || alarmCount === 0) {
+    return null;
+  }
+
+  return (
+    <Html position={[0.62, 2.45, 0]} center style={{ pointerEvents: "none" }}>
+      <div className="flex h-8 min-w-8 items-center justify-center rounded-full border border-red-300/50 bg-red-500/90 px-2 text-xs font-black text-white shadow-xl shadow-red-950/50">
+        {alarmCount}
+      </div>
+    </Html>
+  );
+};
+
+const SensorOverlay = ({ machine }: { machine: MachineType }) => {
+  if (!machine.profile) {
+    return null;
+  }
+
+  const profile = machine.profile;
+
+  return (
+    <Html position={[0, 2.72, 0]} center style={{ pointerEvents: "none" }}>
+      <div className="w-48 rounded-xl border border-slate-700/80 bg-slate-950/86 p-2 text-[11px] text-slate-300 shadow-2xl shadow-black/35 backdrop-blur">
+        <div className="flex items-center justify-between gap-2">
+          <span className="truncate font-bold text-white">{machine.name}</span>
+          <span style={{ color: getSeverityColor(profile) }} className="font-black">
+            {machine.status}
+          </span>
+        </div>
+        <div className="mt-2 grid grid-cols-3 gap-1">
+          <span>T {formatMachineMetric(machine.temperature, "C")}</span>
+          <span>V {formatMachineMetric(machine.vibration)}</span>
+          <span>H {formatMachineMetric(machine.health, "%")}</span>
+          <span>R {formatMachineMetric(profile.riskScore, "%")}</span>
+          <span>F {formatMachineMetric(profile.failureProbability, "%")}</span>
+          <span>O {profile.openWorkOrders.length}</span>
+        </div>
+      </div>
+    </Html>
+  );
+};
+
 export default function FactoryScene({
   profiles = [],
   selectedMachineId,
   onMachineSelect,
+  showSensorOverlays = true,
 }: FactorySceneProps) {
   const [hoveredMachineId, setHoveredMachineId] = useState<string | null>(null);
   const machines = useMemo<MachineType[]>(
@@ -124,6 +256,7 @@ export default function FactoryScene({
     [profiles]
   );
   const isPlantRunning = machines.some((machine) => machine.status === "Running");
+  const selectedMachine = machines.find((machine) => machine.machineId === selectedMachineId);
 
   return (
     <div
@@ -176,6 +309,7 @@ export default function FactoryScene({
         <Pipe running={isPlantRunning} />
         <Chimney running={isPlantRunning} />
         <RobotArm running={machines[3]?.status === "Running"} />
+        <ProductionFlow running={isPlantRunning} />
 
         {/* Machines */}
         {machines.map((machine, index) => (
@@ -211,6 +345,10 @@ export default function FactoryScene({
               intensity={machine.status === "Critical" ? 4 : 2}
               size={machine.status === "Critical" ? 0.12 : 0.08}
             />
+            <AlarmMarker profile={machine.profile} />
+            {showSensorOverlays || selectedMachineId === machine.machineId ? (
+              <SensorOverlay machine={machine} />
+            ) : null}
 
             <group position={[0, 2.15, 0]}>
               <MachineLabel
@@ -253,6 +391,40 @@ export default function FactoryScene({
             ) : null}
           </group>
         ))}
+
+        {selectedMachine?.profile ? (
+          <Html position={[0, 4.8, 2.6]} center style={{ pointerEvents: "none" }}>
+            <div className="w-80 rounded-2xl border border-cyan-400/30 bg-slate-950/92 p-4 text-xs text-slate-300 shadow-2xl shadow-black/50 backdrop-blur">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-black text-white">
+                    {selectedMachine.profile.machine.name}
+                  </div>
+                  <div className="mt-1 text-slate-500">
+                    {selectedMachine.profile.machine.machineId}
+                  </div>
+                </div>
+                <div className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-1 font-bold text-cyan-100">
+                  Digital Twin Link
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <div>
+                  <div className="text-slate-500">Risk</div>
+                  <div className="font-bold text-white">{formatMachineMetric(selectedMachine.profile.riskScore, "%")}</div>
+                </div>
+                <div>
+                  <div className="text-slate-500">RUL</div>
+                  <div className="font-bold text-white">{formatMachineMetric(selectedMachine.profile.remainingUsefulLifeHours, "h")}</div>
+                </div>
+                <div>
+                  <div className="text-slate-500">Alarms</div>
+                  <div className="font-bold text-white">{selectedMachine.profile.criticalAlerts.length}</div>
+                </div>
+              </div>
+            </div>
+          </Html>
+        ) : null}
 
         <OrbitControls
           target={[0, 1, 0]}
