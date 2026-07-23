@@ -134,6 +134,52 @@ export const getMachineById = async (req, res) => {
   }
 };
 
+export const lookupMachineByQr = async (req, res) => {
+  try {
+    const code = String(req.params.code || req.query.code || "").trim();
+
+    if (!code) {
+      return res.status(400).json({
+        message: "QR or barcode value is required",
+      });
+    }
+
+    const machine = await Machine.findOne(
+      buildMachineQuery(req, {
+        $or: [
+          { machineId: code },
+          { qrCode: code },
+          { barcode: code },
+          { serialNumber: code },
+          { linkedDeviceId: code },
+        ],
+      })
+    ).lean();
+
+    if (!machine) {
+      return res.status(404).json({
+        message: "Machine not found",
+      });
+    }
+
+    await createAuditLog({
+      action: "MACHINE_QR_LOOKUP",
+      metadata: { code },
+      req,
+      resourceId: machine.machineId,
+      resourceType: "machine",
+    });
+
+    res.json({
+      machine,
+      success: true,
+    });
+  } catch (err) {
+    console.error(err);
+    sendErrorResponse(res, err, { fallbackMessage: "Failed to lookup machine" });
+  }
+};
+
 // Create machine
 export const buildMachineCreatePayload = (req) => ({
   machineId: req.body.machineId,

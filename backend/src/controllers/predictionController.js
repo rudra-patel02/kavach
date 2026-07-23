@@ -5,6 +5,7 @@ import {
   buildPredictiveMachineDetail,
   buildPredictiveOverview,
 } from "../services/predictionService.js";
+import { buildWhatIfSimulation } from "../services/smartFactoryService.js";
 
 const escapeRegex = (value) =>
   String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -78,6 +79,59 @@ export const getPredictiveMachine = async (req, res) => {
     console.error("Predictive machine detail failed:", error);
     res.status(500).json({
       message: "Failed to generate machine prediction",
+    });
+  }
+};
+
+export const simulatePredictiveScenario = async (req, res) => {
+  try {
+    const machineId = String(req.body?.machineId || req.params.machineId || "").trim();
+
+    if (!machineId) {
+      return res.status(400).json({
+        message: "machineId is required",
+      });
+    }
+
+    const machine = await Machine.findOne(
+      buildTenantScopedQuery(req, {
+        $or: [
+          { machineId },
+          { name: new RegExp(`^${escapeRegex(machineId)}$`, "i") },
+        ],
+      })
+    ).lean();
+
+    if (!machine) {
+      return res.status(404).json({
+        message: "Machine not found",
+      });
+    }
+
+    const simulation = buildWhatIfSimulation(machine, {
+      name: req.body?.name,
+      overrides: req.body?.overrides || req.body?.metrics || {},
+    });
+
+    await createAuditLog({
+      action: "PREDICTIVE_SIMULATION_RUN",
+      metadata: {
+        overrides: simulation.scenario.overrides,
+        riskDelta: simulation.impact.riskDelta,
+      },
+      req,
+      resourceId: machine.machineId,
+      resourceType: "prediction-simulation",
+    });
+
+    res.json({
+      simulation,
+      success: true,
+    });
+  } catch (error) {
+    console.error("Predictive simulation failed:", error);
+    res.status(500).json({
+      message: "Failed to run predictive simulation",
     });
   }
 };

@@ -80,11 +80,18 @@ export class BacnetProtocolAdapter extends BaseProtocolAdapter {
   }
 }
 
+export class PlcProtocolAdapter extends BaseProtocolAdapter {
+  constructor() {
+    super("PLC");
+  }
+}
+
 export const createProtocolAdapters = (mqttClientManager) => ({
   BACNET: new BacnetProtocolAdapter(),
   MODBUS_RTU: new ModbusRtuProtocolAdapter(),
   MODBUS_TCP: new ModbusTcpProtocolAdapter(),
   MQTT: new MqttProtocolAdapter(mqttClientManager),
   OPC_UA: new OpcUaProtocolAdapter(),
+  PLC: new PlcProtocolAdapter(),
   REST: new RestDeviceApiAdapter(),
 });

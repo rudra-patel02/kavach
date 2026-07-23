@@ -2,6 +2,7 @@ import express from "express";
 import {
   getMachines,
   getMachineById,
+  lookupMachineByQr,
   createMachine,
   updateMachine,
   deleteMachine,
@@ -23,6 +24,8 @@ const writeRoles = ["Super Admin", "Admin", "Plant Manager", "Maintenance Engine
 
 // Get all machines
 router.get("/", authMiddleware, roleMiddleware(readRoles), getMachines);
+
+router.get("/lookup/:code", authMiddleware, roleMiddleware(readRoles), lookupMachineByQr);
 
 // Get machine by ID
 router.get("/:id", authMiddleware, roleMiddleware(readRoles), getMachineById);

@@ -23,6 +23,7 @@ import reportRoutes from "./routes/reportRoutes.js";
 import iotRoutes from "./routes/iotRoutes.js";
 import searchRoutes from "./routes/searchRoutes.js";
 import settingsRoutes from "./routes/settingsRoutes.js";
+import smartFactoryRoutes from "./routes/smartFactoryRoutes.js";
 import systemRoutes from "./routes/systemRoutes.js";
 import tenantRoutes from "./routes/tenantRoutes.js";
 import workOrderRoutes from "./routes/workOrderRoutes.js";
@@ -195,6 +196,7 @@ const start = async () => {
   app.use("/api/reports", reportRoutes);
   app.use("/api/search", searchRoutes);
   app.use("/api/settings", settingsRoutes);
+  app.use("/api/smart-factory", smartFactoryRoutes);
   app.use("/api/system", systemRoutes);
   app.use("/api/tenants", tenantRoutes);
   app.use("/api/workorders", workOrderRoutes);

@@ -21,7 +21,7 @@ export const SUPPORTED_EDGE_DEVICES = [
   },
   {
     deviceType: "Industrial Edge Gateway",
-    protocols: ["MQTT", "REST", "MODBUS_TCP", "MODBUS_RTU", "OPC_UA"],
+    protocols: ["MQTT", "REST", "MODBUS_TCP", "MODBUS_RTU", "OPC_UA", "PLC"],
     sensors: [
       "temperature",
       "humidity",
@@ -37,6 +37,11 @@ export const SUPPORTED_EDGE_DEVICES = [
       "flowRate",
       "gasSensor",
     ],
+  },
+  {
+    deviceType: "PLC Gateway",
+    protocols: ["PLC", "MODBUS_TCP", "OPC_UA", "MQTT"],
+    sensors: ["temperature", "pressure", "rpm", "power", "energy", "vibration"],
   },
 ];
 

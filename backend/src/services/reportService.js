@@ -17,6 +17,7 @@ export const REPORT_TYPES = {
   executive: "Executive Report",
   "executive-summary": "Executive Summary Report",
   "plant-health": "Plant Health Report",
+  "automated-executive": "Automated Executive Report",
 };
 
 const round = (value, digits = 1) => {
@@ -146,6 +147,11 @@ const buildReportLines = ({ type, machines, notifications, workOrders }) => {
       (item, index) =>
         `${index + 1}. ${item.name} (${item.machineId}) - due in ${item.dueInDays} day(s), ${item.priority}, downtime ${item.estimatedDowntime}.`
     ),
+    "",
+    "Automation Readiness",
+    `Report Type: ${type}`,
+    "Delivery: scheduled report rules, PDF/Excel/CSV exports, audit logs, and executive KPI sections are enabled.",
+    "Push Targets: web push and email delivery can consume this same report payload without changing report consumers.",
   ];
 };
 

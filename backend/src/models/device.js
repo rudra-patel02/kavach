@@ -47,7 +47,7 @@ const deviceSchema = new mongoose.Schema(
     },
     protocol: {
       type: String,
-      enum: ["MQTT", "OPC_UA", "MODBUS_TCP", "MODBUS_RTU", "REST", "BACNET"],
+      enum: ["MQTT", "OPC_UA", "MODBUS_TCP", "MODBUS_RTU", "PLC", "REST", "BACNET"],
       default: "MQTT",
       index: true,
     },

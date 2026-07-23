@@ -1,0 +1,288 @@
+import { createMachinePrediction } from "./predictionService.js";
+
+const PROTOCOLS = ["MQTT", "OPC_UA", "MODBUS_TCP", "MODBUS_RTU", "PLC", "REST"];
+const VISION_TYPES = ["PPE", "FIRE", "SMOKE", "INTRUSION"];
+
+const round = (value, digits = 1) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? Number(number.toFixed(digits)) : 0;
+};
+
+const average = (values) => {
+  const numericValues = values.filter((value) => Number.isFinite(Number(value)));
+  if (!numericValues.length) return 0;
+  return numericValues.reduce((total, value) => total + Number(value), 0) / numericValues.length;
+};
+
+const getSeverityRank = (severity) =>
+  ({ Low: 1, Medium: 2, High: 3, Critical: 4 })[severity] || 1;
+
+const getProtocolName = (device) => {
+  const rawProtocol = String(
+    device.protocol || device.metadata?.protocol || "REST"
+  ).toUpperCase();
+  if (rawProtocol === "MODBUS") return "MODBUS_TCP";
+  if (rawProtocol === "PLC") return "PLC";
+  return PROTOCOLS.includes(rawProtocol) ? rawProtocol : "REST";
+};
+
+export const buildProtocolIntegrationHealth = ({
+  devices = [],
+  connectionLogs = [],
+} = {}) => {
+  const protocols = PROTOCOLS.map((protocol) => {
+    const protocolDevices = devices.filter(
+      (device) => getProtocolName(device) === protocol
+    );
+    const online = protocolDevices.filter(
+      (device) => device.connectionStatus === "online"
+    ).length;
+    const warning = protocolDevices.filter((device) =>
+      ["warning", "critical"].includes(device.healthStatus)
+    ).length;
+    const recentErrors = connectionLogs.filter(
+      (log) =>
+        getProtocolName(log) === protocol &&
+        ["error", "offline", "failed"].includes(String(log.status || log.event).toLowerCase())
+    ).length;
+    const availability =
+      protocolDevices.length > 0 ? round((online / protocolDevices.length) * 100, 1) : 100;
+
+    return {
+      protocol,
+      displayName: protocol.replace(/_/g, " "),
+      devices: protocolDevices.length,
+      online,
+      offline: protocolDevices.length - online,
+      warning,
+      recentErrors,
+      availability,
+      status:
+        recentErrors > 5 || availability < 80
+          ? "degraded"
+          : warning > 0 || availability < 95
+            ? "watch"
+            : "healthy",
+    };
+  });
+
+  return {
+    generatedAt: new Date().toISOString(),
+    protocols,
+    summary: {
+      adaptersReady: protocols.length,
+      connectedDevices: protocols.reduce((total, protocol) => total + protocol.online, 0),
+      degradedProtocols: protocols.filter((protocol) => protocol.status === "degraded").length,
+      enterpriseReadiness: round(average(protocols.map((protocol) => protocol.availability)), 1),
+    },
+  };
+};
+
+export const normalizeVisionPayload = (payload = {}, context = {}) => {
+  const cameraId = String(payload.cameraId || "").trim();
+  if (!cameraId) {
+    const error = new Error("cameraId is required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const eventType = String(payload.eventType || "UNKNOWN").toUpperCase();
+  const detections = Array.isArray(payload.detections) ? payload.detections : [];
+  const severity = String(payload.severity || "").trim();
+  const inferredSeverity =
+    severity ||
+    detections
+      .map((detection) => detection?.severity)
+      .filter(Boolean)
+      .sort((a, b) => getSeverityRank(b) - getSeverityRank(a))[0] ||
+    (["FIRE", "SMOKE", "INTRUSION"].includes(eventType) ? "High" : "Medium");
+
+  return {
+    eventId:
+      String(payload.eventId || "").trim() ||
+      `VISION-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+    tenantId: payload.tenantId || context.tenantId || "",
+    organizationId: payload.organizationId || context.organizationId || "",
+    plantId: payload.plantId || context.plantId || "",
+    areaId: payload.areaId || "",
+    cameraId,
+    machineId: payload.machineId || "",
+    eventType: VISION_TYPES.includes(eventType) ? eventType : "UNKNOWN",
+    severity: ["Low", "Medium", "High", "Critical"].includes(inferredSeverity)
+      ? inferredSeverity
+      : "Medium",
+    detections: detections.map((detection) => ({
+      label: String(detection?.label || eventType || "UNKNOWN"),
+      confidence: round(Math.min(100, Math.max(0, Number(detection?.confidence || 0))), 1),
+      severity: ["Low", "Medium", "High", "Critical"].includes(detection?.severity)
+        ? detection.severity
+        : inferredSeverity,
+      boundingBox: detection?.boundingBox || {},
+    })),
+    snapshotUrl: payload.snapshotUrl || "",
+    source: payload.source || "edge-ai",
+    observedAt: payload.observedAt ? new Date(payload.observedAt) : new Date(),
+    metadata: payload.metadata || {},
+  };
+};
+
+export const buildVisionOverview = (events = []) => {
+  const openEvents = events.filter((event) => event.status !== "resolved");
+  const byType = VISION_TYPES.reduce((acc, type) => {
+    acc[type] = events.filter((event) => event.eventType === type).length;
+    return acc;
+  }, {});
+
+  return {
+    generatedAt: new Date().toISOString(),
+    summary: {
+      totalEvents: events.length,
+      openEvents: openEvents.length,
+      criticalEvents: events.filter((event) => event.severity === "Critical").length,
+      monitoredUseCases: VISION_TYPES,
+    },
+    byType,
+    latestEvents: events.slice(0, 25).map((event) => ({
+      eventId: event.eventId,
+      cameraId: event.cameraId,
+      machineId: event.machineId,
+      plantId: event.plantId,
+      eventType: event.eventType,
+      severity: event.severity,
+      status: event.status,
+      snapshotUrl: event.snapshotUrl,
+      observedAt: event.observedAt ? new Date(event.observedAt).toISOString() : null,
+    })),
+  };
+};
+
+export const buildWhatIfSimulation = (machine, scenario = {}) => {
+  const baseline = createMachinePrediction(machine);
+  const overrides = scenario.overrides && typeof scenario.overrides === "object"
+    ? scenario.overrides
+    : {};
+  const simulatedMachine = {
+    ...machine,
+    ...Object.entries(overrides).reduce((acc, [key, value]) => {
+      const number = Number(value);
+      acc[key] = Number.isFinite(number) ? number : value;
+      return acc;
+    }, {}),
+  };
+  const simulated = createMachinePrediction(simulatedMachine);
+  const riskDelta = round(simulated.failureProbability - baseline.failureProbability, 1);
+  const rulDelta = Math.round(
+    simulated.remainingUsefulLifeHours - baseline.remainingUsefulLifeHours
+  );
+
+  return {
+    generatedAt: new Date().toISOString(),
+    scenario: {
+      name: String(scenario.name || "What-if scenario"),
+      overrides,
+      assumptions: [
+        "Simulation uses the current Kavach deterministic risk model.",
+        "No machine state is persisted by this endpoint.",
+      ],
+    },
+    machine: {
+      machineId: machine.machineId,
+      name: machine.name,
+      status: machine.status,
+    },
+    baseline,
+    simulated,
+    impact: {
+      riskDelta,
+      remainingUsefulLifeHoursDelta: rulDelta,
+      downtimeDeltaHours: round(
+        simulated.estimatedDowntimeHours - baseline.estimatedDowntimeHours,
+        1
+      ),
+      recommendation:
+        riskDelta > 10
+          ? "Scenario increases operational risk; reduce load or schedule maintenance before applying."
+          : riskDelta < -10
+            ? "Scenario improves expected reliability and can be considered for controlled rollout."
+            : "Scenario has limited risk impact; monitor closely after rollout.",
+    },
+  };
+};
+
+export const buildSmartFactoryTwin = ({
+  machines = [],
+  devices = [],
+  notifications = [],
+  visionEvents = [],
+} = {}) => {
+  const machineNodes = machines.map((machine, index) => {
+    const linkedDevices = devices.filter(
+      (device) =>
+        device.machineId === machine.machineId ||
+        device.deviceId === machine.linkedDeviceId
+    );
+    const prediction = createMachinePrediction(machine);
+
+    return {
+      id: machine.machineId,
+      label: machine.name,
+      type: "machine",
+      position: {
+        x: (index % 6) * 18,
+        y: Math.floor(index / 6) * 14,
+        z: 0,
+      },
+      state: {
+        status: machine.status,
+        health: round(machine.health, 1),
+        riskLevel: prediction.riskLevel,
+        failureProbability: prediction.failureProbability,
+        remainingUsefulLifeHours: prediction.remainingUsefulLifeHours,
+        liveTelemetryEnabled: Boolean(machine.liveTelemetryEnabled),
+      },
+      telemetry: prediction.telemetry,
+      devices: linkedDevices.map((device) => device.deviceId),
+    };
+  });
+
+  const deviceNodes = devices.map((device, index) => ({
+    id: device.deviceId,
+    label: device.deviceType,
+    type: "device",
+    parentMachineId: device.machineId,
+    position: {
+      x: (index % 6) * 18 + 6,
+      y: Math.floor(index / 6) * 14 + 5,
+      z: 4,
+    },
+    state: {
+      protocol: getProtocolName(device),
+      connectionStatus: device.connectionStatus,
+      healthStatus: device.healthStatus,
+      lastSeen: device.lastSeen ? new Date(device.lastSeen).toISOString() : null,
+    },
+  }));
+
+  return {
+    generatedAt: new Date().toISOString(),
+    version: "4.0",
+    nodes: [...machineNodes, ...deviceNodes],
+    alerts: notifications.slice(0, 50).map((notification) => ({
+      id: String(notification._id || notification.id || notification.notificationId),
+      machineId: notification.machineId,
+      severity: notification.severity || notification.priority || "Low",
+      title: notification.title || notification.message || "Machine alert",
+      createdAt: notification.createdAt ? new Date(notification.createdAt).toISOString() : null,
+    })),
+    vision: buildVisionOverview(visionEvents),
+    summary: {
+      machines: machines.length,
+      devices: devices.length,
+      onlineDevices: devices.filter((device) => device.connectionStatus === "online").length,
+      averageHealth: round(average(machines.map((machine) => machine.health)), 1),
+      highRiskMachines: machineNodes.filter((node) =>
+        ["High", "Critical"].includes(node.state.riskLevel)
+      ).length,
+    },
+  };
+};

@@ -10,7 +10,8 @@ export type ReportType =
   | "plant-health"
   | "energy"
   | "prediction"
-  | "executive";
+  | "executive"
+  | "automated-executive";
 
 export type ReportFormat = "pdf" | "csv" | "excel";
 

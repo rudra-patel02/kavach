@@ -90,6 +90,12 @@ export const getReportCatalog = (req, res) => {
     scheduledDelivery: {
       endpoint: "/api/enterprise/report-schedules",
       supportsEmailDelivery: true,
+      supportsAutomatedExecutiveReports: true,
+    },
+    automation: {
+      defaultExecutiveType: "automated-executive",
+      endpoint: "/api/reports/automated-executive",
+      scheduleEndpoint: "/api/enterprise/report-schedules",
     },
     success: true,
     types: REPORT_TYPES,

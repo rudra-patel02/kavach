@@ -53,7 +53,7 @@ const iconMap: Record<NavigationIcon, typeof Activity> = {
 const navigationGroups = [
   {
     label: "Command",
-    match: ["/", "/dashboard/executive", "/enterprise", "/machines", "/plant", "/iot"],
+    match: ["/", "/dashboard/executive", "/enterprise", "/machines", "/plant", "/iot", "/smart-factory"],
   },
   {
     label: "Intelligence",
@@ -192,7 +192,7 @@ export default function Sidebar() {
 
       <div className="border-t border-cyan-400/10 p-5 text-xs text-slate-500">
         <div className="premium-tile rounded-lg px-4 py-3 text-center">
-          <p className="font-semibold text-slate-300">{isCollapsed ? "v1.0" : "Kavach v1.0"}</p>
+          <p className="font-semibold text-slate-300">{isCollapsed ? "v4.0" : "Kavach v4.0"}</p>
           {!isCollapsed ? <p className="mt-1">Enterprise AI Platform</p> : null}
         </div>
       </div>
