@@ -84,3 +84,37 @@ export const clearNotifications = () =>
   fetchJson<NotificationBulkResponse>("/api/notifications", {
     method: "DELETE",
   });
+
+export const fetchPushSubscriptionStatus = () =>
+  fetchJson<{
+    success: boolean;
+    status: {
+      activeSubscriptions: number;
+      configured: boolean;
+      subscriptions: unknown[];
+    };
+  }>("/api/notifications/push/status");
+
+export const registerPushSubscription = (subscription: PushSubscriptionJSON) =>
+  fetchJson<{ success: boolean; vapidPublicKeyConfigured: boolean }>(
+    "/api/notifications/push/subscribe",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ subscription }),
+    }
+  );
+
+export const unregisterPushSubscription = (endpoint: string) =>
+  fetchJson<{ success: boolean; modifiedCount: number }>(
+    "/api/notifications/push/unsubscribe",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ endpoint }),
+    }
+  );

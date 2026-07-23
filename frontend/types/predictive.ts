@@ -182,3 +182,28 @@ export interface PredictiveMachineDetailResponse {
     historicalTrend: PredictiveMachine["historicalTrend"];
   };
 }
+
+export interface PredictiveSimulationResponse {
+  success: boolean;
+  simulation: {
+    generatedAt: string;
+    scenario: {
+      name: string;
+      overrides: Record<string, number | string>;
+      assumptions: string[];
+    };
+    machine: {
+      machineId: string;
+      name: string;
+      status: string;
+    };
+    baseline: PredictiveMachine;
+    simulated: PredictiveMachine;
+    impact: {
+      riskDelta: number;
+      remainingUsefulLifeHoursDelta: number;
+      downtimeDeltaHours: number;
+      recommendation: string;
+    };
+  };
+}

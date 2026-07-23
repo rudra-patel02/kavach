@@ -1,5 +1,6 @@
 import Machine from "../models/machine.js";
 import Notification from "../models/notification.js";
+import ReportDeliveryLog from "../models/reportDeliveryLog.js";
 import WorkOrder from "../models/workOrder.js";
 import { buildTenantScopedQuery } from "../middleware/tenantMiddleware.js";
 import {
@@ -8,6 +9,10 @@ import {
   reportToExcelHtml,
   REPORT_TYPES,
 } from "../services/reportService.js";
+import {
+  findDueReportSchedules,
+  runReportSchedule,
+} from "../services/reportAutomationService.js";
 import { createAuditLog } from "../services/auditService.js";
 
 const loadReportData = async (req) => {
@@ -130,5 +135,65 @@ export const downloadReportPdf = async (req, res) => {
     res.status(500).json({
       message: "Failed to generate PDF report",
     });
+  }
+};
+
+export const getReportAutomationStatus = async (req, res) => {
+  try {
+    const [recentDeliveries, failedCount] = await Promise.all([
+      ReportDeliveryLog.find(buildTenantScopedQuery(req))
+        .sort({ generatedAt: -1 })
+        .limit(25)
+        .lean(),
+      ReportDeliveryLog.countDocuments(
+        buildTenantScopedQuery(req, { status: "failed" })
+      ),
+    ]);
+
+    res.json({
+      success: true,
+      automation: {
+        failedCount,
+        recentDeliveries,
+        supportedFormats: ["pdf", "excel", "csv", "json"],
+        supportedTypes: REPORT_TYPES,
+      },
+    });
+  } catch (error) {
+    console.error("Report automation status failed:", error);
+    res.status(500).json({ message: "Failed to load report automation status" });
+  }
+};
+
+export const runDueReportSchedules = async (req, res) => {
+  try {
+    const data = await loadReportData(req);
+    const dueSchedules = await findDueReportSchedules(buildTenantScopedQuery(req));
+    const results = [];
+
+    for (const schedule of dueSchedules) {
+      const result = await runReportSchedule(schedule, data);
+      results.push({
+        deliveryId: String(result.deliveryLog._id),
+        reportId: result.report.reportId,
+        scheduleId: String(schedule._id),
+        nextRunAt: schedule.nextRunAt,
+      });
+    }
+
+    await createAuditLog({
+      action: "REPORT_AUTOMATION_RUN",
+      metadata: { schedulesRun: results.length },
+      req,
+      resourceType: "reportAutomation",
+    });
+
+    res.json({
+      results,
+      success: true,
+    });
+  } catch (error) {
+    console.error("Report automation run failed:", error);
+    res.status(500).json({ message: "Failed to run report automation" });
   }
 };

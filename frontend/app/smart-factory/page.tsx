@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
+  createAIVisionEvent,
   fetchProtocolIntegrations,
   fetchSmartFactoryTwin,
   lookupMachineByQr,
@@ -46,8 +47,13 @@ export default function SmartFactoryPage() {
   const [protocols, setProtocols] = useState<ProtocolIntegration[]>([]);
   const [qrCode, setQrCode] = useState("");
   const [lookupResult, setLookupResult] = useState<MachineData | null>(null);
+  const [visionCameraId, setVisionCameraId] = useState("CAM-01");
+  const [visionType, setVisionType] = useState<"PPE" | "FIRE" | "SMOKE" | "INTRUSION">("PPE");
+  const [visionSeverity, setVisionSeverity] = useState<"Low" | "Medium" | "High" | "Critical">("Medium");
+  const [visionMachineId, setVisionMachineId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isLookingUp, setIsLookingUp] = useState(false);
+  const [isSubmittingVision, setIsSubmittingVision] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -90,6 +96,44 @@ export default function SmartFactoryPage() {
       );
     } finally {
       setIsLookingUp(false);
+    }
+  };
+
+  const submitVisionEvent = async () => {
+    if (!visionCameraId.trim()) {
+      setError("Camera ID is required");
+      return;
+    }
+
+    setIsSubmittingVision(true);
+    try {
+      await createAIVisionEvent({
+        cameraId: visionCameraId.trim(),
+        detections: [
+          {
+            confidence: visionType === "PPE" ? 88 : 94,
+            label:
+              visionType === "PPE"
+                ? "ppe-compliance"
+                : visionType.toLowerCase(),
+            severity: visionSeverity,
+          },
+        ],
+        eventType: visionType,
+        machineId: visionMachineId.trim() || undefined,
+        severity: visionSeverity,
+      });
+      const response = await fetchSmartFactoryTwin();
+      setTwin(response.twin);
+      setError(null);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "AI vision event failed"
+      );
+    } finally {
+      setIsSubmittingVision(false);
     }
   };
 
@@ -245,6 +289,72 @@ export default function SmartFactoryPage() {
                   <div className="mt-3 flex items-center gap-2 text-sm text-slate-400">
                     <AlertTriangle size={15} />
                     {twin?.vision.summary.openEvents || 0} open events
+                  </div>
+                </section>
+
+                <section className="premium-card rounded-2xl p-5">
+                  <div className="mb-4 flex items-center gap-3">
+                    <Camera className="text-cyan-300" size={20} />
+                    <h2 className="font-bold">Create Vision Event</h2>
+                  </div>
+                  <div className="grid gap-2">
+                    <input
+                      value={visionCameraId}
+                      onChange={(event) => setVisionCameraId(event.target.value)}
+                      className="premium-input rounded-xl px-3 py-2 text-sm text-white outline-none"
+                      placeholder="Camera ID"
+                    />
+                    <input
+                      value={visionMachineId}
+                      onChange={(event) => setVisionMachineId(event.target.value)}
+                      className="premium-input rounded-xl px-3 py-2 text-sm text-white outline-none"
+                      placeholder="Machine ID optional"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <select
+                        value={visionType}
+                        onChange={(event) =>
+                          setVisionType(
+                            event.target.value as "PPE" | "FIRE" | "SMOKE" | "INTRUSION"
+                          )
+                        }
+                        className="premium-input rounded-xl px-3 py-2 text-sm text-slate-200 outline-none"
+                        aria-label="Vision event type"
+                      >
+                        <option value="PPE">PPE</option>
+                        <option value="FIRE">Fire</option>
+                        <option value="SMOKE">Smoke</option>
+                        <option value="INTRUSION">Intrusion</option>
+                      </select>
+                      <select
+                        value={visionSeverity}
+                        onChange={(event) =>
+                          setVisionSeverity(
+                            event.target.value as "Low" | "Medium" | "High" | "Critical"
+                          )
+                        }
+                        className="premium-input rounded-xl px-3 py-2 text-sm text-slate-200 outline-none"
+                        aria-label="Vision event severity"
+                      >
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                        <option value="Critical">Critical</option>
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void submitVisionEvent()}
+                      disabled={isSubmittingVision}
+                      className="premium-button inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                    >
+                      {isSubmittingVision ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <Camera size={16} />
+                      )}
+                      Submit event
+                    </button>
                   </div>
                 </section>
               </aside>

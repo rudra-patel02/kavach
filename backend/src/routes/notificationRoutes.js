@@ -8,8 +8,12 @@ import {
   deleteNotification,
   getNotifications,
   getNotificationPreferences,
+  getPushSubscriptionStatus,
   markAllNotificationsRead,
   markNotificationRead,
+  previewPushNotification,
+  registerPushSubscription,
+  unregisterPushSubscription,
   updateNotificationPreferences,
 } from "../controllers/notificationController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
@@ -36,6 +40,10 @@ router.get("/", authMiddleware, roleMiddleware(alertRoles), getNotifications);
 router.post("/", authMiddleware, roleMiddleware(manageRoles), createNotification);
 router.get("/preferences", authMiddleware, roleMiddleware(alertRoles), getNotificationPreferences);
 router.patch("/preferences", authMiddleware, roleMiddleware(alertRoles), updateNotificationPreferences);
+router.get("/push/status", authMiddleware, roleMiddleware(alertRoles), getPushSubscriptionStatus);
+router.post("/push/subscribe", authMiddleware, roleMiddleware(alertRoles), registerPushSubscription);
+router.post("/push/unsubscribe", authMiddleware, roleMiddleware(alertRoles), unregisterPushSubscription);
+router.post("/push/preview", authMiddleware, roleMiddleware(manageRoles), previewPushNotification);
 router.patch("/read", authMiddleware, roleMiddleware(manageRoles), markAllNotificationsRead);
 router.patch("/archive", authMiddleware, roleMiddleware(manageRoles), archiveNotifications);
 router.patch("/:id/read", authMiddleware, roleMiddleware(manageRoles), markNotificationRead);

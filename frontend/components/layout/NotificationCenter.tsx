@@ -25,9 +25,12 @@ import {
   clearNotifications,
   deleteNotification,
   fetchNotificationPreferences,
+  fetchPushSubscriptionStatus,
   fetchNotifications,
   markAllNotificationsRead,
   markNotificationRead,
+  registerPushSubscription,
+  unregisterPushSubscription,
 } from "@/lib/notifications";
 import socket from "@/lib/socket";
 import type {
@@ -121,6 +124,14 @@ const getDesktopPermission = (): DesktopPermission => {
   return window.Notification.permission;
 };
 
+const urlBase64ToUint8Array = (base64String: string) => {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = `${base64String}${padding}`.replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+
+  return Uint8Array.from([...rawData].map((character) => character.charCodeAt(0)));
+};
+
 export default function NotificationCenter() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -140,6 +151,8 @@ export default function NotificationCenter() {
     useState<NotificationItem | null>(null);
   const [desktopPermission, setDesktopPermission] =
     useState<DesktopPermission>("unsupported");
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [isUpdatingPush, setIsUpdatingPush] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -274,8 +287,19 @@ export default function NotificationCenter() {
 
   useEffect(() => {
     const preferenceTimer = window.setTimeout(() => {
-      fetchNotificationPreferences()
-        .then((response) => setSoundEnabled(response.preferences.sound))
+      Promise.allSettled([
+        fetchNotificationPreferences(),
+        fetchPushSubscriptionStatus(),
+      ])
+        .then(([preferenceResult, pushResult]) => {
+          if (preferenceResult.status === "fulfilled") {
+            setSoundEnabled(preferenceResult.value.preferences.sound);
+          }
+
+          if (pushResult.status === "fulfilled") {
+            setPushEnabled(pushResult.value.status.activeSubscriptions > 0);
+          }
+        })
         .catch(() => setSoundEnabled(true));
     }, 0);
 
@@ -607,6 +631,52 @@ export default function NotificationCenter() {
     }
   };
 
+  const handleTogglePushNotifications = async () => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      setError("Push notifications are not supported by this browser");
+      return;
+    }
+
+    const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+
+    if (!publicKey) {
+      setError("Push notifications require NEXT_PUBLIC_VAPID_PUBLIC_KEY");
+      return;
+    }
+
+    setIsUpdatingPush(true);
+
+    try {
+      const registration = await navigator.serviceWorker.register("/sw.js");
+      const currentSubscription =
+        await registration.pushManager.getSubscription();
+
+      if (currentSubscription) {
+        await unregisterPushSubscription(currentSubscription.endpoint);
+        await currentSubscription.unsubscribe();
+        setPushEnabled(false);
+      } else {
+        const subscription = await registration.pushManager.subscribe({
+          applicationServerKey: urlBase64ToUint8Array(publicKey),
+          userVisibleOnly: true,
+        });
+
+        await registerPushSubscription(subscription.toJSON());
+        setPushEnabled(true);
+      }
+
+      setError(null);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Could not update push notifications"
+      );
+    } finally {
+      setIsUpdatingPush(false);
+    }
+  };
+
   return (
     <div ref={panelRef} className="relative">
       {toastNotification ? (
@@ -675,7 +745,7 @@ export default function NotificationCenter() {
               </button>
             </div>
 
-            <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            <div className="mt-4 grid gap-2 sm:grid-cols-4">
               <button
                 type="button"
                 onClick={handleMarkAllRead}
@@ -712,6 +782,20 @@ export default function NotificationCenter() {
               >
                 <BellRing size={16} />
                 {desktopPermission === "granted" ? "Desktop on" : "Desktop"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void handleTogglePushNotifications()}
+                disabled={isUpdatingPush}
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-violet-400/30 bg-violet-500/10 px-3 py-2 text-sm font-semibold text-violet-100 transition-all hover:-translate-y-0.5 hover:bg-violet-500/20 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                {isUpdatingPush ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <BellRing size={16} />
+                )}
+                {pushEnabled ? "Push on" : "Push"}
               </button>
             </div>
 

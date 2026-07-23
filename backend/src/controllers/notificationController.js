@@ -1,8 +1,14 @@
 import mongoose from "mongoose";
 
 import Notification from "../models/notification.js";
+import PushSubscription from "../models/pushSubscription.js";
 import { buildTenantScopedQuery } from "../middleware/tenantMiddleware.js";
 import { serializeNotification } from "../services/notificationService.js";
+import {
+  buildPushPayload,
+  normalizePushSubscription,
+  summarizePushDelivery,
+} from "../services/pushNotificationService.js";
 import { createAuditLog } from "../services/auditService.js";
 import User from "../models/user.js";
 import {
@@ -575,5 +581,128 @@ export const clearNotifications = async (req, res) => {
   } catch (error) {
     console.error("Failed to clear notifications:", error);
     res.status(500).json({ message: "Failed to clear notifications" });
+  }
+};
+
+export const registerPushSubscription = async (req, res) => {
+  try {
+    const subscription = normalizePushSubscription(req.body, {
+      organizationId: req.user?.organizationId,
+      plantId: req.tenantContext?.plantId || req.user?.activePlantId,
+      tenantId: req.user?.tenantId || req.tenantContext?.tenantId,
+      userAgent: req.headers["user-agent"],
+      userId: req.user?.id,
+    });
+    const savedSubscription = await PushSubscription.findOneAndUpdate(
+      { endpoint: subscription.endpoint },
+      {
+        ...subscription,
+        status: "active",
+      },
+      {
+        new: true,
+        runValidators: true,
+        setDefaultsOnInsert: true,
+        upsert: true,
+      }
+    ).lean();
+
+    await createAuditLog({
+      action: "PUSH_SUBSCRIPTION_REGISTERED",
+      metadata: { endpoint: subscription.endpoint },
+      req,
+      resourceId: String(savedSubscription._id),
+      resourceType: "pushSubscription",
+    });
+
+    res.status(201).json({
+      success: true,
+      subscription: savedSubscription,
+      vapidPublicKeyConfigured: Boolean(process.env.VAPID_PUBLIC_KEY),
+    });
+  } catch (error) {
+    console.error("Failed to register push subscription:", error);
+    res.status(error.statusCode || 500).json({
+      message: error.message || "Failed to register push subscription",
+    });
+  }
+};
+
+export const unregisterPushSubscription = async (req, res) => {
+  try {
+    const endpoint = String(req.body.endpoint || "").trim();
+
+    if (!endpoint) {
+      return res.status(400).json({ message: "endpoint is required" });
+    }
+
+    const result = await PushSubscription.updateOne(
+      buildTenantScopedQuery(req, { endpoint }),
+      {
+        status: "disabled",
+      }
+    );
+
+    await createAuditLog({
+      action: "PUSH_SUBSCRIPTION_DISABLED",
+      metadata: { endpoint, modifiedCount: result.modifiedCount },
+      req,
+      resourceType: "pushSubscription",
+    });
+
+    res.json({
+      modifiedCount: result.modifiedCount,
+      success: true,
+    });
+  } catch (error) {
+    console.error("Failed to unregister push subscription:", error);
+    res.status(500).json({ message: "Failed to unregister push subscription" });
+  }
+};
+
+export const getPushSubscriptionStatus = async (req, res) => {
+  try {
+    const subscriptions = await PushSubscription.find(
+      buildTenantScopedQuery(req, {
+        userId: req.user?.id || "",
+      })
+    )
+      .sort({ updatedAt: -1 })
+      .limit(20)
+      .lean();
+
+    res.json({
+      success: true,
+      status: {
+        activeSubscriptions: subscriptions.filter((item) => item.status === "active").length,
+        configured: Boolean(process.env.VAPID_PUBLIC_KEY),
+        subscriptions,
+      },
+    });
+  } catch (error) {
+    console.error("Failed to load push subscription status:", error);
+    res.status(500).json({ message: "Failed to load push subscription status" });
+  }
+};
+
+export const previewPushNotification = async (req, res) => {
+  try {
+    const subscriptions = await PushSubscription.find(
+      buildTenantScopedQuery(req, {
+        status: "active",
+      })
+    )
+      .sort({ updatedAt: -1 })
+      .limit(100)
+      .lean();
+    const payload = buildPushPayload(req.body.notification || req.body);
+
+    res.json({
+      delivery: summarizePushDelivery(subscriptions, payload),
+      success: true,
+    });
+  } catch (error) {
+    console.error("Failed to preview push notification:", error);
+    res.status(500).json({ message: "Failed to preview push notification" });
   }
 };

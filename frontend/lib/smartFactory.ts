@@ -58,6 +58,19 @@ export interface SmartFactoryTwinResponse {
   twin: SmartFactoryTwin;
 }
 
+export interface AIVisionEventPayload {
+  cameraId: string;
+  eventType: "PPE" | "FIRE" | "SMOKE" | "INTRUSION";
+  machineId?: string;
+  severity?: "Low" | "Medium" | "High" | "Critical";
+  detections?: {
+    label: string;
+    confidence: number;
+    severity?: "Low" | "Medium" | "High" | "Critical";
+  }[];
+  snapshotUrl?: string;
+}
+
 export interface ProtocolIntegrationsResponse {
   success: boolean;
   integrations: {
@@ -87,3 +100,12 @@ export const lookupMachineByQr = (code: string) =>
   fetchJson<MachineLookupResponse>(
     `/api/machines/lookup/${encodeURIComponent(code)}`
   );
+
+export const createAIVisionEvent = (payload: AIVisionEventPayload) =>
+  fetchJson<{ success: boolean; event: unknown }>("/api/smart-factory/vision/events", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
