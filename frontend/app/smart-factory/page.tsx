@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   Boxes,
   Camera,
+  Check,
   Factory,
   Loader2,
   QrCode,
@@ -15,9 +16,15 @@ import {
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   createAIVisionEvent,
+  fetchAIVisionCameraDashboard,
+  fetchAIVisionTimeline,
   fetchProtocolIntegrations,
   fetchSmartFactoryTwin,
   lookupMachineByQr,
+  updateAIVisionEventStatus,
+  upsertAIVisionCamera,
+  type AIVisionCamera,
+  type AIVisionTimelineEvent,
   type ProtocolIntegration,
   type SmartFactoryTwin,
 } from "@/lib/smartFactory";
@@ -44,6 +51,8 @@ const statusClasses: Record<ProtocolIntegration["status"], string> = {
 
 export default function SmartFactoryPage() {
   const [twin, setTwin] = useState<SmartFactoryTwin | null>(null);
+  const [cameras, setCameras] = useState<AIVisionCamera[]>([]);
+  const [timeline, setTimeline] = useState<AIVisionTimelineEvent[]>([]);
   const [protocols, setProtocols] = useState<ProtocolIntegration[]>([]);
   const [qrCode, setQrCode] = useState("");
   const [lookupResult, setLookupResult] = useState<MachineData | null>(null);
@@ -51,27 +60,50 @@ export default function SmartFactoryPage() {
   const [visionType, setVisionType] = useState<"PPE" | "FIRE" | "SMOKE" | "INTRUSION">("PPE");
   const [visionSeverity, setVisionSeverity] = useState<"Low" | "Medium" | "High" | "Critical">("Medium");
   const [visionMachineId, setVisionMachineId] = useState("");
+  const [cameraName, setCameraName] = useState("Main Gate Camera");
+  const [cameraLocation, setCameraLocation] = useState("Main Gate");
   const [isLoading, setIsLoading] = useState(true);
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [isSubmittingVision, setIsSubmittingVision] = useState(false);
+  const [isSavingCamera, setIsSavingCamera] = useState(false);
+  const [pendingEventId, setPendingEventId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    Promise.all([fetchSmartFactoryTwin(), fetchProtocolIntegrations()])
-      .then(([twinResponse, protocolResponse]) => {
-        setTwin(twinResponse.twin);
-        setProtocols(protocolResponse.integrations.protocols);
-        setError(null);
-      })
-      .catch((requestError) => {
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : "Failed to load smart factory"
-        );
-      })
-      .finally(() => setIsLoading(false));
+  const loadSmartFactory = useCallback(async () => {
+    const [twinResponse, protocolResponse, cameraResponse, timelineResponse] =
+      await Promise.all([
+        fetchSmartFactoryTwin(),
+        fetchProtocolIntegrations(),
+        fetchAIVisionCameraDashboard(),
+        fetchAIVisionTimeline({ limit: "50" }),
+      ]);
+
+    setTwin(twinResponse.twin);
+    setProtocols(protocolResponse.integrations.protocols);
+    setCameras(cameraResponse.dashboard.cameras);
+    setTimeline(timelineResponse.timeline);
   }, []);
+
+  useEffect(() => {
+    const loadTimer = window.setTimeout(() => {
+      loadSmartFactory()
+        .then(() => {
+          setError(null);
+        })
+        .catch((requestError) => {
+          setError(
+            requestError instanceof Error
+              ? requestError.message
+              : "Failed to load smart factory"
+          );
+        })
+        .finally(() => setIsLoading(false));
+    }, 0);
+
+    return () => {
+      window.clearTimeout(loadTimer);
+    };
+  }, [loadSmartFactory]);
 
   const machineNodes = useMemo(
     () => (twin?.nodes || []).filter((node) => node.type === "machine"),
@@ -123,8 +155,7 @@ export default function SmartFactoryPage() {
         machineId: visionMachineId.trim() || undefined,
         severity: visionSeverity,
       });
-      const response = await fetchSmartFactoryTwin();
-      setTwin(response.twin);
+      await loadSmartFactory();
       setError(null);
     } catch (requestError) {
       setError(
@@ -134,6 +165,54 @@ export default function SmartFactoryPage() {
       );
     } finally {
       setIsSubmittingVision(false);
+    }
+  };
+
+  const saveCamera = async () => {
+    if (!visionCameraId.trim() || !cameraName.trim()) {
+      setError("Camera ID and name are required");
+      return;
+    }
+
+    setIsSavingCamera(true);
+    try {
+      await upsertAIVisionCamera({
+        cameraId: visionCameraId.trim(),
+        location: cameraLocation.trim(),
+        machineId: visionMachineId.trim() || undefined,
+        name: cameraName.trim(),
+        status: "online",
+      });
+      await loadSmartFactory();
+      setError(null);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Camera save failed"
+      );
+    } finally {
+      setIsSavingCamera(false);
+    }
+  };
+
+  const updateEventStatus = async (
+    eventId: string,
+    status: "acknowledged" | "resolved"
+  ) => {
+    setPendingEventId(eventId);
+    try {
+      await updateAIVisionEventStatus(eventId, status);
+      await loadSmartFactory();
+      setError(null);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Vision event update failed"
+      );
+    } finally {
+      setPendingEventId(null);
     }
   };
 
@@ -357,6 +436,147 @@ export default function SmartFactoryPage() {
                     </button>
                   </div>
                 </section>
+
+                <section className="premium-card rounded-2xl p-5">
+                  <div className="mb-4 flex items-center gap-3">
+                    <Camera className="text-cyan-300" size={20} />
+                    <h2 className="font-bold">Register Camera</h2>
+                  </div>
+                  <div className="grid gap-2">
+                    <input
+                      value={cameraName}
+                      onChange={(event) => setCameraName(event.target.value)}
+                      className="premium-input rounded-xl px-3 py-2 text-sm text-white outline-none"
+                      placeholder="Camera name"
+                    />
+                    <input
+                      value={cameraLocation}
+                      onChange={(event) => setCameraLocation(event.target.value)}
+                      className="premium-input rounded-xl px-3 py-2 text-sm text-white outline-none"
+                      placeholder="Location"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void saveCamera()}
+                      disabled={isSavingCamera}
+                      className="premium-button inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                    >
+                      {isSavingCamera ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <Check size={16} />
+                      )}
+                      Save camera
+                    </button>
+                  </div>
+                </section>
+              </aside>
+            </section>
+
+            <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
+              <div className="premium-card rounded-2xl p-5">
+                <div className="mb-4 flex items-center gap-3">
+                  <Camera className="text-cyan-300" size={20} />
+                  <h2 className="text-xl font-bold">Camera Dashboard</h2>
+                </div>
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {cameras.length === 0 ? (
+                    <div className="premium-tile rounded-xl p-4 text-sm text-slate-400 md:col-span-2 xl:col-span-3">
+                      No cameras registered yet.
+                    </div>
+                  ) : (
+                    cameras.map((camera) => (
+                      <article key={camera.cameraId} className="premium-tile rounded-xl p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold text-white">
+                              {camera.name}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              {camera.cameraId} | {camera.location || "Unassigned"}
+                            </p>
+                          </div>
+                          <span
+                            className={`rounded-full border px-2 py-1 text-xs ${
+                              camera.status === "online" && !camera.stale
+                                ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-100"
+                                : "border-amber-400/30 bg-amber-500/10 text-amber-100"
+                            }`}
+                          >
+                            {camera.stale ? "stale" : camera.status}
+                          </span>
+                        </div>
+                        <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
+                          <div>
+                            <p className="text-slate-500">Events</p>
+                            <p className="mt-1 font-bold text-white">
+                              {camera.totalEvents}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-slate-500">High</p>
+                            <p className="mt-1 font-bold text-white">
+                              {camera.highSeverityEvents}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-slate-500">Machine</p>
+                            <p className="mt-1 truncate font-bold text-white">
+                              {camera.machineId || "--"}
+                            </p>
+                          </div>
+                        </div>
+                      </article>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <aside className="premium-card rounded-2xl p-5">
+                <div className="mb-4 flex items-center gap-3">
+                  <AlertTriangle className="text-cyan-300" size={20} />
+                  <h2 className="font-bold">Event Timeline</h2>
+                </div>
+                <div className="space-y-3">
+                  {timeline.slice(0, 10).map((event) => (
+                    <article key={event.eventId} className="premium-tile rounded-xl p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-white">
+                            {event.eventType} | {event.severity}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {event.cameraId} {event.machineId ? `| ${event.machineId}` : ""}
+                          </p>
+                        </div>
+                        <span className="rounded-full border border-slate-700 px-2 py-1 text-xs text-slate-300">
+                          {event.status}
+                        </span>
+                      </div>
+                      <div className="mt-3 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void updateEventStatus(event.eventId, "acknowledged")}
+                          disabled={pendingEventId === event.eventId || event.status !== "open"}
+                          className="rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-100 disabled:opacity-40"
+                        >
+                          Acknowledge
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void updateEventStatus(event.eventId, "resolved")}
+                          disabled={pendingEventId === event.eventId || event.status === "resolved"}
+                          className="rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-100 disabled:opacity-40"
+                        >
+                          Resolve
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                  {timeline.length === 0 ? (
+                    <p className="text-sm text-slate-400">No vision events yet.</p>
+                  ) : null}
+                </div>
               </aside>
             </section>
 

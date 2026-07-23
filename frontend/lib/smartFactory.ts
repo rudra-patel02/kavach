@@ -53,6 +53,60 @@ export interface SmartFactoryTwin {
   };
 }
 
+export interface AIVisionTimelineEvent {
+  areaId: string;
+  cameraId: string;
+  detections: {
+    label: string;
+    confidence: number;
+    severity: "Low" | "Medium" | "High" | "Critical";
+  }[];
+  eventId: string;
+  eventType: "PPE" | "FIRE" | "SMOKE" | "INTRUSION" | "UNKNOWN";
+  machineId: string;
+  observedAt: string | null;
+  severity: "Low" | "Medium" | "High" | "Critical";
+  snapshotUrl: string;
+  status: "open" | "acknowledged" | "resolved" | "suppressed";
+  title: string;
+}
+
+export interface AIVisionCamera {
+  areaId: string;
+  cameraId: string;
+  enabledDetections: string[];
+  eventCounts: Record<string, number>;
+  highSeverityEvents: number;
+  lastEventAt: string | null;
+  lastSeenAt: string | null;
+  location: string;
+  machineId: string;
+  name: string;
+  status: "online" | "offline" | "degraded" | "maintenance";
+  streamUrl: string;
+  stale: boolean;
+  totalEvents: number;
+}
+
+export interface AIVisionCameraDashboardResponse {
+  success: boolean;
+  dashboard: {
+    cameras: AIVisionCamera[];
+    generatedAt: string;
+    summary: {
+      cameras: number;
+      degradedCameras: number;
+      onlineCameras: number;
+      totalEvents: number;
+    };
+  };
+}
+
+export interface AIVisionTimelineResponse {
+  success: boolean;
+  timeline: AIVisionTimelineEvent[];
+}
+
 export interface SmartFactoryTwinResponse {
   success: boolean;
   twin: SmartFactoryTwin;
@@ -109,3 +163,43 @@ export const createAIVisionEvent = (payload: AIVisionEventPayload) =>
     },
     body: JSON.stringify(payload),
   });
+
+export const fetchAIVisionCameraDashboard = () =>
+  fetchJson<AIVisionCameraDashboardResponse>("/api/smart-factory/vision/cameras");
+
+export const fetchAIVisionTimeline = (params: Record<string, string> = {}) => {
+  const query = new URLSearchParams(params).toString();
+  return fetchJson<AIVisionTimelineResponse>(
+    `/api/smart-factory/vision/timeline${query ? `?${query}` : ""}`
+  );
+};
+
+export const upsertAIVisionCamera = (payload: {
+  cameraId: string;
+  name: string;
+  location?: string;
+  machineId?: string;
+  status?: "online" | "offline" | "degraded" | "maintenance";
+}) =>
+  fetchJson<{ success: boolean; camera: unknown }>("/api/smart-factory/vision/cameras", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+export const updateAIVisionEventStatus = (
+  eventId: string,
+  status: "open" | "acknowledged" | "resolved" | "suppressed"
+) =>
+  fetchJson<{ success: boolean; event: unknown }>(
+    `/api/smart-factory/vision/events/${encodeURIComponent(eventId)}/status`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ status }),
+    }
+  );

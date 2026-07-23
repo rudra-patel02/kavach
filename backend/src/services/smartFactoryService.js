@@ -2,6 +2,7 @@ import { createMachinePrediction } from "./predictionService.js";
 
 const PROTOCOLS = ["MQTT", "OPC_UA", "MODBUS_TCP", "MODBUS_RTU", "PLC", "REST"];
 const VISION_TYPES = ["PPE", "FIRE", "SMOKE", "INTRUSION"];
+const VISION_ALERT_TYPES = new Set(["PPE", "FIRE", "SMOKE", "INTRUSION"]);
 
 const round = (value, digits = 1) => {
   const number = Number(value);
@@ -126,6 +127,51 @@ export const normalizeVisionPayload = (payload = {}, context = {}) => {
   };
 };
 
+export const normalizeVisionCameraPayload = (payload = {}, context = {}) => {
+  const cameraId = String(payload.cameraId || "").trim();
+  const name = String(payload.name || cameraId || "").trim();
+
+  if (!cameraId) {
+    const error = new Error("cameraId is required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!name) {
+    const error = new Error("name is required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const enabledDetections = Array.isArray(payload.enabledDetections)
+    ? payload.enabledDetections
+        .map((item) => String(item).toUpperCase())
+        .filter((item) => VISION_TYPES.includes(item))
+    : VISION_TYPES;
+
+  return {
+    areaId: payload.areaId || "",
+    cameraId,
+    confidenceThreshold: Math.min(
+      100,
+      Math.max(0, Number(payload.confidenceThreshold ?? 70))
+    ),
+    enabledDetections: enabledDetections.length ? enabledDetections : VISION_TYPES,
+    lastSeenAt: payload.lastSeenAt ? new Date(payload.lastSeenAt) : new Date(),
+    location: payload.location || "",
+    machineId: payload.machineId || "",
+    metadata: payload.metadata || {},
+    name,
+    organizationId: payload.organizationId || context.organizationId || "",
+    plantId: payload.plantId || context.plantId || "",
+    status: ["online", "offline", "degraded", "maintenance"].includes(payload.status)
+      ? payload.status
+      : "online",
+    streamUrl: payload.streamUrl || "",
+    tenantId: payload.tenantId || context.tenantId || "",
+  };
+};
+
 export const buildVisionOverview = (events = []) => {
   const openEvents = events.filter((event) => event.status !== "resolved");
   const byType = VISION_TYPES.reduce((acc, type) => {
@@ -153,6 +199,118 @@ export const buildVisionOverview = (events = []) => {
       snapshotUrl: event.snapshotUrl,
       observedAt: event.observedAt ? new Date(event.observedAt).toISOString() : null,
     })),
+  };
+};
+
+export const buildVisionTimeline = (events = []) =>
+  events.map((event) => ({
+    areaId: event.areaId || "",
+    cameraId: event.cameraId,
+    detections: event.detections || [],
+    eventId: event.eventId,
+    eventType: event.eventType,
+    machineId: event.machineId || "",
+    observedAt: event.observedAt ? new Date(event.observedAt).toISOString() : null,
+    severity: event.severity,
+    snapshotUrl: event.snapshotUrl || "",
+    status: event.status || "open",
+    title: `${event.eventType} ${event.severity} event`,
+  }));
+
+export const buildCameraDashboard = ({ cameras = [], events = [] } = {}) => {
+  const now = Date.now();
+  const camerasWithStats = cameras.map((camera) => {
+    const cameraEvents = events.filter((event) => event.cameraId === camera.cameraId);
+    const latestEvent = cameraEvents[0] || null;
+    const lastSeen = camera.lastSeenAt || camera.lastEventAt || latestEvent?.observedAt;
+    const minutesSinceSeen = lastSeen
+      ? Math.round((now - new Date(lastSeen).getTime()) / 60000)
+      : null;
+
+    return {
+      areaId: camera.areaId || "",
+      cameraId: camera.cameraId,
+      enabledDetections: camera.enabledDetections || VISION_TYPES,
+      eventCounts: VISION_TYPES.reduce((acc, type) => {
+        acc[type] = cameraEvents.filter((event) => event.eventType === type).length;
+        return acc;
+      }, {}),
+      highSeverityEvents: cameraEvents.filter((event) =>
+        ["High", "Critical"].includes(event.severity)
+      ).length,
+      lastEventAt: latestEvent?.observedAt
+        ? new Date(latestEvent.observedAt).toISOString()
+        : null,
+      lastSeenAt: lastSeen ? new Date(lastSeen).toISOString() : null,
+      location: camera.location || "",
+      machineId: camera.machineId || "",
+      name: camera.name,
+      status: camera.status || "online",
+      streamUrl: camera.streamUrl || "",
+      stale: minutesSinceSeen !== null && minutesSinceSeen > 15,
+      totalEvents: cameraEvents.length,
+    };
+  });
+
+  return {
+    cameras: camerasWithStats,
+    generatedAt: new Date().toISOString(),
+    summary: {
+      cameras: cameras.length,
+      degradedCameras: camerasWithStats.filter((camera) =>
+        ["degraded", "offline"].includes(camera.status) || camera.stale
+      ).length,
+      onlineCameras: camerasWithStats.filter((camera) => camera.status === "online").length,
+      totalEvents: events.length,
+    },
+  };
+};
+
+export const buildVisionAlertPayload = (event) => {
+  if (!event || !VISION_ALERT_TYPES.has(event.eventType)) {
+    return null;
+  }
+
+  const priority =
+    event.severity === "Critical" ? "P1" : event.severity === "High" ? "P2" : "P3";
+  const actionByType = {
+    FIRE: "Trigger emergency response, isolate the affected area, and verify fire suppression.",
+    INTRUSION: "Dispatch security and verify access control logs for the camera zone.",
+    PPE: "Notify the area supervisor and verify PPE compliance before work continues.",
+    SMOKE: "Inspect the area immediately and verify ventilation and fire sensors.",
+  };
+
+  return {
+    category: "safety_warning",
+    channels: ["push", "email"],
+    dedupeKey: `vision:${event.eventId}`,
+    description: `${event.eventType} detection from camera ${event.cameraId}`,
+    icon: "bell",
+    machineId: event.machineId || "",
+    machineName: event.machineId || "Camera zone",
+    message: `${event.eventType} detected by ${event.cameraId} with ${event.severity} severity.`,
+    organizationId: event.organizationId || "",
+    plantId: event.plantId || "",
+    priority,
+    severity: event.severity || "Medium",
+    suggestedAction: actionByType[event.eventType] || "Review AI vision event timeline.",
+    tenantId: event.tenantId || "",
+    title: `AI Vision ${event.eventType} Alert`,
+    type: "safety_warning",
+    alertTimeline: [
+      {
+        actor: "KAVACH AI Vision",
+        event: "AI_VISION_EVENT_DETECTED",
+        message: `${event.eventType} event ${event.eventId} detected on camera ${event.cameraId}.`,
+      },
+    ],
+    alertHistory: [
+      {
+        actor: "KAVACH AI Vision",
+        event: "AI_VISION_EVENT_DETECTED",
+        message: `${event.eventType} event ${event.eventId} detected on camera ${event.cameraId}.`,
+      },
+    ],
   };
 };
 

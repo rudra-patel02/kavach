@@ -2,10 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  buildCameraDashboard,
   buildProtocolIntegrationHealth,
   buildSmartFactoryTwin,
+  buildVisionAlertPayload,
   buildVisionOverview,
+  buildVisionTimeline,
   buildWhatIfSimulation,
+  normalizeVisionCameraPayload,
   normalizeVisionPayload,
 } from "../src/services/smartFactoryService.js";
 
@@ -69,6 +73,94 @@ test("buildVisionOverview summarizes PPE, fire, smoke, and intrusion detections"
   assert.equal(overview.summary.openEvents, 2);
   assert.equal(overview.summary.criticalEvents, 1);
   assert.equal(overview.byType.FIRE, 1);
+});
+
+test("normalizes AI vision cameras for dashboard registration", () => {
+  const camera = normalizeVisionCameraPayload(
+    {
+      cameraId: "CAM-01",
+      confidenceThreshold: 82,
+      enabledDetections: ["ppe", "fire", "unsupported"],
+      name: "Assembly Gate",
+      status: "online",
+    },
+    { plantId: "plant-1", tenantId: "tenant-1" }
+  );
+
+  assert.equal(camera.cameraId, "CAM-01");
+  assert.equal(camera.name, "Assembly Gate");
+  assert.deepEqual(camera.enabledDetections, ["PPE", "FIRE"]);
+  assert.equal(camera.plantId, "plant-1");
+});
+
+test("buildCameraDashboard combines camera health and event stats", () => {
+  const dashboard = buildCameraDashboard({
+    cameras: [
+      {
+        cameraId: "CAM-01",
+        enabledDetections: ["PPE", "FIRE"],
+        lastSeenAt: new Date().toISOString(),
+        name: "Assembly Gate",
+        status: "online",
+      },
+    ],
+    events: [
+      {
+        cameraId: "CAM-01",
+        eventId: "V-1",
+        eventType: "PPE",
+        observedAt: new Date(),
+        severity: "Medium",
+        status: "open",
+      },
+      {
+        cameraId: "CAM-01",
+        eventId: "V-2",
+        eventType: "FIRE",
+        observedAt: new Date(),
+        severity: "Critical",
+        status: "open",
+      },
+    ],
+  });
+
+  assert.equal(dashboard.summary.cameras, 1);
+  assert.equal(dashboard.summary.totalEvents, 2);
+  assert.equal(dashboard.cameras[0].eventCounts.FIRE, 1);
+  assert.equal(dashboard.cameras[0].highSeverityEvents, 1);
+});
+
+test("buildVisionTimeline creates operator-ready timeline items", () => {
+  const timeline = buildVisionTimeline([
+    {
+      cameraId: "CAM-01",
+      detections: [{ label: "smoke", confidence: 95 }],
+      eventId: "V-1",
+      eventType: "SMOKE",
+      observedAt: new Date("2026-07-23T12:00:00.000Z"),
+      severity: "High",
+      status: "open",
+    },
+  ]);
+
+  assert.equal(timeline[0].eventId, "V-1");
+  assert.equal(timeline[0].title, "SMOKE High event");
+  assert.equal(timeline[0].observedAt, "2026-07-23T12:00:00.000Z");
+});
+
+test("buildVisionAlertPayload maps detections to existing notification schema", () => {
+  const alert = buildVisionAlertPayload({
+    cameraId: "CAM-01",
+    eventId: "V-1",
+    eventType: "INTRUSION",
+    machineId: "M-100",
+    severity: "High",
+  });
+
+  assert.equal(alert.type, "safety_warning");
+  assert.equal(alert.priority, "P2");
+  assert.equal(alert.dedupeKey, "vision:V-1");
+  assert.match(alert.suggestedAction, /security/i);
 });
 
 test("buildWhatIfSimulation compares baseline and simulated machine risk without mutating input", () => {
