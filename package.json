@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "postinstall": "node scripts/install-all.mjs",
+    "dev": "node scripts/dev.mjs",
+    "build": "npm run frontend:build",
+    "start": "npm run backend:start",
     "backend:dev": "npm --prefix backend run dev",
     "backend:start": "npm --prefix backend run start",
     "backend:seed": "npm --prefix backend run seed",

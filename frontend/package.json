@@ -19,7 +19,7 @@
     "@types/three": "^0.185.0",
     "framer-motion": "^12.42.2",
     "lucide-react": "^1.22.0",
-    "next": "16.2.9",
+    "next": "^16.2.11",
     "react": "19.2.4",
     "react-circular-progressbar": "^2.2.0",
     "react-countup": "^6.5.3",
@@ -34,11 +34,12 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.9",
+    "eslint-config-next": "^16.2.11",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
   "overrides": {
-    "postcss": "8.5.16"
+    "postcss": "8.5.16",
+    "sharp": "^0.35.0"
   }
 }
