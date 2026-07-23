@@ -3,11 +3,27 @@
 #include <HTTPClient.h>
 #include <WiFi.h>
 
-const char* WIFI_SSID = "replace-with-wifi-ssid";
-const char* WIFI_PASSWORD = "replace-with-wifi-password";
-const char* BACKEND_SENSOR_URL = "https://kavach-spgh.onrender.com/api/iot/sensor";
-const char* DEVICE_ID = "esp32-dht22-01";
-const char* DEVICE_SECRET = "replace-with-device-shared-secret";
+#include "secrets.h"
+
+#ifndef WIFI_SSID
+#error "Set WIFI_SSID in secrets.h"
+#endif
+
+#ifndef WIFI_PASSWORD
+#error "Set WIFI_PASSWORD in secrets.h"
+#endif
+
+#ifndef BACKEND_SENSOR_URL
+#error "Set BACKEND_SENSOR_URL in secrets.h"
+#endif
+
+#ifndef DEVICE_ID
+#error "Set DEVICE_ID in secrets.h"
+#endif
+
+#ifndef DEVICE_SECRET
+#error "Set DEVICE_SECRET in secrets.h to the exact backend DEVICE_SECRET"
+#endif
 
 #define DHT_PIN 4
 #define DHT_TYPE DHT22

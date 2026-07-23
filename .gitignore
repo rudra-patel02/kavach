@@ -13,3 +13,5 @@ build/
 *.log
 *.tsbuildinfo
 .DS_Store
+
+backend/firmware/esp32-mqtt-example/secrets.h

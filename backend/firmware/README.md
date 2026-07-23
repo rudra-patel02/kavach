@@ -16,6 +16,6 @@ REST alternatives:
 - `POST /api/iot/telemetry`
 - `POST /api/iot/sensor` for ESP32 DHT22 temperature and humidity readings
 
-When `DEVICE_SECRET` is set on the backend, send it as `x-device-secret`, a bearer token, or `deviceSecret` in MQTT payloads. Keep WiFi credentials and device secrets outside source control for real devices.
+When `DEVICE_SECRET` is set on the backend, send it as `x-device-secret`, a bearer token, or `deviceSecret` in MQTT payloads. Keep WiFi credentials and device secrets outside source control for real devices. For the ESP32 example, copy `esp32-mqtt-example/secrets.example.h` to `esp32-mqtt-example/secrets.h` and set `DEVICE_SECRET` to the exact value configured for the backend deployment.
 
 The ESP32 Arduino example posts DHT22 readings every 5 seconds to `/api/iot/sensor`.
