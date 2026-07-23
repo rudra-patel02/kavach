@@ -1,6 +1,7 @@
 import { clearStoredAuth, notifyAuthChanged } from "./auth";
 
 const API_PREFIX = "/api";
+const RENDER_BACKEND_ORIGIN = "https://kavach-spgh.onrender.com";
 
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
 const isLocalHttpUrl = (url: URL) =>
@@ -33,6 +34,9 @@ const stripApiPrefix = (value: string) =>
   enforceHttps(value).replace(/\/api$/i, "");
 
 const normalizePath = (path: string) => (path.startsWith("/") ? path : `/${path}`);
+const isRenderFrontendRuntime = () =>
+  typeof window !== "undefined" &&
+  window.location.hostname.endsWith(".onrender.com");
 
 const joinApiBaseAndPath = (baseUrl: string, path: string) => {
   const normalizedBaseUrl = trimTrailingSlash(baseUrl);
@@ -56,7 +60,7 @@ export const getApiBaseUrl = () => {
   const configuredUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
 
   if (!configuredUrl) {
-    return "";
+    return isRenderFrontendRuntime() ? RENDER_BACKEND_ORIGIN : "";
   }
 
   return enforceHttps(configuredUrl);
@@ -66,6 +70,7 @@ export const getSocketBaseUrl = () => {
   const configuredUrl =
     process.env.NEXT_PUBLIC_SOCKET_URL?.trim() ||
     process.env.NEXT_PUBLIC_API_URL?.trim() ||
+    (isRenderFrontendRuntime() ? RENDER_BACKEND_ORIGIN : "") ||
     (typeof window !== "undefined" ? window.location.origin : "");
 
   return stripApiPrefix(configuredUrl);
