@@ -9,6 +9,7 @@ This guide sets up KAVACH for local development and production-like verification
 - Git
 - MongoDB Atlas or local MongoDB
 - Optional: MQTT broker for IoT ingestion
+- Optional: VAPID key pair for browser push notifications
 
 Check versions:
 
@@ -44,6 +45,7 @@ Minimum backend values:
 ```env
 NODE_ENV=development
 PORT=5000
+APP_RELEASE=4.0.0
 MONGO_URI=mongodb+srv://<user>:<password>@<cluster>/<database>
 JWT_SECRET=replace-with-a-random-secret-at-least-32-characters
 JWT_REFRESH_SECRET=replace-with-a-second-random-secret-at-least-32-characters
@@ -54,6 +56,9 @@ CORS_CREDENTIALS=true
 IOT_ENABLED=false
 ENABLE_SENSOR_SIMULATION=false
 DEVICE_SECRET=replace-with-device-shared-secret
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=mailto:ops@example.com
 ```
 
 Frontend local file:
@@ -67,6 +72,7 @@ Minimum frontend values:
 ```env
 NEXT_PUBLIC_API_URL=
 NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=
 API_URL=http://localhost:5000
 ```
 
@@ -103,6 +109,14 @@ Run the backend seed script after configuring `MONGO_URI`:
 ```bash
 npm run backend:seed
 ```
+
+For the full enterprise demo dataset, use the authenticated enterprise demo endpoint after login:
+
+```text
+POST /api/enterprise/demo/generate
+```
+
+The enterprise demo includes tenants, plants, machines, predictive alerts, work orders, IoT-linked assets, AI Vision cameras, and AI Vision timeline events.
 
 If the admin-only seed script is needed:
 
@@ -158,6 +172,12 @@ npm run frontend:lint
 npm run frontend:typecheck
 npm run frontend:build
 npm run backend:test
+```
+
+Or run the complete release gate:
+
+```bash
+npm run verify
 ```
 
 Start production builds locally:
@@ -233,6 +253,19 @@ Check:
 - Backend CORS allows the frontend origin
 - Browser network tab shows `wss://` in production
 - Render backend is awake and healthy
+
+### Push notifications do not enable
+
+Check:
+
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` is set on the frontend
+- backend VAPID variables are set before connecting a push sender
+- the site is served over HTTPS or localhost
+- the browser supports service workers and PushManager
+
+### AI Vision dashboard is empty
+
+Register a camera in Smart Factory, ingest a vision event through `/api/smart-factory/vision/events`, or generate enterprise demo data.
 
 ## Clean Verification
 

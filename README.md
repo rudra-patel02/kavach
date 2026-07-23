@@ -1,6 +1,6 @@
-# KAVACH
+# KAVACH v4.0
 
-KAVACH is a production-ready industrial operations platform for machine monitoring, predictive maintenance, enterprise plant management, AI-assisted operations, alerts, audit logs, reports, work orders, and live Socket.IO telemetry.
+KAVACH v4.0 is a production-ready industrial operations platform for machine monitoring, predictive maintenance, enterprise plant management, AI-assisted operations, alerts, audit logs, reports, work orders, live Socket.IO telemetry, AI Vision, PWA notifications, industrial protocol readiness, and an interactive 3D Smart Factory Digital Twin.
 
 The repository contains a Next.js frontend and an Express/MongoDB backend. The production deployment is configured for Vercel frontend hosting, Render or Railway backend hosting, MongoDB Atlas, HTTPS-only frontend API calls, Express CORS, and Socket.IO websocket handshakes.
 
@@ -34,7 +34,8 @@ Express API + Socket.IO
   v
 MongoDB Atlas
 
-Optional: MQTT broker -> backend IoT ingestion -> Socket.IO -> live UI
+Optional: ESP32/MQTT/OPC UA/Modbus/PLC edge gateway -> backend IoT ingestion -> Socket.IO -> live UI
+Optional: AI Vision camera event -> Smart Factory API -> Notification Center / Digital Twin
 ```
 
 ## Repository Layout
@@ -60,23 +61,27 @@ Optional: MQTT broker -> backend IoT ingestion -> Socket.IO -> live UI
 | Layer | Technology |
 | --- | --- |
 | Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS |
-| Visualization | Three.js, React Three Fiber, Drei, Recharts |
+| Visualization | Three.js, React Three Fiber, Drei, Recharts, live sensor overlays |
 | Backend | Node.js 22, Express 5 |
 | Database | MongoDB, Mongoose |
 | Auth | JWT access tokens, refresh tokens, bcrypt password hashing |
 | Realtime | Socket.IO websocket and polling fallback |
-| IoT | Optional MQTT integration and device telemetry ingestion |
+| IoT | ESP32 REST ingestion, MQTT, OPC UA, Modbus, PLC adapter readiness |
 | Deployment | Vercel frontend, Render/Railway backend, Docker Compose reference |
 
 ## Main Capabilities
 
 - Dashboard and executive operations views
-- Machine registry, machine detail, digital twin views, and live status
+- Machine registry, machine detail, interactive digital twin views, and live status
 - Enterprise organization, plant, region, area, asset, engineer, and onboarding flows
 - Predictive maintenance and work order management
 - AI overview, fleet health, root cause, forecasts, and copilot chat
+- AI Vision for PPE, fire, smoke, intrusion events, camera dashboard, safety alerts, and event timeline
+- Interactive 3D Smart Factory with clickable machines, sensor overlays, alarm markers, production flow animation, and equipment detail panels
+- PWA shell, service worker cache, QR machine lookup, and web push subscription storage
+- Predictive simulation and what-if analysis
 - Alerts, notifications, preferences, and archive/read workflows
-- Audit logs and exportable reports
+- Audit logs, automated executive reports, and exportable PDF/CSV/Excel reports
 - System health, backup export/configuration, and operational diagnostics
 - Socket.IO live updates for machines, telemetry, alerts, work orders, and enterprise refresh events
 
@@ -98,6 +103,7 @@ Frontend production must include:
 NEXT_PUBLIC_API_URL=
 NEXT_PUBLIC_SOCKET_URL=https://your-backend-service.onrender.com
 API_URL=https://your-backend-service.onrender.com
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=
 ```
 
 Backend production must include:
@@ -112,6 +118,9 @@ CORS_ORIGIN=https://your-vercel-app.vercel.app
 CORS_CREDENTIALS=true
 IOT_ENABLED=false
 ENABLE_SENSOR_SIMULATION=false
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=mailto:ops@example.com
 ```
 
 ## Production Verification
@@ -169,11 +178,17 @@ Rotate this password immediately after production access is confirmed.
 - Never expose `MONGO_URI`, JWT secrets, device secrets, or repair keys in frontend variables.
 - Do not run one-time repair endpoints in production after verification.
 - Confirm MongoDB Atlas network access allows the Render backend outbound IP range or appropriate access rule.
+- Configure `NEXT_PUBLIC_VAPID_PUBLIC_KEY` only when web push is enabled; keep private VAPID keys server-side.
+- Keep ESP32 `DEVICE_SECRET` rotated and separate from user JWT secrets.
 
 ## Documentation
 
 - Local setup: `INSTALL.md`
 - Production deployment: `DEPLOYMENT.md`
 - API and realtime contract: `API.md`
+- Architecture: `docs/ARCHITECTURE.md`
+- Changelog: `CHANGELOG.md`
+- Release report: `docs/RELEASE_REPORT_v4.0.md`
+- Screenshot checklist: `docs/SCREENSHOTS.md`
 - Live Swagger UI: `/api/docs`
 - OpenAPI JSON: `/api/docs/openapi.json`

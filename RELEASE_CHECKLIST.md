@@ -11,6 +11,7 @@
 - [ ] IoT and MQTT variables are configured only if device ingestion is enabled.
 - [ ] `ENABLE_SENSOR_SIMULATION=false` unless running an approved demo environment.
 - [ ] Optional AI provider variables are configured only if external AI calls are intended.
+- [ ] Optional VAPID variables are configured only if browser push delivery is enabled.
 - [ ] Backup, audit retention, and restore token values are configured for production operations.
 
 ## Validation
@@ -26,6 +27,11 @@
 - [ ] Protected routes redirect unauthenticated users to `/login`.
 - [ ] Socket.IO connects from the production frontend.
 - [ ] System page renders without runtime errors.
+- [ ] Digital Twin renders, machines are clickable, sensor overlays update, and production flow animates.
+- [ ] Smart Factory protocol health, QR lookup, AI Vision camera dashboard, and event timeline load.
+- [ ] Predictive what-if simulation runs without mutating machine records.
+- [ ] Automated executive report can be generated.
+- [ ] ESP32 `/api/iot/sensor` path still accepts valid device telemetry.
 
 ## Deployment
 
@@ -52,6 +58,9 @@
 - [ ] Open frontend production URL.
 - [ ] Log in with a production admin user.
 - [ ] Verify dashboard, machines, work orders, alerts, reports, settings, and system pages.
+- [ ] Verify Smart Factory, Digital Twin, Predictive Simulation, IoT Devices, and AI Vision workflows.
+- [ ] Submit a controlled AI Vision PPE/fire/smoke/intrusion demo event and confirm a safety alert is created.
+- [ ] Confirm PWA manifest is detected and service worker registers.
 - [ ] Export one report or backup in a controlled environment.
 - [ ] Confirm backend logs show no startup/runtime errors.
 

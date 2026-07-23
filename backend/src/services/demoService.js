@@ -1,5 +1,7 @@
 import bcrypt from "bcryptjs";
 
+import AIVisionCamera from "../models/aiVisionCamera.js";
+import AIVisionEvent from "../models/aiVisionEvent.js";
 import FleetAnalytics from "../models/fleetAnalytics.js";
 import Machine from "../models/machine.js";
 import Notification from "../models/notification.js";
@@ -31,6 +33,8 @@ export const resetDemoData = async () => {
 
   const [
     fleetAnalytics,
+    aiVisionCameras,
+    aiVisionEvents,
     machines,
     notifications,
     organizations,
@@ -42,6 +46,8 @@ export const resetDemoData = async () => {
     workOrders,
   ] = await Promise.all([
     FleetAnalytics.deleteMany(filter),
+    AIVisionCamera.deleteMany(filter),
+    AIVisionEvent.deleteMany(filter),
     Machine.deleteMany(filter),
     Notification.deleteMany(filter),
     Organization.deleteMany(filter),
@@ -55,6 +61,8 @@ export const resetDemoData = async () => {
 
   return {
     fleetAnalytics: fleetAnalytics.deletedCount,
+    aiVisionCameras: aiVisionCameras.deletedCount,
+    aiVisionEvents: aiVisionEvents.deletedCount,
     machines: machines.deletedCount,
     notifications: notifications.deletedCount,
     organizations: organizations.deletedCount,
@@ -256,6 +264,80 @@ export const generateDemoData = async () => {
         createdAt: hoursAgo(index + 1),
       }))
   );
+  const aiVisionCameras = await AIVisionCamera.insertMany([
+    {
+      areaId: "AREA-PUNE-ASSEMBLY",
+      cameraId: "CAM-PUNE-ENTRY",
+      enabledDetections: ["PPE", "INTRUSION"],
+      lastEventAt: hoursAgo(1),
+      lastSeenAt: now(),
+      location: "Pune Assembly Gate",
+      machineId: "DM-2002",
+      name: "Assembly Gate PPE Camera",
+      organizationId: String(organization._id),
+      plantId: plants[0].plantId,
+      status: "online",
+      tenantId: DEMO_TENANT_ID,
+    },
+    {
+      areaId: "AREA-CHENNAI-UTILITIES",
+      cameraId: "CAM-CHENNAI-BOILER",
+      enabledDetections: ["FIRE", "SMOKE", "PPE"],
+      lastEventAt: hoursAgo(2),
+      lastSeenAt: now(),
+      location: "Chennai Boiler Room",
+      machineId: "DM-2003",
+      name: "Boiler Room Safety Camera",
+      organizationId: String(organization._id),
+      plantId: plants[1].plantId,
+      status: "online",
+      tenantId: DEMO_TENANT_ID,
+    },
+  ]);
+  const aiVisionEvents = await AIVisionEvent.insertMany([
+    {
+      areaId: "AREA-PUNE-ASSEMBLY",
+      cameraId: "CAM-PUNE-ENTRY",
+      detections: [
+        {
+          confidence: 91.4,
+          label: "missing-hardhat",
+          severity: "High",
+        },
+      ],
+      eventId: "VISION-DEMO-PPE-001",
+      eventType: "PPE",
+      machineId: "DM-2002",
+      observedAt: hoursAgo(1),
+      organizationId: String(organization._id),
+      plantId: plants[0].plantId,
+      severity: "High",
+      source: "demo-edge-ai",
+      status: "open",
+      tenantId: DEMO_TENANT_ID,
+    },
+    {
+      areaId: "AREA-CHENNAI-UTILITIES",
+      cameraId: "CAM-CHENNAI-BOILER",
+      detections: [
+        {
+          confidence: 88.7,
+          label: "smoke-plume",
+          severity: "Critical",
+        },
+      ],
+      eventId: "VISION-DEMO-SMOKE-001",
+      eventType: "SMOKE",
+      machineId: "DM-2003",
+      observedAt: hoursAgo(2),
+      organizationId: String(organization._id),
+      plantId: plants[1].plantId,
+      severity: "Critical",
+      source: "demo-edge-ai",
+      status: "acknowledged",
+      tenantId: DEMO_TENANT_ID,
+    },
+  ]);
   const workOrders = await WorkOrder.insertMany(
     notifications.map((notification, index) => ({
       aiRecommendation: notification.suggestedAction,
@@ -338,6 +420,8 @@ export const generateDemoData = async () => {
     },
     counts: {
       fleetAnalytics: 1,
+      aiVisionCameras: aiVisionCameras.length,
+      aiVisionEvents: aiVisionEvents.length,
       machines: machines.length,
       notifications: notifications.length,
       organizations: 1,

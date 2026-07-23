@@ -5,13 +5,13 @@ This document summarizes the production REST and Socket.IO contract. The backend
 Production API base URL:
 
 ```text
-https://kavach-spgh.onrender.com
+https://your-backend-service.onrender.com
 ```
 
 All REST paths below are relative to:
 
 ```text
-https://kavach-spgh.onrender.com/api
+https://your-backend-service.onrender.com/api
 ```
 
 ## Authentication
@@ -70,7 +70,7 @@ Common status codes:
 Production backend CORS allows:
 
 ```text
-Origin: https://kavach-1-7749.onrender.com
+Origin: https://your-frontend-origin.example
 Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
 Headers: Content-Type, Authorization
 Credentials: enabled when CORS_CREDENTIALS=true
@@ -99,6 +99,7 @@ Credentials: enabled when CORS_CREDENTIALS=true
 | Method | Path | Description |
 | --- | --- | --- |
 | GET | `/api/machines` | List machines |
+| GET | `/api/machines/lookup/:code` | Lookup by QR, barcode, serial, machine id, or linked device id |
 | GET | `/api/machines/:id` | Get machine by id |
 | POST | `/api/machines` | Create machine |
 | PUT | `/api/machines/:id` | Update machine |
@@ -122,7 +123,22 @@ Example create payload:
 | GET | `/api/analytics/overview` | Analytics overview |
 | GET | `/api/analytics/export.csv` | Export analytics CSV |
 | GET | `/api/predictive/overview` | Predictive overview |
+| POST | `/api/predictive/simulate` | Run what-if simulation without persisting machine state |
 | GET | `/api/predictive/:machineId` | Machine prediction detail |
+
+Example simulation payload:
+
+```json
+{
+  "machineId": "MACHINE-001",
+  "name": "High temperature scenario",
+  "overrides": {
+    "temperature": 92,
+    "vibration": 0.9,
+    "power": 620
+  }
+}
+```
 
 ## AI and Copilot
 
@@ -244,6 +260,10 @@ Additional tenant patch/post routes manage organization, plant, region, and area
 | POST | `/api/notifications` | Create notification |
 | GET | `/api/notifications/preferences` | Read preferences |
 | PATCH | `/api/notifications/preferences` | Update preferences |
+| GET | `/api/notifications/push/status` | Read PWA push subscription status |
+| POST | `/api/notifications/push/subscribe` | Register browser push subscription |
+| POST | `/api/notifications/push/unsubscribe` | Disable browser push subscription |
+| POST | `/api/notifications/push/preview` | Preview web push delivery payload |
 | PATCH | `/api/notifications/read` | Mark all read |
 | PATCH | `/api/notifications/archive` | Archive bulk notifications |
 | PATCH | `/api/notifications/:id/read` | Mark notification read |
@@ -259,6 +279,8 @@ Additional tenant patch/post routes manage organization, plant, region, and area
 | GET | `/api/audit/export` | Export audit logs |
 | GET | `/api/audit/export/:format` | Export audit as `csv`, `excel`, or `pdf` |
 | GET | `/api/reports` | Report catalog |
+| GET | `/api/reports/automation/status` | Automated report delivery status |
+| POST | `/api/reports/automation/run-due` | Run due report schedules |
 | POST | `/api/reports/generate` | Generate report |
 | GET | `/api/reports/:type` | Generate report by type |
 | GET | `/api/reports/:type/pdf` | Download report PDF |
@@ -289,6 +311,10 @@ Device routes use device authentication with `DEVICE_SECRET`.
 | POST | `/api/iot/devices/:deviceId/heartbeat` | Device heartbeat |
 | GET | `/api/iot` | IoT overview |
 | GET | `/api/iot/devices` | List devices |
+| GET | `/api/iot/devices/:deviceId` | Device detail |
+| GET | `/api/iot/devices/:deviceId/config` | Device onboarding config and firmware links |
+| GET | `/api/iot/devices/:deviceId/telemetry` | Device telemetry history |
+| POST | `/api/iot/devices/:deviceId/command` | Publish MQTT device command |
 
 Telemetry payload shape:
 
@@ -306,18 +332,54 @@ Telemetry payload shape:
 }
 ```
 
+## Smart Factory, Digital Twin, and AI Vision
+
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/api/smart-factory/integrations` | MQTT, OPC UA, Modbus, PLC, REST protocol readiness |
+| GET | `/api/smart-factory/twin` | Smart Factory digital twin state |
+| GET | `/api/smart-factory/vision` | AI Vision overview |
+| GET | `/api/smart-factory/vision/cameras` | Camera dashboard |
+| POST | `/api/smart-factory/vision/cameras` | Create or update AI Vision camera |
+| PATCH | `/api/smart-factory/vision/cameras/:cameraId/status` | Update camera status |
+| GET | `/api/smart-factory/vision/timeline` | AI Vision event timeline |
+| POST | `/api/smart-factory/vision/events` | Ingest PPE/fire/smoke/intrusion event |
+| PATCH | `/api/smart-factory/vision/events/:eventId/status` | Acknowledge, resolve, suppress, or reopen event |
+
+AI Vision event payload:
+
+```json
+{
+  "cameraId": "CAM-01",
+  "eventType": "PPE",
+  "machineId": "MACHINE-001",
+  "severity": "High",
+  "detections": [
+    {
+      "label": "missing-hardhat",
+      "confidence": 91.4,
+      "severity": "High",
+      "boundingBox": { "x": 120, "y": 40, "w": 80, "h": 160 }
+    }
+  ],
+  "snapshotUrl": "https://example.com/snapshot.jpg"
+}
+```
+
+AI Vision events also create compatible `safety_warning` notifications for the existing alert center and push flows.
+
 ## Socket.IO
 
 Production Socket.IO base:
 
 ```text
-wss://kavach-spgh.onrender.com/socket.io
+wss://your-backend-service.onrender.com/socket.io
 ```
 
 Client configuration:
 
 ```js
-io("https://kavach-spgh.onrender.com", {
+io("https://your-backend-service.onrender.com", {
   path: "/socket.io",
   transports: ["websocket", "polling"]
 });
@@ -368,20 +430,22 @@ Server-to-client events:
 | `enterprise:dashboard:refresh` | Enterprise dashboard refresh |
 | `enterprise:fleet:update` | Fleet update |
 | `enterprise:maintenance:update` | Maintenance status update |
+| `ai:vision:event` | AI Vision event created |
+| `ai:vision:event:update` | AI Vision event status changed |
 
 ## Production Verification
 
 Use these checks after deployment:
 
 ```text
-GET https://kavach-spgh.onrender.com/api/health
-GET https://kavach-spgh.onrender.com/api/docs/openapi.json
-POST https://kavach-spgh.onrender.com/api/auth/login
+GET https://your-backend-service.onrender.com/api/health
+GET https://your-backend-service.onrender.com/api/docs/openapi.json
+POST https://your-backend-service.onrender.com/api/auth/login
 ```
 
 Then verify in the browser:
 
-- Requests go to `https://kavach-spgh.onrender.com`
+- Requests go to the configured HTTPS backend URL
 - Socket.IO connects through WSS
 - No mixed-content errors
 - No CORS preflight failures

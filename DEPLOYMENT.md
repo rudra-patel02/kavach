@@ -7,6 +7,8 @@ This guide prepares KAVACH for a production split deployment:
 - Database: MongoDB Atlas
 - Realtime: Socket.IO over HTTPS/WSS
 - IoT: ESP32 posts to the backend `/api/iot/sensor` endpoint
+- AI Vision: camera/edge events post to `/api/smart-factory/vision/events`
+- PWA: service worker and optional browser push subscriptions
 
 Do not put backend secrets in Vercel or in any `NEXT_PUBLIC_` variable.
 
@@ -46,6 +48,7 @@ Set these Vercel environment variables for Production, Preview, and Development 
 # Keep blank to use same-origin /api through Next.js rewrites.
 NEXT_PUBLIC_API_URL=
 NEXT_PUBLIC_SOCKET_URL=https://your-backend-service.onrender.com
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=
 API_URL=https://your-backend-service.onrender.com
 ```
 
@@ -85,6 +88,9 @@ CORS_ORIGIN=https://your-vercel-app.vercel.app
 CORS_CREDENTIALS=true
 PUBLIC_API_BASE_URL=https://your-backend-service.onrender.com
 DEVICE_SECRET=<random-device-secret>
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=mailto:ops@example.com
 ```
 
 Recommended production variables are listed in `.env.example` and `backend/.env.example`.
@@ -166,6 +172,35 @@ Expected telemetry verification:
 3. Backend emits `sensor-update`.
 4. Dashboard Live Sensor Data updates temperature, humidity, status, and timestamp.
 
+## AI Vision Production Events
+
+AI Vision edge processors should post event detections to:
+
+```text
+POST https://your-backend-service.onrender.com/api/smart-factory/vision/events
+```
+
+Use the normal authenticated API path for operator-created events. If an edge-to-edge secret gateway is introduced later, keep it server-side and do not expose it through frontend variables.
+
+Production verification:
+
+1. Register or upsert cameras from Smart Factory.
+2. Ingest PPE, fire, smoke, and intrusion event payloads.
+3. Confirm the Camera Dashboard updates.
+4. Confirm the Event Timeline contains new events.
+5. Confirm a `safety_warning` alert appears in Notifications.
+6. Confirm `ai:vision:event` is emitted over Socket.IO.
+
+## PWA and Push
+
+The frontend ships a manifest and service worker. Push subscription storage is enabled when:
+
+```env
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=<public-key>
+```
+
+Actual push delivery requires a server-side sender wired to `VAPID_PRIVATE_KEY`. Until a sender is configured, subscriptions and preview payloads can be validated through the notification push APIs.
+
 ## Health Checks
 
 Public health endpoint:
@@ -204,8 +239,11 @@ After deployment:
 5. Confirm Socket.IO connects with WSS and no CORS errors.
 6. Confirm Machines, IoT, Analytics, Alerts, Copilot, Reports, Settings, and Logout.
 7. Send ESP32 telemetry and confirm the Live Sensor Data card updates.
-8. Check browser console for mixed-content, CORS, and hydration errors.
-9. Check backend logs for MongoDB, unhandled errors, and rate-limit noise.
+8. Open Digital Twin and confirm clickable machines, sensor overlays, alarm markers, and production flow animation.
+9. Open Smart Factory and confirm protocol health, AI Vision camera dashboard, event timeline, QR lookup, and vision event submission.
+10. Export an automated executive report and verify audit entries.
+11. Check browser console for mixed-content, CORS, and hydration errors.
+12. Check backend logs for MongoDB, unhandled errors, and rate-limit noise.
 
 ## Rollback
 
