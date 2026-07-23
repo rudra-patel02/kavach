@@ -4,12 +4,6 @@ const API_PREFIX = "/api";
 const RENDER_BACKEND_ORIGIN = "https://kavach-spgh.onrender.com";
 
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
-const isLocalHttpUrl = (url: URL) =>
-  url.hostname === "localhost" ||
-  url.hostname === "127.0.0.1" ||
-  url.hostname.startsWith("192.168.") ||
-  url.hostname.startsWith("172.") ||
-  url.hostname.startsWith("10.");
 
 const enforceHttps = (value: string) => {
   const trimmed = value.trim();
@@ -17,11 +11,11 @@ const enforceHttps = (value: string) => {
   try {
     const url = new URL(trimmed);
 
-    if (url.protocol === "http:" && !isLocalHttpUrl(url)) {
+    if (url.protocol === "http:" && process.env.NODE_ENV === "production") {
       url.protocol = "https:";
     }
 
-    if (url.protocol === "ws:" && !isLocalHttpUrl(url)) {
+    if (url.protocol === "ws:" && process.env.NODE_ENV === "production") {
       url.protocol = "wss:";
     }
 
