@@ -53,12 +53,6 @@ const createSocket = () => {
     timeout: 10000,
   });
 
-  nextSocket.on("connect_error", (error) => {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("Socket.IO connection failed:", error.message);
-    }
-  });
-
   nextSocket.on(SOCKET_EVENTS.HEARTBEAT, (payload) => {
     nextSocket.emit(SOCKET_EVENTS.HEARTBEAT_ACK, payload);
   });

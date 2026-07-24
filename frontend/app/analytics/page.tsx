@@ -272,6 +272,36 @@ export default function AnalyticsPage() {
           </div>
         ) : null}
 
+        {isLoading && machines.length === 0 ? (
+          <section
+            role="status"
+            aria-live="polite"
+            className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4"
+          >
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div
+                key={index}
+                className="premium-skeleton h-32 rounded-xl"
+              />
+            ))}
+          </section>
+        ) : null}
+
+        {!isLoading && machines.length === 0 ? (
+          <section className="rounded-2xl border border-slate-800 bg-slate-900/75 p-6 text-center">
+            <Factory size={32} className="mx-auto text-slate-500" aria-hidden="true" />
+            <h2 className="mt-3 text-xl font-bold text-white">
+              No Analytics Data Available
+            </h2>
+            <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-400">
+              KAVACH is connected, but no machine telemetry has been received
+              for this view yet.
+            </p>
+          </section>
+        ) : null}
+
+        {machines.length > 0 ? (
+          <>
         <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-6">
           {kpiCards.map((item) => {
             const Icon = item.icon;
@@ -419,6 +449,8 @@ export default function AnalyticsPage() {
             </div>
           </div>
         </section>
+          </>
+        ) : null}
       </div>
     </DashboardLayout>
   );

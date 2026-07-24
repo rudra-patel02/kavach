@@ -13,6 +13,18 @@ const parseBoolean = (value, defaultValue = false) => {
   return ["1", "true", "yes", "on"].includes(String(value).toLowerCase());
 };
 
+const logIoTInfo = (message, metadata = {}) => {
+  console.info(
+    JSON.stringify({
+      level: "info",
+      message,
+      service: "kavach-backend",
+      timestamp: new Date().toISOString(),
+      ...metadata,
+    })
+  );
+};
+
 export const createIoTConnectionManager = ({ gateway }) => {
   const mqttClientManager = createMqttClientManager();
   const mqttPublisher = createMqttPublisher(mqttClientManager);
@@ -25,7 +37,7 @@ export const createIoTConnectionManager = ({ gateway }) => {
   let mqttEnabled = false;
 
   mqttClientManager.events.on("connect", async (status) => {
-    console.log(`MQTT connected to ${status.brokerUrl}`);
+    logIoTInfo("mqtt_connected", { brokerUrl: status.brokerUrl });
 
     try {
       await mqttSubscriber.subscribe();
@@ -35,7 +47,7 @@ export const createIoTConnectionManager = ({ gateway }) => {
   });
 
   mqttClientManager.events.on("reconnect", () => {
-    console.log("MQTT reconnecting");
+    logIoTInfo("mqtt_reconnecting");
   });
 
   mqttClientManager.events.on("offline", () => {
@@ -56,7 +68,7 @@ export const createIoTConnectionManager = ({ gateway }) => {
     if (mqttEnabled) {
       await mqttClientManager.start();
     } else {
-      console.log("IoT MQTT disabled; REST device API remains enabled");
+      logIoTInfo("mqtt_disabled_rest_device_api_enabled");
     }
 
     return {

@@ -75,7 +75,7 @@ process.on("uncaughtException", (error) => {
 });
 
 const logStartup = (message, metadata = {}) => {
-  console.log(
+  console.info(
     JSON.stringify({
       level: "info",
       message,
@@ -270,7 +270,7 @@ const start = async () => {
     }
 
     shuttingDown = true;
-    console.log(`${signal} received; shutting down`);
+    logStartup("shutdown_started", { signal });
     stopSensorSimulation();
     stopBackupScheduler();
     await iotConnectionManager.stop();

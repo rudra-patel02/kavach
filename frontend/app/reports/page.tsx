@@ -89,15 +89,31 @@ export default function ReportsPage() {
 
         <section className="rounded-2xl border border-slate-800 bg-slate-900/85 p-5">
           {isLoading ? (
-            <div className="flex items-center gap-3 text-slate-300">
-              <Loader2 size={18} className="animate-spin text-cyan-300" />
+            <div
+              role="status"
+              aria-live="polite"
+              className="flex items-center gap-3 text-slate-300"
+            >
+              <Loader2 size={18} className="animate-spin text-cyan-300" aria-hidden="true" />
               Loading report catalog
+            </div>
+          ) : reportEntries.length === 0 ? (
+            <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-6 text-center">
+              <FileText size={28} className="mx-auto text-slate-500" aria-hidden="true" />
+              <h2 className="mt-3 text-lg font-bold text-white">
+                No Reports Available
+              </h2>
+              <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-400">
+                The report catalog is empty or temporarily unavailable. Retry
+                after the backend finishes waking up.
+              </p>
             </div>
           ) : (
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px_220px]">
               <select
                 value={selectedType}
                 onChange={(event) => setSelectedType(event.target.value as ReportType)}
+                aria-label="Report type"
                 className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none"
               >
                 {reportEntries.map(([type, label]) => (
@@ -111,6 +127,7 @@ export default function ReportsPage() {
                 onChange={(event) =>
                   setSelectedFormat(event.target.value as ReportFormat)
                 }
+                aria-label="Report format"
                 className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none"
               >
                 <option value="pdf">PDF</option>
@@ -120,29 +137,35 @@ export default function ReportsPage() {
               <button
                 type="button"
                 onClick={() => void handleDownload()}
-                disabled={isDownloading}
+                disabled={isDownloading || reportEntries.length === 0}
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-3 text-sm font-semibold text-cyan-100 disabled:opacity-50"
               >
-                {isDownloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                {isDownloading ? (
+                  <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                ) : (
+                  <Download size={16} aria-hidden="true" />
+                )}
                 Export
               </button>
             </div>
           )}
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {reportEntries.map(([type, label]) => (
-            <article
-              key={type}
-              className="rounded-2xl border border-slate-800 bg-slate-900/85 p-5"
-            >
-              <p className="text-lg font-bold text-white">{label}</p>
-              <p className="mt-2 text-sm text-slate-400">
-                Export as PDF, Excel-compatible workbook, or CSV.
-              </p>
-            </article>
-          ))}
-        </section>
+        {reportEntries.length > 0 ? (
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {reportEntries.map(([type, label]) => (
+              <article
+                key={type}
+                className="rounded-2xl border border-slate-800 bg-slate-900/85 p-5"
+              >
+                <p className="text-lg font-bold text-white">{label}</p>
+                <p className="mt-2 text-sm text-slate-400">
+                  Export as PDF, Excel-compatible workbook, or CSV.
+                </p>
+              </article>
+            ))}
+          </section>
+        ) : null}
       </div>
     </DashboardLayout>
   );

@@ -7,6 +7,18 @@ const parsePositiveInteger = (value, fallback) => {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 };
 
+const logDatabaseInfo = (message, metadata = {}) => {
+  console.info(
+    JSON.stringify({
+      level: "info",
+      message,
+      service: "kavach-backend",
+      timestamp: new Date().toISOString(),
+      ...metadata,
+    })
+  );
+};
+
 export const getMongoUriMetadata = (mongoUri = process.env.MONGO_URI) => {
   const value = String(mongoUri || "").trim();
 
@@ -69,19 +81,13 @@ const connectDB = async () => {
   const maxPoolSize = Number(process.env.MONGO_MAX_POOL_SIZE || 10);
   const metadata = getMongoUriMetadata(mongoUri);
 
-  console.log(
-    JSON.stringify({
-      level: "info",
-      message: "mongodb_connect_start",
-      database: metadata.database,
-      hosts: metadata.hosts,
-      maxPoolSize:
-        Number.isFinite(maxPoolSize) && maxPoolSize > 0 ? maxPoolSize : 10,
-      protocol: metadata.protocol,
-      service: "kavach-backend",
-      timestamp: new Date().toISOString(),
-    })
-  );
+  logDatabaseInfo("mongodb_connect_start", {
+    database: metadata.database,
+    hosts: metadata.hosts,
+    maxPoolSize:
+      Number.isFinite(maxPoolSize) && maxPoolSize > 0 ? maxPoolSize : 10,
+    protocol: metadata.protocol,
+  });
 
   await mongoose.connect(mongoUri, {
     maxPoolSize: Number.isFinite(maxPoolSize) && maxPoolSize > 0 ? maxPoolSize : 10,
@@ -95,17 +101,11 @@ const connectDB = async () => {
     ),
   });
 
-  console.log(
-    JSON.stringify({
-      level: "info",
-      message: "mongodb_connected",
-      database: mongoose.connection.name || metadata.database,
-      host: mongoose.connection.host || metadata.hosts[0] || "",
-      readyState: mongoose.connection.readyState,
-      service: "kavach-backend",
-      timestamp: new Date().toISOString(),
-    })
-  );
+  logDatabaseInfo("mongodb_connected", {
+    database: mongoose.connection.name || metadata.database,
+    host: mongoose.connection.host || metadata.hosts[0] || "",
+    readyState: mongoose.connection.readyState,
+  });
   return mongoose.connection;
 };
 
@@ -117,17 +117,11 @@ export const connectDBWithRetry = async ({
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
-      console.log(
-        JSON.stringify({
-          level: "info",
-          message: "mongodb_connect_attempt",
-          attempt,
-          attempts,
-          delayMs,
-          service: "kavach-backend",
-          timestamp: new Date().toISOString(),
-        })
-      );
+      logDatabaseInfo("mongodb_connect_attempt", {
+        attempt,
+        attempts,
+        delayMs,
+      });
       return await connectDB();
     } catch (error) {
       lastError = error;

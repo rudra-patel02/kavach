@@ -1,18 +1,25 @@
+import { Loader2 } from "lucide-react";
+
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-slate-950 p-6 text-white industrial-shell sm:p-8">
-      <div className="page-stack space-y-6">
-        <div className="premium-skeleton h-12 w-72 rounded-2xl" />
-        <div className="grid gap-4 md:grid-cols-4">
-          {[0, 1, 2, 3].map((item) => (
-            <div
-              key={item}
-              className="premium-skeleton h-32 rounded-2xl"
-            />
-          ))}
-        </div>
-        <div className="premium-skeleton h-[520px] rounded-3xl" />
-      </div>
-    </div>
+    <main
+      role="status"
+      aria-live="polite"
+      className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-white industrial-shell"
+    >
+      <section className="premium-card w-full max-w-xl rounded-2xl p-6 text-center">
+        <Loader2
+          size={36}
+          className="mx-auto animate-spin text-cyan-300"
+          aria-hidden="true"
+        />
+        <h1 className="mt-4 text-xl font-bold text-white">
+          Loading KAVACH
+        </h1>
+        <p className="mt-2 text-sm text-slate-400">
+          Preparing live plant intelligence and operational views.
+        </p>
+      </section>
+    </main>
   );
 }
