@@ -1,14 +1,25 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import CountUp from "react-countup";
 import { motion } from "framer-motion";
-import { AlertTriangle, Bot, TrendingUp, Zap } from "lucide-react";
+import {
+  AlertTriangle,
+  Bot,
+  CheckCircle2,
+  ShieldCheck,
+  TrendingUp,
+  XCircle,
+  Zap,
+} from "lucide-react";
 import { useMachineFeed } from "@/hooks/useMachineFeed";
 import LiveBadge from "./LiveBadge";
 
+type DecisionState = "approved" | "rejected";
+
 export default function AICommandCenter() {
   const machines = useMachineFeed();
+  const [decisions, setDecisions] = useState<Record<string, DecisionState>>({});
 
   const avgHealth =
     machines.length > 0
@@ -70,6 +81,43 @@ export default function AICommandCenter() {
     },
   ], [avgEfficiency, avgHealth, failureRisk]);
 
+  const recommendedActions = useMemo(
+    () =>
+      machines
+        .filter(
+          (machine) =>
+            machine.status === "Critical" ||
+            machine.status === "Warning" ||
+            machine.health < 65 ||
+            machine.temperature > 85 ||
+            machine.vibration > 0.7
+        )
+        .slice(0, 5)
+        .map((machine) => {
+          const risk =
+            machine.status === "Critical" || machine.health < 45
+              ? "Critical"
+              : machine.temperature > 90 || machine.vibration > 0.9
+                ? "High"
+                : "Medium";
+          const action =
+            risk === "Critical"
+              ? "Approve controlled maintenance window and reduce operating load."
+              : risk === "High"
+                ? "Schedule priority inspection and verify cooling, vibration, and power draw."
+                : "Continue monitoring and add this asset to the next shift handover.";
+
+          return {
+            id: machine.machineId,
+            action,
+            machine: machine.name,
+            metrics: `${Math.round(machine.health)}% health / ${machine.temperature.toFixed(1)} C`,
+            risk,
+          };
+        }),
+    [machines]
+  );
+
   return (
     <section className="premium-card rounded-2xl p-6 lg:p-7">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -120,6 +168,105 @@ export default function AICommandCenter() {
             </motion.div>
           );
         })}
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-950/55 p-5">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300/80">
+              Human Approval Required
+            </p>
+            <h3 className="mt-2 flex items-center gap-2 text-xl font-black text-white">
+              <ShieldCheck size={20} className="text-cyan-300" />
+              Autonomous AI Control Center
+            </h3>
+          </div>
+          <span className="rounded-full border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-xs font-bold uppercase tracking-[0.14em] text-amber-100">
+            No auto-execution
+          </span>
+        </div>
+
+        <div className="mt-5 grid gap-3 lg:grid-cols-2">
+          {recommendedActions.length > 0 ? (
+            recommendedActions.map((item) => (
+              <div
+                key={item.id}
+                className="rounded-xl border border-slate-800 bg-slate-900/70 p-4"
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-bold text-white">{item.machine}</p>
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-xs font-bold ${
+                          item.risk === "Critical"
+                            ? "border-red-400/30 bg-red-500/10 text-red-100"
+                            : item.risk === "High"
+                              ? "border-orange-400/30 bg-orange-500/10 text-orange-100"
+                              : "border-yellow-400/30 bg-yellow-500/10 text-yellow-100"
+                        }`}
+                      >
+                        {item.risk}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-slate-400">{item.metrics}</p>
+                    <p className="mt-3 text-sm leading-5 text-slate-200">
+                      {item.action}
+                    </p>
+                  </div>
+
+                  {decisions[item.id] ? (
+                    <span
+                      className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold uppercase ${
+                        decisions[item.id] === "approved"
+                          ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-100"
+                          : "border-red-400/30 bg-red-500/10 text-red-100"
+                      }`}
+                    >
+                      {decisions[item.id] === "approved" ? (
+                        <CheckCircle2 size={15} />
+                      ) : (
+                        <XCircle size={15} />
+                      )}
+                      {decisions[item.id]}
+                    </span>
+                  ) : (
+                    <div className="flex shrink-0 gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDecisions((current) => ({
+                            ...current,
+                            [item.id]: "approved",
+                          }))
+                        }
+                        className="rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-100 transition-colors hover:bg-emerald-500/20"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setDecisions((current) => ({
+                            ...current,
+                            [item.id]: "rejected",
+                          }))
+                        }
+                        className="rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs font-bold text-red-100 transition-colors hover:bg-red-500/20"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 p-4 text-sm text-emerald-100 lg:col-span-2">
+              No critical AI actions are pending supervisor review.
+            </div>
+          )}
+        </div>
       </div>
     </section>
   );

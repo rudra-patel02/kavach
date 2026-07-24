@@ -205,6 +205,7 @@ export interface PredictiveSimulationResponse {
     generatedAt: string;
     scenario: {
       name: string;
+      eventType?: string;
       overrides: Record<string, number | string>;
       assumptions: string[];
     };
@@ -219,6 +220,17 @@ export interface PredictiveSimulationResponse {
       riskDelta: number;
       remainingUsefulLifeHoursDelta: number;
       downtimeDeltaHours: number;
+      affectedMachines?: {
+        machineId: string;
+        name: string;
+        department: string;
+        riskLevel: PredictiveRiskLevel;
+      }[];
+      downtimeHours?: number;
+      financialImpact?: number;
+      operationalImpact?: string;
+      riskLevel?: PredictiveRiskLevel;
+      recommendedActions?: string[];
       recommendation: string;
     };
   };

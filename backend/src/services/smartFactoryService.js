@@ -332,15 +332,44 @@ export const buildWhatIfSimulation = (machine, scenario = {}) => {
   const rulDelta = Math.round(
     simulated.remainingUsefulLifeHours - baseline.remainingUsefulLifeHours
   );
+  const downtimeDeltaHours = round(
+    simulated.estimatedDowntimeHours - baseline.estimatedDowntimeHours,
+    1
+  );
+  const downtimeCostPerHour = Number(process.env.DOWNTIME_COST_PER_HOUR || 5000);
+  const financialImpact = Math.max(
+    0,
+    Math.round((simulated.estimatedDowntimeHours + Math.max(0, riskDelta) / 10) * downtimeCostPerHour)
+  );
+  const scenarioName = String(scenario.name || "What-if scenario");
+  const operationalImpact =
+    riskDelta > 15
+      ? "Severe disruption likely; controlled slowdown or maintenance window is recommended before this condition persists."
+      : riskDelta > 5
+        ? "Moderate operational degradation expected; monitor adjacent production cells and prepare maintenance coverage."
+        : riskDelta < -5
+          ? "Operational risk improves against the current baseline with lower expected maintenance exposure."
+          : "Limited operational variance from the current baseline; continue monitoring live telemetry.";
+  const recommendedActions = [
+    simulated.recommendedAction || simulated.recommendation,
+    simulated.riskLevel === "Critical"
+      ? "Escalate to plant leadership and open a controlled maintenance window."
+      : "Keep the recommendation in supervisor review and continue live telemetry validation.",
+    riskDelta > 5
+      ? "Notify affected production, quality, and maintenance teams before proceeding."
+      : "Record the scenario outcome for future shift handover context.",
+  ].filter(Boolean);
 
   return {
     generatedAt: new Date().toISOString(),
     scenario: {
-      name: String(scenario.name || "What-if scenario"),
+      name: scenarioName,
+      eventType: String(scenario.eventType || scenario.type || "custom"),
       overrides,
       assumptions: [
         "Simulation uses the current Kavach deterministic risk model.",
         "No machine state is persisted by this endpoint.",
+        "Financial impact uses the configured downtime cost per hour.",
       ],
     },
     machine: {
@@ -353,10 +382,20 @@ export const buildWhatIfSimulation = (machine, scenario = {}) => {
     impact: {
       riskDelta,
       remainingUsefulLifeHoursDelta: rulDelta,
-      downtimeDeltaHours: round(
-        simulated.estimatedDowntimeHours - baseline.estimatedDowntimeHours,
-        1
-      ),
+      downtimeDeltaHours,
+      affectedMachines: [
+        {
+          machineId: machine.machineId,
+          name: machine.name,
+          department: machine.department || "Production",
+          riskLevel: simulated.riskLevel,
+        },
+      ],
+      downtimeHours: simulated.estimatedDowntimeHours,
+      financialImpact,
+      operationalImpact,
+      riskLevel: simulated.riskLevel,
+      recommendedActions,
       recommendation:
         riskDelta > 10
           ? "Scenario increases operational risk; reduce load or schedule maintenance before applying."

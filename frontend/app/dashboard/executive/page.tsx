@@ -2,11 +2,18 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  AlertTriangle,
   BarChart3,
   Download,
+  Factory,
   Gauge,
   Loader2,
+  Radio,
   RefreshCcw,
+  ShieldAlert,
+  Siren,
+  Target,
+  Zap,
 } from "lucide-react";
 import {
   Area,
@@ -48,6 +55,13 @@ const realtimeEvents = [
   SOCKET_EVENTS.LEGACY_NOTIFICATION_CREATED,
   "workorder:new",
   "workorder:updated",
+] as const;
+
+const warRoomRadar = [
+  { key: "risk", label: "AI Risk", color: "bg-red-400" },
+  { key: "energy", label: "Energy Load", color: "bg-violet-400" },
+  { key: "downtime", label: "Downtime", color: "bg-orange-400" },
+  { key: "alerts", label: "Alerts", color: "bg-yellow-400" },
 ] as const;
 
 function ChartPanel({
@@ -317,6 +331,179 @@ export default function ExecutiveDashboardPage() {
               dashboard={dashboard}
               isRefreshing={isRefreshing}
             />
+
+            <section className="min-h-[calc(100vh-8rem)] rounded-2xl border border-cyan-300/15 bg-slate-950/85 p-5 shadow-2xl shadow-cyan-950/20">
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                <div>
+                  <div className="flex items-center gap-3 text-sm font-bold uppercase tracking-[0.18em] text-cyan-300">
+                    <Radio size={18} className="animate-pulse" />
+                    Executive Digital War Room
+                  </div>
+                  <h2 className="mt-3 text-3xl font-black text-white md:text-5xl">
+                    Live Plant Command Center
+                  </h2>
+                  <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400">
+                    Full-screen operating view for KPI health, plant status,
+                    alert timeline, AI risk radar, and executive response.
+                  </p>
+                </div>
+                <div className="rounded-xl border border-cyan-300/20 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">
+                  Last sync {new Date(dashboard.generatedAt).toLocaleTimeString()}
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                {[
+                  {
+                    icon: Gauge,
+                    label: "OEE",
+                    value: `${dashboard.kpis.oee}%`,
+                    tone: "text-cyan-200",
+                  },
+                  {
+                    icon: Factory,
+                    label: "Running",
+                    value: dashboard.kpis.runningMachines,
+                    tone: "text-emerald-200",
+                  },
+                  {
+                    icon: ShieldAlert,
+                    label: "AI Risk",
+                    value: `${dashboard.kpis.risk}%`,
+                    tone: "text-red-200",
+                  },
+                  {
+                    icon: Zap,
+                    label: "Energy",
+                    value: `${dashboard.kpis.energy} kWh`,
+                    tone: "text-violet-200",
+                  },
+                  {
+                    icon: AlertTriangle,
+                    label: "Alerts",
+                    value: dashboard.kpis.alerts,
+                    tone: "text-yellow-200",
+                  },
+                ].map((item) => {
+                  const Icon = item.icon;
+
+                  return (
+                    <div
+                      key={item.label}
+                      className="rounded-xl border border-slate-800 bg-slate-900/75 p-4"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+                          {item.label}
+                        </p>
+                        <Icon size={18} className={item.tone} />
+                      </div>
+                      <p className={`mt-4 text-3xl font-black ${item.tone}`}>
+                        {item.value}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+                <div className="grid gap-5 lg:grid-cols-2">
+                  <div className="rounded-xl border border-slate-800 bg-slate-900/75 p-5">
+                    <div className="flex items-center gap-2">
+                      <Target size={19} className="text-cyan-300" />
+                      <h3 className="text-lg font-bold text-white">Plant Overview</h3>
+                    </div>
+                    <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
+                      {Object.entries(dashboard.statusDistribution).map(
+                        ([status, count]) => (
+                          <div
+                            key={status}
+                            className="rounded-lg border border-slate-800 bg-slate-950/60 p-3"
+                          >
+                            <p className="text-slate-500">{status}</p>
+                            <p className="mt-1 text-2xl font-black text-white">
+                              {count}
+                            </p>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-800 bg-slate-900/75 p-5">
+                    <div className="flex items-center gap-2">
+                      <Siren size={19} className="text-red-300" />
+                      <h3 className="text-lg font-bold text-white">
+                        Alert Timeline
+                      </h3>
+                    </div>
+                    <div className="mt-5 space-y-3">
+                      {dashboard.topRiskMachines.slice(0, 5).map((machine, index) => (
+                        <div
+                          key={machine.machineId}
+                          className="flex gap-3 rounded-lg border border-slate-800 bg-slate-950/60 p-3 text-sm"
+                        >
+                          <span className="font-bold text-cyan-300">
+                            T-{(5 - index) * 10}m
+                          </span>
+                          <div>
+                            <p className="font-semibold text-white">
+                              {machine.name} risk at {machine.failureProbability}%
+                            </p>
+                            <p className="mt-1 text-slate-400">
+                              {machine.recommendedAction || machine.recommendation}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                      {dashboard.topRiskMachines.length === 0 ? (
+                        <p className="text-sm text-slate-400">
+                          No critical alert events in the current live view.
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-800 bg-slate-900/75 p-5">
+                  <h3 className="text-lg font-bold text-white">AI Risk Radar</h3>
+                  <div className="mt-5 space-y-4">
+                    {warRoomRadar.map((item) => {
+                      const value = Math.min(
+                        100,
+                        Math.max(0, Number(dashboard.kpis[item.key] || 0))
+                      );
+
+                      return (
+                        <div key={item.key}>
+                          <div className="mb-2 flex items-center justify-between text-sm">
+                            <span className="text-slate-400">{item.label}</span>
+                            <span className="font-bold text-white">{value}%</span>
+                          </div>
+                          <div className="h-3 overflow-hidden rounded-full bg-slate-800">
+                            <div
+                              className={`h-full rounded-full ${item.color}`}
+                              style={{ width: `${value}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-6 rounded-xl border border-cyan-400/20 bg-cyan-500/10 p-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-200">
+                      Operational Status
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-cyan-50/90">
+                      {dashboard.kpis.criticalMachines > 0
+                        ? `${dashboard.kpis.criticalMachines} machines require executive attention. Keep maintenance and production leads aligned until risk drops.`
+                        : "Plant status is stable. Continue monitoring risk radar and live alert timeline."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
 
             <section className="rounded-xl border border-slate-800 bg-slate-900/75 p-5">
               <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">

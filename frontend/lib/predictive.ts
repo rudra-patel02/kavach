@@ -16,7 +16,8 @@ export const fetchPredictiveMachine = (machineId: string) =>
 export const runPredictiveSimulation = (payload: {
   machineId: string;
   name?: string;
-  overrides: Record<string, number>;
+  eventType?: string;
+  overrides: Record<string, number | string>;
 }) =>
   fetchJson<PredictiveSimulationResponse>("/api/predictive/simulate", {
     method: "POST",
