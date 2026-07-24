@@ -1,6 +1,16 @@
 # Changelog
 
-## 4.0.2 - 2026-07-24
+## 1.0.0 - 2026-07-24
+
+### Release
+
+- Prepared KAVACH as the first production `v1.0.0` release.
+- Aligned root, frontend, and backend package metadata to `1.0.0`.
+- Aligned environment examples and Render release metadata to `API_VERSION=1.0.0` and `APP_RELEASE=1.0.0`.
+- Added the v1.0.0 release report and updated release documentation.
+- Verified production readiness without deploying or pushing changes.
+
+## 0.9.2 - 2026-07-24
 
 ### Added
 
@@ -31,7 +41,7 @@
 - `https://kavach-frontend-4s8e.onrender.com` route smoke passed.
 - `https://kavach-frontend.onrender.com` returned `503` during QA and needs deployment-level review.
 
-## 4.0.0 - 2026-07-23
+## 0.9.0 - 2026-07-23
 
 ### Added
 

@@ -313,6 +313,7 @@ Device routes use device authentication with `DEVICE_SECRET`.
 | --- | --- | --- |
 | POST | `/api/iot/devices/register` | Register device |
 | POST | `/api/iot/telemetry` | Ingest telemetry |
+| POST | `/api/iot/sensor` | Ingest ESP32 DHT-style sensor readings |
 | POST | `/api/iot/devices/:deviceId/heartbeat` | Device heartbeat |
 | GET | `/api/iot` | IoT overview |
 | GET | `/api/iot/devices` | List devices |

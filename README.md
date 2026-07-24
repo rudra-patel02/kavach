@@ -143,4 +143,4 @@ Rotate seeded credentials immediately for real production use.
 - User manual: `docs/USER_MANUAL.md`
 - Developer guide: `docs/DEVELOPER_GUIDE.md`
 - Changelog: `CHANGELOG.md`
-- Release report: `docs/RELEASE_REPORT_v4.0.md`
+- Release report: `docs/RELEASE_REPORT_v1.0.0.md`

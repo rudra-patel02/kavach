@@ -224,7 +224,7 @@ export default function SmartFactoryPage() {
             <div>
               <div className="page-eyebrow mb-3 flex items-center gap-3">
                 <Factory size={18} />
-                Kavach v4.0
+                Kavach v1.0
               </div>
               <h1 className="text-3xl font-black tracking-tight md:text-4xl">
                 Smart Factory Twin

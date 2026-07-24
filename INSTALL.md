@@ -45,7 +45,7 @@ Minimum backend values:
 ```env
 NODE_ENV=development
 PORT=5000
-APP_RELEASE=4.0.0
+APP_RELEASE=1.0.0
 MONGO_URI=mongodb+srv://<user>:<password>@<cluster>/<database>
 JWT_SECRET=replace-with-a-random-secret-at-least-32-characters
 JWT_REFRESH_SECRET=replace-with-a-second-random-secret-at-least-32-characters

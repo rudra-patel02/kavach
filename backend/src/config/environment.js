@@ -133,7 +133,7 @@ export const getEnvironmentConfig = () => {
   }
 
   return {
-    apiVersion: process.env.API_VERSION || "20.0.0",
+    apiVersion: process.env.API_VERSION || "1.0.0",
     authRateLimitMax,
     allowedOrigins: withDefaultProductionOrigin(
       parseCorsOrigins(

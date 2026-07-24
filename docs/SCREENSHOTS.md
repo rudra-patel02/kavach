@@ -1,4 +1,4 @@
-# KAVACH v4.0 Screenshot Checklist
+# KAVACH v1.0.0 Screenshot Checklist
 
 Use this checklist for production release screenshots. Store captures in `docs/screenshots/` if you keep binary assets in the release package.
 

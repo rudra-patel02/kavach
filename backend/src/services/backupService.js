@@ -73,7 +73,7 @@ export const buildBackupPayload = async ({ includeSecrets = false } = {}) => {
     data,
     exportedAt: new Date().toISOString(),
     service: "KAVACH",
-    version: process.env.API_VERSION || "20.0.0",
+    version: process.env.API_VERSION || "1.0.0",
   };
 };
 

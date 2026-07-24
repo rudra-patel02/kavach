@@ -11,7 +11,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: API_VERSION
-        value: "20.0.0"
+        value: "1.0.0"
       - key: MONGO_URI
         sync: false
       - key: MONGO_MAX_POOL_SIZE

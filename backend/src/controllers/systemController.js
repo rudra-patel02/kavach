@@ -59,7 +59,7 @@ const buildHealthPayload = (req, startedAt) => {
     Number(process.hrtime.bigint() - startedAt) / 1000000;
 
   return {
-    apiVersion: process.env.API_VERSION || "20.0.0",
+    apiVersion: process.env.API_VERSION || "1.0.0",
     cpu: {
       cores: os.cpus().length,
       loadAverage: os.loadavg(),
