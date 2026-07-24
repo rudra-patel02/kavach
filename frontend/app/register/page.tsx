@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, UserPlus } from "lucide-react";
-import { apiUrl } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -20,7 +20,7 @@ export default function RegisterPage() {
     setMessage("");
 
     try {
-      const res = await fetch(apiUrl("/api/auth/register"), {
+      const res = await apiFetch("/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

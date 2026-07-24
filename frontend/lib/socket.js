@@ -1,5 +1,4 @@
 import { io } from "socket.io-client";
-import { getSocketBaseUrl } from "./api";
 
 export const SOCKET_EVENTS = {
   HELLO: "hello",
@@ -43,15 +42,21 @@ export const SOCKET_EVENTS = {
 let socketInstance = null;
 
 const createSocket = () => {
-  const nextSocket = io(getSocketBaseUrl(), {
+  const nextSocket = io("", {
     path: "/socket.io",
-    transports: ["websocket", "polling"],
+    transports: ["polling"],
     autoConnect: false,
     reconnection: true,
     reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
     timeout: 10000,
+  });
+
+  nextSocket.on("connect_error", (error) => {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("Socket.IO connection failed:", error.message);
+    }
   });
 
   nextSocket.on(SOCKET_EVENTS.HEARTBEAT, (payload) => {

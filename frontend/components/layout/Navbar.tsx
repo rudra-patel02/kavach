@@ -17,7 +17,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { apiUrl } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 import { clearStoredAuth, useStoredUser } from "@/lib/auth";
 import { globalSearch } from "@/lib/search";
 import type { GlobalSearchResult } from "@/types/search";
@@ -194,7 +194,7 @@ export default function Navbar() {
     router.replace("/login");
 
     try {
-      await fetch(apiUrl("/api/auth/logout"), {
+      await apiFetch("/api/auth/logout", {
         body: JSON.stringify({ refreshToken }),
         headers: { "Content-Type": "application/json" },
         method: "POST",

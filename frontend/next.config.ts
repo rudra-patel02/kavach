@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 import { fileURLToPath } from "node:url";
 
 const frontendRoot = fileURLToPath(new URL(".", import.meta.url));
+const productionBackendOrigin = "https://kavach-spgh.onrender.com";
 
 const trimTrailingSlash = (value: string) => value.trim().replace(/\/+$/, "");
 
@@ -24,14 +25,10 @@ const enforceHttps = (value: string) => {
     return trimTrailingSlash(trimmed);
   }
 };
-const stripApiPrefix = (value: string) =>
-  enforceHttps(value).replace(/\/api$/i, "");
-
 const publicApiUrl = enforceHttps(process.env.NEXT_PUBLIC_API_URL || "");
 const publicSocketUrl = enforceHttps(
-  process.env.NEXT_PUBLIC_SOCKET_URL || publicApiUrl
+  process.env.NEXT_PUBLIC_SOCKET_URL || publicApiUrl || productionBackendOrigin
 );
-const backendUrl = stripApiPrefix(process.env.API_URL || publicApiUrl);
 
 const nextConfig: NextConfig = {
   compress: true,
@@ -67,18 +64,6 @@ const nextConfig: NextConfig = {
             value: "camera=(), microphone=(), geolocation=()",
           },
         ],
-      },
-    ];
-  },
-  async rewrites() {
-    if (!backendUrl) {
-      return [];
-    }
-
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${backendUrl}/api/:path*`,
       },
     ];
   },

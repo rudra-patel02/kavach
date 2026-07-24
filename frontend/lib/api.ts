@@ -1,7 +1,8 @@
 import { clearStoredAuth, notifyAuthChanged } from "./auth";
 
 const API_PREFIX = "/api";
-const RENDER_BACKEND_ORIGIN = "https://kavach-spgh.onrender.com";
+const DEFAULT_REQUEST_TIMEOUT_MS = 15000;
+const DEFAULT_RETRY_DELAYS_MS = [500, 1500, 3000];
 
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
 
@@ -28,9 +29,6 @@ const stripApiPrefix = (value: string) =>
   enforceHttps(value).replace(/\/api$/i, "");
 
 const normalizePath = (path: string) => (path.startsWith("/") ? path : `/${path}`);
-const isRenderFrontendRuntime = () =>
-  typeof window !== "undefined" &&
-  window.location.hostname.endsWith(".onrender.com");
 
 const joinApiBaseAndPath = (baseUrl: string, path: string) => {
   const normalizedBaseUrl = trimTrailingSlash(baseUrl);
@@ -51,21 +49,16 @@ const joinApiBaseAndPath = (baseUrl: string, path: string) => {
 };
 
 export const getApiBaseUrl = () => {
-  const configuredUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+  const configuredUrl = process.env.NEXT_PUBLIC_API_URL?.trim() || "";
 
-  if (!configuredUrl) {
-    return isRenderFrontendRuntime() ? RENDER_BACKEND_ORIGIN : "";
-  }
-
-  return enforceHttps(configuredUrl);
+  return stripApiPrefix(configuredUrl);
 };
 
 export const getSocketBaseUrl = () => {
   const configuredUrl =
     process.env.NEXT_PUBLIC_SOCKET_URL?.trim() ||
     process.env.NEXT_PUBLIC_API_URL?.trim() ||
-    (isRenderFrontendRuntime() ? RENDER_BACKEND_ORIGIN : "") ||
-    (typeof window !== "undefined" ? window.location.origin : "");
+    "";
 
   return stripApiPrefix(configuredUrl);
 };
@@ -97,6 +90,91 @@ const getAuthCookie = (name: string) => {
   return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : null;
 };
 
+const delay = (ms: number) =>
+  new Promise((resolve) => globalThis.setTimeout(resolve, ms));
+
+const isRetryableStatus = (status: number) =>
+  status === 408 || status === 425 || status === 429 || status >= 500;
+
+const isRetryableMethod = (method: string) =>
+  ["GET", "HEAD", "OPTIONS", "POST"].includes(method);
+
+const mergeAbortSignals = (
+  signal: AbortSignal | null | undefined,
+  timeoutMs: number
+) => {
+  const controller = new AbortController();
+  const timeoutId = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+
+  const abort = () => controller.abort();
+
+  if (signal) {
+    if (signal.aborted) {
+      controller.abort();
+    } else {
+      signal.addEventListener("abort", abort, { once: true });
+    }
+  }
+
+  return {
+    signal: controller.signal,
+    cleanup: () => {
+      globalThis.clearTimeout(timeoutId);
+      signal?.removeEventListener("abort", abort);
+    },
+  };
+};
+
+export const apiFetch = async (
+  path: string,
+  init: RequestInit = {},
+  options: { retryDelaysMs?: number[]; timeoutMs?: number } = {}
+) => {
+  const method = String(init.method || "GET").toUpperCase();
+  const retryDelaysMs = isRetryableMethod(method)
+    ? options.retryDelaysMs ?? DEFAULT_RETRY_DELAYS_MS
+    : [];
+  const timeoutMs = options.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= retryDelaysMs.length; attempt += 1) {
+    const { signal, cleanup } = mergeAbortSignals(init.signal, timeoutMs);
+
+    try {
+      const response = await fetch(apiUrl(path), {
+        cache: "no-store",
+        ...init,
+        signal,
+      });
+
+      cleanup();
+
+      if (
+        attempt < retryDelaysMs.length &&
+        isRetryableStatus(response.status)
+      ) {
+        await delay(retryDelaysMs[attempt]);
+        continue;
+      }
+
+      return response;
+    } catch (error) {
+      cleanup();
+      lastError = error;
+
+      if (attempt >= retryDelaysMs.length) {
+        break;
+      }
+
+      await delay(retryDelaysMs[attempt]);
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Unable to connect to server");
+};
+
 const refreshAccessToken = async () => {
   if (typeof window === "undefined") {
     return null;
@@ -108,7 +186,7 @@ const refreshAccessToken = async () => {
     return null;
   }
 
-  const response = await fetch(apiUrl("/api/auth/refresh"), {
+  const response = await apiFetch("/api/auth/refresh", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -148,11 +226,8 @@ export const authenticatedFetch = async (
   path: string,
   init: RequestInit = {}
 ) => {
-  const method = String(init.method || "GET").toUpperCase();
-  const canRetry = method === "GET";
   const makeRequest = (token: string | null) =>
-    fetch(apiUrl(path), {
-      cache: "no-store",
+    apiFetch(path, {
       ...init,
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -165,12 +240,9 @@ export const authenticatedFetch = async (
   try {
     response = await makeRequest(getToken());
   } catch (error) {
-    if (!canRetry) {
-      throw error;
-    }
-
-    await new Promise((resolve) => globalThis.setTimeout(resolve, 300));
-    response = await makeRequest(getToken());
+    throw error instanceof Error
+      ? error
+      : new Error("Unable to connect to server");
   }
 
   if (response.status === 401) {
@@ -179,11 +251,6 @@ export const authenticatedFetch = async (
     if (refreshedToken) {
       response = await makeRequest(refreshedToken);
     }
-  }
-
-  if (canRetry && response.status >= 500) {
-    await new Promise((resolve) => globalThis.setTimeout(resolve, 300));
-    response = await makeRequest(getToken());
   }
 
   return response;

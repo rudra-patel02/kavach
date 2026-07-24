@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import IndustrialTwinBackground from "@/components/layout/IndustrialTwinBackground";
 import ThemeModeControl from "@/components/layout/ThemeModeControl";
-import { apiUrl } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 import { notifyAuthChanged, useStoredToken } from "@/lib/auth";
 
 export default function LoginPage() {
@@ -45,14 +45,9 @@ export default function LoginPage() {
       return;
     }
 
-    let timeoutId: number | undefined;
-
     try {
       setLoading(true);
-      const controller = new AbortController();
-      timeoutId = window.setTimeout(() => controller.abort(), 15000);
-
-      const res = await fetch(apiUrl("/api/auth/login"), {
+      const res = await apiFetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -61,7 +56,6 @@ export default function LoginPage() {
           email,
           password,
         }),
-        signal: controller.signal,
       });
 
       const data = await res.json();
@@ -82,9 +76,6 @@ export default function LoginPage() {
     } catch {
       setError("Unable to connect to server.");
     } finally {
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
-      }
       setLoading(false);
     }
   };
