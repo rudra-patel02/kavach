@@ -31,6 +31,13 @@ const riskTone: Record<PredictiveRiskLevel, string> = {
   Critical: "border-red-400/35 bg-red-500/10 text-red-200",
 };
 
+const riskDotTone: Record<PredictiveRiskLevel, string> = {
+  Low: "bg-emerald-400 shadow-emerald-400/50",
+  Medium: "bg-amber-400 shadow-amber-400/50",
+  High: "bg-orange-400 shadow-orange-400/50",
+  Critical: "bg-red-400 shadow-red-400/50",
+};
+
 const riskRank: Record<PredictiveRiskLevel, number> = {
   Low: 1,
   Medium: 2,
@@ -50,7 +57,7 @@ const numberFormatter = new Intl.NumberFormat("en-US", {
 
 const formatHours = (hours?: number | null) => {
   if (typeof hours !== "number" || !Number.isFinite(hours) || hours <= 0) {
-    return "Not available";
+    return "—";
   }
 
   return `${numberFormatter.format(hours)}h`;
@@ -58,7 +65,7 @@ const formatHours = (hours?: number | null) => {
 
 const formatFailureTime = (hours?: number | null) => {
   if (typeof hours !== "number" || !Number.isFinite(hours) || hours <= 0) {
-    return "Not available";
+    return "—";
   }
 
   const date = new Date(Date.now() + hours * 60 * 60 * 1000);
@@ -164,22 +171,44 @@ const getRecommendationAction = (
     ? recommendation.recommendedAction || recommendation.recommendation
     : recommendation?.recommendation;
 
+const getConfidenceTone = (confidence?: number | null) => {
+  if (typeof confidence !== "number" || !Number.isFinite(confidence)) {
+    return "border-slate-700 bg-slate-950/55 text-slate-300";
+  }
+
+  if (confidence > 90) {
+    return "border-emerald-400/35 bg-emerald-500/10 text-emerald-200";
+  }
+
+  if (confidence >= 70) {
+    return "border-amber-400/35 bg-amber-500/10 text-amber-200";
+  }
+
+  return "border-red-400/35 bg-red-500/10 text-red-200";
+};
+
 function MetricTile({
   icon: Icon,
   label,
+  tileClassName = "border-slate-800 bg-slate-950/55",
   value,
+  valueClassName = "text-white",
 }: {
   icon: LucideIcon;
   label: string;
+  tileClassName?: string;
   value: string;
+  valueClassName?: string;
 }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-950/55 p-3">
+    <div
+      className={`rounded-xl border p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400/30 hover:bg-slate-900/65 ${tileClassName}`}
+    >
       <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
         <Icon size={14} className="text-cyan-300" />
         {label}
       </div>
-      <p className="truncate text-sm font-black text-white" title={value}>
+      <p className={`truncate text-sm font-black ${valueClassName}`} title={value}>
         {value}
       </p>
     </div>
@@ -282,9 +311,22 @@ export default function AIDecisionCenterCard() {
     (decision.recommendation as PredictiveRecommendation | null)?.name ||
     "Not available";
   const riskLabel = decision.riskLevel || "Medium";
+  const machineId =
+    decision.priorityMachine?.machineId ||
+    decision.priorityAIMachine?.machine.machineId ||
+    (decision.recommendation as PredictiveRecommendation | null)?.machineId ||
+    "";
+  const detailsHref = machineId
+    ? `/machines/${encodeURIComponent(machineId)}`
+    : "/machines";
+  const confidenceText =
+    typeof decision.confidence === "number"
+      ? `${Math.round(decision.confidence)}%`
+      : "—";
+  const confidenceTone = getConfidenceTone(decision.confidence);
 
   return (
-    <section className="hero-visual premium-tile relative overflow-hidden rounded-2xl p-5">
+    <section className="hero-visual premium-tile relative overflow-hidden rounded-2xl p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-cyan-400/35 sm:p-5">
       <div className="pointer-events-none absolute inset-0 opacity-70">
         <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.11)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.08)_1px,transparent_1px)] bg-[length:28px_28px]" />
         <div className="pulse-line absolute left-0 top-8 h-px w-full bg-gradient-to-r from-transparent via-cyan-300/70 to-transparent" />
@@ -307,7 +349,9 @@ export default function AIDecisionCenterCard() {
               riskTone[riskLabel]
             }`}
           >
-            <span className="live-dot h-2 w-2 rounded-full bg-current" />
+            <span
+              className={`live-dot h-2.5 w-2.5 rounded-full shadow-lg ${riskDotTone[riskLabel]}`}
+            />
             {decision.riskLevel || "Live"}
           </span>
         </div>
@@ -328,7 +372,10 @@ export default function AIDecisionCenterCard() {
           </div>
         ) : (
           <>
-            <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950/55 p-4">
+            <Link
+              href={detailsHref}
+              className="mt-6 block rounded-xl border border-slate-800 bg-slate-950/55 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400/35 hover:bg-slate-900/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60"
+            >
               <div className="flex items-start gap-3">
                 <span className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-400/25 bg-cyan-500/10 text-cyan-300">
                   <AlertTriangle size={20} />
@@ -345,7 +392,7 @@ export default function AIDecisionCenterCard() {
                   </p>
                 </div>
               </div>
-            </div>
+            </Link>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <MetricTile
@@ -370,25 +417,23 @@ export default function AIDecisionCenterCard() {
                 label="Cost Impact"
                 value={
                   decision.costImpact === null
-                    ? "Not available"
+                    ? "—"
                     : currencyFormatter.format(decision.costImpact)
                 }
               />
               <MetricTile
                 icon={ShieldCheck}
                 label="Confidence"
-                value={
-                  typeof decision.confidence === "number"
-                    ? `${Math.round(decision.confidence)}%`
-                    : "Not available"
-                }
+                tileClassName={confidenceTone}
+                value={confidenceText}
+                valueClassName="text-current"
               />
             </div>
 
             <div className="mt-auto pt-5">
               <Link
-                href="/predictive"
-                className="premium-button inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black"
+                href={detailsHref}
+                className="premium-button inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black transition-transform duration-200 hover:-translate-y-0.5"
               >
                 <Wrench size={17} />
                 View Details
