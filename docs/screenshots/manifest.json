@@ -1,0 +1,90 @@
+{
+  "generatedAt": "2026-07-24T11:17:52.700Z",
+  "frontend": "https://kavach-frontend-4s8e.onrender.com",
+  "routes": [
+    {
+      "name": "dashboard",
+      "route": "/",
+      "url": "https://kavach-frontend-4s8e.onrender.com/",
+      "file": "docs/screenshots/dashboard.png"
+    },
+    {
+      "name": "executive-dashboard",
+      "route": "/dashboard/executive",
+      "url": "https://kavach-frontend-4s8e.onrender.com/dashboard/executive",
+      "file": "docs/screenshots/executive-dashboard.png"
+    },
+    {
+      "name": "enterprise-ops",
+      "route": "/enterprise",
+      "url": "https://kavach-frontend-4s8e.onrender.com/enterprise",
+      "file": "docs/screenshots/enterprise-ops.png"
+    },
+    {
+      "name": "machines",
+      "route": "/machines",
+      "url": "https://kavach-frontend-4s8e.onrender.com/machines",
+      "file": "docs/screenshots/machines.png"
+    },
+    {
+      "name": "digital-twin-plant",
+      "route": "/plant",
+      "url": "https://kavach-frontend-4s8e.onrender.com/plant",
+      "file": "docs/screenshots/digital-twin-plant.png"
+    },
+    {
+      "name": "iot-devices",
+      "route": "/iot",
+      "url": "https://kavach-frontend-4s8e.onrender.com/iot",
+      "file": "docs/screenshots/iot-devices.png"
+    },
+    {
+      "name": "smart-factory",
+      "route": "/smart-factory",
+      "url": "https://kavach-frontend-4s8e.onrender.com/smart-factory",
+      "file": "docs/screenshots/smart-factory.png"
+    },
+    {
+      "name": "predictive-maintenance",
+      "route": "/predictive",
+      "url": "https://kavach-frontend-4s8e.onrender.com/predictive",
+      "file": "docs/screenshots/predictive-maintenance.png"
+    },
+    {
+      "name": "ai-copilot",
+      "route": "/copilot",
+      "url": "https://kavach-frontend-4s8e.onrender.com/copilot",
+      "file": "docs/screenshots/ai-copilot.png"
+    },
+    {
+      "name": "analytics",
+      "route": "/analytics",
+      "url": "https://kavach-frontend-4s8e.onrender.com/analytics",
+      "file": "docs/screenshots/analytics.png"
+    },
+    {
+      "name": "reports",
+      "route": "/reports",
+      "url": "https://kavach-frontend-4s8e.onrender.com/reports",
+      "file": "docs/screenshots/reports.png"
+    },
+    {
+      "name": "ai-root-cause",
+      "route": "/ai/root-cause",
+      "url": "https://kavach-frontend-4s8e.onrender.com/ai/root-cause",
+      "file": "docs/screenshots/ai-root-cause.png"
+    },
+    {
+      "name": "audit",
+      "route": "/audit",
+      "url": "https://kavach-frontend-4s8e.onrender.com/audit",
+      "file": "docs/screenshots/audit.png"
+    },
+    {
+      "name": "settings",
+      "route": "/settings",
+      "url": "https://kavach-frontend-4s8e.onrender.com/settings",
+      "file": "docs/screenshots/settings.png"
+    }
+  ]
+}

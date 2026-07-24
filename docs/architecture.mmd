@@ -1,0 +1,44 @@
+flowchart LR
+  user["Operators / Engineers / Executives"] --> browser["Browser / PWA"]
+
+  subgraph frontend["Frontend - Next.js 16 / React 19"]
+    browser --> app["App Router Pages"]
+    app --> apiProxy["/api Proxy Route"]
+    app --> socketProxy["/socket.io Proxy Route"]
+    app --> ui["Dashboards, AI, Predictive, IoT, Smart Factory"]
+  end
+
+  subgraph backend["Backend - Express 5 / Node.js 22"]
+    apiProxy --> rest["REST API Routes"]
+    socketProxy --> realtime["Socket.IO Gateway"]
+    rest --> auth["Authentication + RBAC"]
+    rest --> ai["AI Engine + Predictive Services"]
+    rest --> iot["IoT Controllers"]
+    rest --> reports["Reports, Audit, Backup"]
+  end
+
+  subgraph data["Persistence"]
+    auth --> mongo["MongoDB Atlas"]
+    ai --> mongo
+    iot --> mongo
+    reports --> mongo
+    realtime --> mongo
+  end
+
+  subgraph edge["Industrial Edge"]
+    esp32["ESP32 / Sensors"] --> telemetry["REST Telemetry"]
+    mqtt["MQTT / Protocol Adapters"] --> telemetry
+    vision["AI Vision Edge"] --> visionApi["Vision Events"]
+    telemetry --> iot
+    visionApi --> rest
+  end
+
+  subgraph deploy["Deployment Flow"]
+    repo["Git Repository"] --> build["Lint + Typecheck + Tests + Build"]
+    build --> frontendHost["Frontend Host"]
+    build --> backendHost["Backend Host"]
+    backendHost --> mongo
+  end
+
+  realtime --> ui
+  ai --> ui

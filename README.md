@@ -56,6 +56,8 @@ Recent QA found the backend and `kavach-frontend-4s8e` deployment healthy. The p
 
 ## Runtime Architecture
 
+![KAVACH production architecture](docs/architecture.svg)
+
 ```text
 Browser / PWA
   |
@@ -74,6 +76,33 @@ MongoDB Atlas
 ESP32 / edge devices -> /api/iot telemetry and heartbeat -> machine state -> Socket.IO -> dashboard
 AI Vision edge events -> /api/smart-factory/vision/events -> notifications + digital twin timeline
 ```
+
+Detailed diagram assets:
+
+- Mermaid source: `docs/architecture.mmd`
+- SVG diagram: `docs/architecture.svg`
+- PNG diagram: `docs/architecture.png`
+
+## Documentation Assets
+
+High-quality production screenshots are stored in `docs/screenshots/` and indexed in `docs/SCREENSHOTS.md`.
+
+| Module | Screenshot |
+| --- | --- |
+| Dashboard | `docs/screenshots/dashboard.png` |
+| Executive Dashboard | `docs/screenshots/executive-dashboard.png` |
+| Enterprise Operations | `docs/screenshots/enterprise-ops.png` |
+| Machines | `docs/screenshots/machines.png` |
+| Digital Twin / Plant | `docs/screenshots/digital-twin-plant.png` |
+| IoT Devices | `docs/screenshots/iot-devices.png` |
+| Smart Factory | `docs/screenshots/smart-factory.png` |
+| Predictive Maintenance | `docs/screenshots/predictive-maintenance.png` |
+| AI Copilot | `docs/screenshots/ai-copilot.png` |
+| Analytics | `docs/screenshots/analytics.png` |
+| Reports | `docs/screenshots/reports.png` |
+| AI Root Cause | `docs/screenshots/ai-root-cause.png` |
+| Audit | `docs/screenshots/audit.png` |
+| Settings | `docs/screenshots/settings.png` |
 
 ## Environment Summary
 

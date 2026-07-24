@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="980" viewBox="0 0 1600 980" role="img" aria-labelledby="title desc">
+  <title id="title">KAVACH Production Architecture</title>
+  <desc id="desc">Architecture diagram showing frontend, backend, authentication, AI engine, Socket.IO, database, IoT edge, and deployment flow.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#07111f"/>
+      <stop offset="100%" stop-color="#0f2635"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" x2="1">
+      <stop offset="0%" stop-color="#10243a"/>
+      <stop offset="100%" stop-color="#102f3a"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#67e8f9"/>
+    </marker>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000" flood-opacity="0.28"/>
+    </filter>
+    <style>
+      .title { fill: #e6fbff; font: 800 34px Arial, sans-serif; }
+      .subtitle { fill: #9bdce7; font: 500 16px Arial, sans-serif; }
+      .group { fill: rgba(15, 23, 42, 0.62); stroke: #1f7f93; stroke-width: 2; rx: 24; }
+      .box { fill: url(#card); stroke: #4dd0e1; stroke-width: 2; rx: 18; filter: url(#shadow); }
+      .box2 { fill: #16233d; stroke: #a7f3d0; stroke-width: 2; rx: 18; filter: url(#shadow); }
+      .box3 { fill: #261b3f; stroke: #c4b5fd; stroke-width: 2; rx: 18; filter: url(#shadow); }
+      .label { fill: #f8fafc; font: 700 18px Arial, sans-serif; }
+      .small { fill: #b6c9d4; font: 500 13px Arial, sans-serif; }
+      .groupLabel { fill: #67e8f9; font: 800 15px Arial, sans-serif; letter-spacing: 2px; }
+      .line { stroke: #67e8f9; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .line2 { stroke: #a7f3d0; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .line3 { stroke: #c4b5fd; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect width="1600" height="980" fill="url(#bg)"/>
+  <text x="70" y="70" class="title">KAVACH Production Architecture</text>
+  <text x="70" y="102" class="subtitle">Next.js frontend, Express backend, AI services, MongoDB, Socket.IO, and industrial IoT integration</text>
+
+  <rect x="54" y="145" width="310" height="180" class="group"/>
+  <text x="78" y="178" class="groupLabel">USERS</text>
+  <rect x="92" y="210" width="235" height="72" class="box"/>
+  <text x="116" y="241" class="label">Browser / PWA</text>
+  <text x="116" y="264" class="small">Operators, engineers, executives</text>
+
+  <rect x="435" y="130" width="360" height="315" class="group"/>
+  <text x="462" y="164" class="groupLabel">FRONTEND</text>
+  <rect x="485" y="195" width="260" height="70" class="box"/>
+  <text x="508" y="225" class="label">Next.js App Router</text>
+  <text x="508" y="248" class="small">Dashboard, AI, IoT, reports</text>
+  <rect x="485" y="300" width="260" height="58" class="box"/>
+  <text x="508" y="334" class="label">/api Proxy</text>
+  <rect x="485" y="370" width="260" height="58" class="box"/>
+  <text x="508" y="404" class="label">/socket.io Proxy</text>
+
+  <rect x="870" y="120" width="410" height="420" class="group"/>
+  <text x="898" y="154" class="groupLabel">BACKEND</text>
+  <rect x="925" y="185" width="290" height="62" class="box2"/>
+  <text x="948" y="222" class="label">Express REST API</text>
+  <rect x="925" y="270" width="290" height="62" class="box2"/>
+  <text x="948" y="307" class="label">Authentication + RBAC</text>
+  <rect x="925" y="355" width="290" height="62" class="box2"/>
+  <text x="948" y="392" class="label">AI Engine + Predictive</text>
+  <rect x="925" y="440" width="290" height="62" class="box2"/>
+  <text x="948" y="477" class="label">IoT, Reports, Audit</text>
+
+  <rect x="1360" y="220" width="185" height="145" class="group"/>
+  <text x="1382" y="253" class="groupLabel">DATA</text>
+  <rect x="1388" y="285" width="130" height="58" class="box"/>
+  <text x="1408" y="320" class="label">MongoDB</text>
+
+  <rect x="92" y="570" width="420" height="260" class="group"/>
+  <text x="120" y="604" class="groupLabel">INDUSTRIAL EDGE</text>
+  <rect x="135" y="640" width="295" height="58" class="box3"/>
+  <text x="158" y="675" class="label">ESP32 / Sensors</text>
+  <rect x="135" y="715" width="295" height="58" class="box3"/>
+  <text x="158" y="750" class="label">MQTT / Protocol Adapters</text>
+
+  <rect x="610" y="610" width="355" height="220" class="group"/>
+  <text x="638" y="644" class="groupLabel">REALTIME</text>
+  <rect x="660" y="685" width="250" height="65" class="box"/>
+  <text x="686" y="723" class="label">Socket.IO Gateway</text>
+
+  <rect x="1065" y="610" width="425" height="245" class="group"/>
+  <text x="1094" y="644" class="groupLabel">DEPLOYMENT FLOW</text>
+  <rect x="1110" y="680" width="145" height="58" class="box3"/>
+  <text x="1135" y="715" class="label">Git</text>
+  <rect x="1288" y="680" width="145" height="58" class="box3"/>
+  <text x="1311" y="715" class="label">CI Checks</text>
+  <rect x="1110" y="770" width="145" height="58" class="box3"/>
+  <text x="1130" y="805" class="label">Frontend</text>
+  <rect x="1288" y="770" width="145" height="58" class="box3"/>
+  <text x="1312" y="805" class="label">Backend</text>
+
+  <path d="M327 246 C375 246 405 230 485 230" class="line"/>
+  <path d="M745 329 C810 329 850 216 925 216" class="line"/>
+  <path d="M745 399 C810 399 850 716 660 716" class="line"/>
+  <path d="M1215 216 C1270 216 1318 314 1388 314" class="line2"/>
+  <path d="M1215 301 C1280 301 1320 314 1388 314" class="line2"/>
+  <path d="M1215 386 C1285 386 1322 314 1388 314" class="line2"/>
+  <path d="M430 669 C585 669 770 471 925 471" class="line3"/>
+  <path d="M430 744 C585 744 760 471 925 471" class="line3"/>
+  <path d="M910 716 C975 716 995 502 925 471" class="line"/>
+  <path d="M660 716 C585 650 550 430 615 428" class="line"/>
+  <path d="M1255 709 L1288 709" class="line3"/>
+  <path d="M1360 738 L1360 770" class="line3"/>
+  <path d="M1182 738 L1182 770" class="line3"/>
+  <path d="M1433 799 C1495 799 1498 420 1453 343" class="line3"/>
+
+  <text x="70" y="925" class="subtitle">Release v1.0.0: same-origin API proxy, backend CORS, authenticated REST, Socket.IO live updates, and MongoDB-backed operational state.</text>
+</svg>

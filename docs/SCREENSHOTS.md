@@ -1,25 +1,35 @@
-# KAVACH v1.0.0 Screenshot Checklist
+# KAVACH Documentation Screenshots
 
-Use this checklist for production release screenshots. Store captures in `docs/screenshots/` if you keep binary assets in the release package.
-
-Recommended captures:
+These documentation screenshots were captured from the deployed KAVACH frontend for README, release, and presentation assets. Files are stored in `docs/screenshots/`.
 
 | File | Screen | Acceptance Notes |
 | --- | --- | --- |
-| `01-dashboard.png` | Main dashboard | KPIs, live alerts, charts, and digital twin card visible |
-| `02-digital-twin.png` | `/plant` | 3D scene, sensor overlays, production flow, alarm markers |
-| `03-machine-detail.png` | Digital Twin drawer or `/machines/:id` | Machine telemetry, AI risk, work orders, actions |
-| `04-smart-factory.png` | `/smart-factory` | Protocol health, QR lookup, AI Vision cards |
-| `05-ai-vision.png` | Smart Factory AI Vision area | Camera dashboard and event timeline visible |
-| `06-predictive.png` | `/predictive` | RUL, failure probability, what-if simulation |
-| `07-workorders.png` | `/workorders` | Work order queue and statuses |
-| `08-reports.png` | `/reports` | Automated executive report option and export controls |
-| `09-pwa-install.png` | Browser install prompt | App manifest detected, install available |
+| `dashboard.png` | Dashboard | KPIs, live production metrics, charts, alerts, and operational summary |
+| `executive-dashboard.png` | Executive Dashboard | Executive KPIs, risk overview, war-room style operational indicators |
+| `enterprise-ops.png` | Enterprise Operations | Organization, plant, fleet, personnel, notifications, and operations views |
+| `machines.png` | Machines | Fleet health, machine cards, status indicators, and maintenance context |
+| `digital-twin-plant.png` | Digital Twin / Plant | Plant-level digital twin, production state, and realtime equipment context |
+| `iot-devices.png` | IoT Devices | Device registry, telemetry readiness, heartbeat, and protocol status |
+| `smart-factory.png` | Smart Factory | Protocol health, AI Vision, QR lookup, and factory intelligence panels |
+| `predictive-maintenance.png` | Predictive Maintenance | RUL, failure probability, recommendations, maintenance planning, and simulations |
+| `ai-copilot.png` | AI Copilot | Plant-context AI assistant and operational query interface |
+| `analytics.png` | Analytics | Trend charts, performance metrics, and operational analytics |
+| `reports.png` | Reports | Report generation, export controls, and executive reporting workflows |
+| `ai-root-cause.png` | AI Root Cause | Root cause analysis, confidence, impact, and recommended action views |
+| `audit.png` | Audit | Audit trail, administrative events, and compliance activity history |
+| `settings.png` | Settings | Application configuration and administrative settings |
+| `manifest.json` | Screenshot manifest | Capture metadata for generated documentation screenshots |
 
 Quality bar:
 
-- Capture desktop at 1440px width and mobile at 390px width.
+- Capture desktop at high resolution.
 - No overlapping text or clipped controls.
 - No browser console errors.
 - Use production or production-like seed data.
 - Do not include real customer secrets, tokens, emails, or internal URLs.
+
+Related architecture assets:
+
+- Mermaid source: `docs/architecture.mmd`
+- SVG diagram: `docs/architecture.svg`
+- PNG diagram: `docs/architecture.png`
