@@ -2,16 +2,16 @@
 
 This document summarizes the production REST and Socket.IO contract. The backend also serves Swagger UI at `/api/docs` and OpenAPI JSON at `/api/docs/openapi.json`.
 
-Production API base URL:
+Current backend API base URL:
 
 ```text
-https://your-backend-service.onrender.com
+https://kavach-spgh.onrender.com
 ```
 
 All REST paths below are relative to:
 
 ```text
-https://your-backend-service.onrender.com/api
+https://kavach-spgh.onrender.com/api
 ```
 
 ## Authentication
@@ -131,7 +131,8 @@ Example simulation payload:
 ```json
 {
   "machineId": "MACHINE-001",
-  "name": "High temperature scenario",
+  "name": "Temperature Increase",
+  "eventType": "temperature_increase",
   "overrides": {
     "temperature": 92,
     "vibration": 0.9,
@@ -139,6 +140,8 @@ Example simulation payload:
   }
 }
 ```
+
+Simulation responses include baseline prediction, simulated prediction, risk delta, RUL delta, downtime delta, affected machines, estimated downtime, financial impact, operational impact, risk level, and recommended actions. Simulations do not persist machine state.
 
 ## AI and Copilot
 
@@ -153,6 +156,8 @@ Example simulation payload:
 | GET | `/api/ai/planner/:machineId` | Maintenance planning |
 | POST | `/api/copilot/chat` | Copilot chat |
 | GET | `/api/copilot/report` | Copilot report |
+
+Copilot plant-context questions are answered from current project data. Supported examples include most-critical machine, production decrease, maintenance priority, and plant health summary.
 
 ## Work Orders
 
@@ -368,12 +373,24 @@ AI Vision event payload:
 
 AI Vision events also create compatible `safety_warning` notifications for the existing alert center and push flows.
 
+## Enterprise AI UI Surfaces
+
+The following enterprise features are implemented through existing data and APIs rather than new standalone backend route groups:
+
+| Feature | Primary UI | Backend Data Used |
+| --- | --- | --- |
+| AI Scenario Simulator | `/predictive` | `/api/predictive/simulate`, current machine telemetry |
+| Autonomous AI Control Center | dashboard | live machine feed, health, temperature, vibration, status |
+| Executive Digital War Room | `/dashboard/executive` | `/api/executive/dashboard` |
+| AI Incident Investigation | `/predictive` | predictive overview and root cause data |
+| Plant Efficiency Optimizer | `/predictive` | predictive overview, energy, efficiency, maintenance ranking |
+
 ## Socket.IO
 
-Production Socket.IO base:
+Current Socket.IO base:
 
 ```text
-wss://your-backend-service.onrender.com/socket.io
+https://kavach-spgh.onrender.com/socket.io
 ```
 
 Client configuration:
@@ -438,9 +455,9 @@ Server-to-client events:
 Use these checks after deployment:
 
 ```text
-GET https://your-backend-service.onrender.com/api/health
-GET https://your-backend-service.onrender.com/api/docs/openapi.json
-POST https://your-backend-service.onrender.com/api/auth/login
+GET https://kavach-spgh.onrender.com/api/health
+GET https://kavach-spgh.onrender.com/api/docs/openapi.json
+POST https://kavach-spgh.onrender.com/api/auth/login
 ```
 
 Then verify in the browser:

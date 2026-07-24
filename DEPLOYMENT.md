@@ -2,11 +2,11 @@
 
 This guide prepares KAVACH for a production split deployment:
 
-- Frontend: Vercel, root directory `frontend`
+- Frontend: Render or Vercel, root directory `frontend`
 - Backend: Render or Railway, root directory `backend`
 - Database: MongoDB Atlas
 - Realtime: Socket.IO over HTTPS/WSS
-- IoT: ESP32 posts to the backend `/api/iot/sensor` endpoint
+- IoT: ESP32 or edge devices post telemetry to backend IoT endpoints
 - AI Vision: camera/edge events post to `/api/smart-factory/vision/events`
 - PWA: service worker and optional browser push subscriptions
 
@@ -52,6 +52,14 @@ NEXT_PUBLIC_VAPID_PUBLIC_KEY=
 API_URL=https://your-backend-service.onrender.com
 ```
 
+For the current Render-hosted backend, use:
+
+```env
+NEXT_PUBLIC_API_URL=
+NEXT_PUBLIC_SOCKET_URL=https://kavach-spgh.onrender.com
+API_URL=https://kavach-spgh.onrender.com
+```
+
 For Railway backend, use the Railway public HTTPS backend URL instead.
 
 The frontend config:
@@ -91,6 +99,13 @@ DEVICE_SECRET=<random-device-secret>
 VAPID_PUBLIC_KEY=
 VAPID_PRIVATE_KEY=
 VAPID_SUBJECT=mailto:ops@example.com
+```
+
+For the currently healthy frontend deployment, set:
+
+```env
+CORS_ORIGIN=https://kavach-frontend-4s8e.onrender.com
+PUBLIC_API_BASE_URL=https://kavach-spgh.onrender.com
 ```
 
 Recommended production variables are listed in `.env.example` and `backend/.env.example`.
@@ -160,16 +175,16 @@ If the frontend uses a custom domain, add that domain to `CORS_ORIGIN`. Multiple
 The ESP32 should post to the deployed backend:
 
 ```text
-https://your-backend-service.onrender.com/api/iot/sensor
+https://your-backend-service.onrender.com/api/iot/telemetry
 ```
 
 For LAN development, local HTTP URLs are still supported by the frontend config and ESP32 sketch. For production, use HTTPS.
 
 Expected telemetry verification:
 
-1. ESP32 receives HTTP `200` from `/api/iot/sensor`.
+1. ESP32 receives HTTP `200` from the telemetry ingestion endpoint.
 2. MongoDB stores telemetry for `deviceId`.
-3. Backend emits `sensor-update`.
+3. Backend emits telemetry and sensor events over Socket.IO.
 4. Dashboard Live Sensor Data updates temperature, humidity, status, and timestamp.
 
 ## AI Vision Production Events
@@ -244,6 +259,15 @@ After deployment:
 10. Export an automated executive report and verify audit entries.
 11. Check browser console for mixed-content, CORS, and hydration errors.
 12. Check backend logs for MongoDB, unhandled errors, and rate-limit noise.
+
+## Current QA Notes
+
+The latest QA pass verified:
+
+- Backend health, auth invalid inputs, protected routes, authenticated API modules, exports, reports, Copilot, CORS preflight, and Socket.IO polling.
+- Healthy frontend route smoke on `https://kavach-frontend-4s8e.onrender.com`.
+- Primary frontend alias `https://kavach-frontend.onrender.com` returned `503`; review that Render service before using it as the production URL.
+- Local backend startup requires MongoDB Atlas network access. If the current workstation IP is not allowlisted, the backend refuses to bind HTTP.
 
 ## Rollback
 
