@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Cpu, RadioTower, ShieldCheck, Sparkles } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 
+import AIDecisionCenterCard from "@/components/dashboard/AIDecisionCenterCard";
 import OverviewCards from "@/components/dashboard/OverviewCards";
 import LiveSensors from "@/components/sensors/LiveSensors";
 
@@ -116,25 +117,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="hero-visual premium-tile rounded-2xl p-5">
-              <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-cyan-300/15 bg-slate-950/70">
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.12)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.08)_1px,transparent_1px)] bg-[length:28px_28px]" />
-                <div className="absolute left-1/2 top-1/2 h-36 w-36 -translate-x-1/2 -translate-y-1/2 rotate-45 border border-cyan-300/30 shadow-[0_0_60px_rgba(34,211,238,0.18)]" />
-                <div className="absolute left-[18%] top-[18%] h-3 w-3 border border-emerald-100 bg-emerald-300 shadow-[0_0_28px_rgba(16,185,129,0.8)]" />
-                <div className="absolute right-[18%] top-[30%] h-3 w-3 border border-cyan-100 bg-cyan-300 shadow-[0_0_28px_rgba(34,211,238,0.8)]" />
-                <div className="absolute bottom-[20%] left-[36%] h-3 w-3 border border-violet-100 bg-violet-300 shadow-[0_0_28px_rgba(167,139,250,0.75)]" />
-                <div className="absolute inset-x-8 top-1/2 h-px bg-gradient-to-r from-transparent via-cyan-200/70 to-transparent" />
-                <div className="absolute inset-y-8 left-1/2 w-px bg-gradient-to-b from-transparent via-emerald-200/60 to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4 rounded-lg border border-slate-700/70 bg-slate-950/75 px-4 py-3 backdrop-blur-xl">
-                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-200">
-                    Digital twin uplink
-                  </p>
-                  <p className="mt-1 text-sm text-slate-300">
-                    Autonomous monitoring matrix online
-                  </p>
-                </div>
-              </div>
-            </div>
+            <AIDecisionCenterCard />
           </div>
         </motion.section>
 
