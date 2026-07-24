@@ -60,8 +60,21 @@ export interface PredictiveMachine {
   riskTrend: string;
   probableCause: string;
   rootCause: string;
+  businessImpact?: string;
   recommendation: string;
   recommendedAction: string;
+  rootCauseAnalysis?: {
+    probableRootCause: string;
+    probableCause: string;
+    confidencePercent: number;
+    confidence: number;
+    businessImpact: string;
+    recommendedAction: string;
+    maintenancePriority: string;
+    riskLevel: PredictiveRiskLevel;
+    failureProbability: number;
+    generatedAt: string;
+  };
   recommendationEngine: {
     recommendedAction: string;
     probableCause: string;
@@ -126,6 +139,9 @@ export interface PredictiveRecommendation {
   riskLevel: PredictiveRiskLevel;
   priority: string;
   probableCause: string;
+  businessImpact?: string;
+  recommendedAction?: string;
+  maintenancePriority?: string;
   recommendation: string;
   confidence: number;
 }

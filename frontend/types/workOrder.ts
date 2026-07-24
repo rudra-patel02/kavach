@@ -90,6 +90,7 @@ export interface WorkOrder {
     completedBy?: string;
     completedAt?: string;
   }[];
+  completionNotes?: string;
   dueDate: string | null;
   scheduledDate: string | null;
   completedAt: string | null;

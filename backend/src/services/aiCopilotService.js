@@ -51,7 +51,7 @@ const buildFailureLeaderResponse = (message, machines) => {
   const leader = overview.predictions[0];
 
   if (!leader) {
-    return null;
+    return buildCopilotResponse("summarize plant status", machines);
   }
 
   return {
@@ -316,10 +316,198 @@ const buildMaintenanceReportResponse = (message, machines) => {
   };
 };
 
+const buildMostCriticalMachineResponse = (machines, context = {}) => {
+  const overview = context.predictiveOverview || buildPredictiveOverview(machines);
+  const leader = overview.predictions[0];
+
+  if (!leader) {
+    return null;
+  }
+
+  return {
+    intent: "most_critical_machine",
+    answer: [
+      `Most critical machine: ${leader.name} (${leader.machineId})`,
+      "",
+      `Risk Level: ${leader.riskLevel}`,
+      `Failure Probability: ${leader.failureProbability}%`,
+      `Confidence: ${leader.aiConfidence}%`,
+      `Maintenance Priority: ${leader.maintenancePriority}`,
+      `Remaining Useful Life: ${leader.remainingUsefulLifeHours} hours`,
+      "",
+      `Probable Root Cause: ${leader.probableCause}`,
+      `Business Impact: ${leader.businessImpact}`,
+      `Recommended Action: ${leader.recommendation}`,
+      "",
+      "This answer uses only live machine telemetry, current health/status, alerts, work orders, and predictive calculations from the KAVACH database.",
+    ].join("\n"),
+    recommendation: formatRecommendation(leader),
+    summary: buildPlantSummary(machines),
+    affectedMachines: [
+      createMachineInsight(
+        machines.find((machine) => machine.machineId === leader.machineId) ||
+          leader
+      ),
+    ],
+    predictiveOverview: overview,
+    suggestedQuestions: [
+      `Why is ${leader.machineId} critical?`,
+      "Which machine needs maintenance first?",
+      "Summarize current plant health",
+      "Show critical alerts",
+    ],
+    generatedAt: new Date().toISOString(),
+  };
+};
+
+const buildMaintenanceFirstResponse = (machines, context = {}) => {
+  const overview = context.predictiveOverview || buildPredictiveOverview(machines);
+  const candidates = overview.predictions
+    .filter((machine) => machine.maintenancePriority !== "Monitor")
+    .slice(0, 5);
+  const queue = candidates.length ? candidates : overview.predictions.slice(0, 3);
+  const leader = queue[0];
+
+  return {
+    intent: "maintenance_first",
+    answer: [
+      leader
+        ? `${leader.name} (${leader.machineId}) should receive maintenance first.`
+        : "No machine currently requires priority maintenance.",
+      "",
+      ...queue.map(
+        (machine, index) =>
+          `${index + 1}. ${machine.name} (${machine.machineId}) - ${machine.maintenancePriority} priority, ${machine.failureProbability}% failure probability, RUL ${machine.remainingUsefulLifeHours}h.`
+      ),
+      "",
+      leader
+        ? `Reason: ${leader.probableCause}`
+        : "Reason: current telemetry does not show an active high-risk machine.",
+      leader
+        ? `Recommended Action: ${leader.recommendation}`
+        : "Recommended Action: continue planned preventive monitoring.",
+    ].join("\n"),
+    recommendation: formatRecommendation(leader),
+    summary: buildPlantSummary(machines),
+    affectedMachines: queue.map((candidate) =>
+      createMachineInsight(
+        machines.find((machine) => machine.machineId === candidate.machineId) ||
+          candidate
+      )
+    ),
+    predictiveOverview: overview,
+    suggestedQuestions: [
+      "Why is this machine first?",
+      "Show maintenance schedule",
+      "Which machine is most critical?",
+      "Summarize current plant health",
+    ],
+    generatedAt: new Date().toISOString(),
+  };
+};
+
+const buildProductionDecreaseResponse = (machines, context = {}) => {
+  const overview = context.predictiveOverview || buildPredictiveOverview(machines);
+  const executiveKpis = context.executiveDashboard?.kpis || {};
+  const riskDrivers = overview.predictions
+    .filter((machine) => ["Critical", "High", "Medium"].includes(machine.riskLevel))
+    .slice(0, 5);
+  const energyDriver = [...machines].sort((a, b) => getEnergy(b) - getEnergy(a))[0];
+  const healthDriver = overview.predictions
+    .slice()
+    .sort((a, b) => a.machineHealth - b.machineHealth)[0];
+
+  return {
+    intent: "production_decrease",
+    answer: [
+      "Production decrease analysis from live plant context:",
+      "",
+      `OEE: ${executiveKpis.oee ?? "not available"}%`,
+      `Availability: ${executiveKpis.availability ?? "not available"}%`,
+      `Performance: ${executiveKpis.performance ?? executiveKpis.productionEfficiency ?? "not available"}%`,
+      `Average Machine Health: ${overview.summary.machineHealth}%`,
+      `High Risk Machines: ${overview.summary.highRiskMachines}`,
+      "",
+      riskDrivers.length
+        ? `Primary operational driver: ${riskDrivers[0].name} (${riskDrivers[0].machineId}) is ${riskDrivers[0].riskLevel} risk with ${riskDrivers[0].failureProbability}% failure probability.`
+        : "Primary operational driver: no high-risk machine is active.",
+      energyDriver
+        ? `Energy/load driver: ${energyDriver.name} (${energyDriver.machineId}) has the highest energy signature at ${round(getEnergy(energyDriver), 1)} kWh.`
+        : "Energy/load driver: no energy telemetry available.",
+      healthDriver
+        ? `Health driver: ${healthDriver.name} (${healthDriver.machineId}) has the lowest health at ${healthDriver.machineHealth}%.`
+        : "Health driver: no machine health data available.",
+      "",
+      "Recommended Action: inspect high-risk and low-health machines first, compare energy/load against normal production recipe, and review active work orders before adjusting the schedule.",
+    ].join("\n"),
+    recommendation: formatRecommendation(riskDrivers[0] || healthDriver),
+    summary: buildPlantSummary(machines),
+    affectedMachines: riskDrivers.map((candidate) =>
+      createMachineInsight(
+        machines.find((machine) => machine.machineId === candidate.machineId) ||
+          candidate
+      )
+    ),
+    predictiveOverview: overview,
+    suggestedQuestions: [
+      "Which machine needs maintenance first?",
+      "Show most critical machine",
+      "Show energy analysis",
+      "Generate maintenance report",
+    ],
+    generatedAt: new Date().toISOString(),
+  };
+};
+
 const getLocalCopilotResponse = (message, contextOrMachines) => {
   const machines = getContextMachines(contextOrMachines);
   const context = Array.isArray(contextOrMachines) ? { machines } : contextOrMachines;
   const normalized = String(message || "").trim().toLowerCase();
+
+  if (
+    includesAny(normalized, [
+      "which machine is most critical",
+      "most critical machine",
+      "highest risk machine",
+      "top critical machine",
+    ])
+  ) {
+    return buildMostCriticalMachineResponse(machines, context);
+  }
+
+  if (
+    includesAny(normalized, [
+      "which machine needs maintenance first",
+      "needs maintenance first",
+      "maintenance first",
+      "service first",
+    ])
+  ) {
+    return buildMaintenanceFirstResponse(machines, context);
+  }
+
+  if (
+    includesAny(normalized, [
+      "why did production decrease",
+      "production decrease",
+      "production dropped",
+      "production down",
+      "output decreased",
+    ])
+  ) {
+    return buildProductionDecreaseResponse(machines, context);
+  }
+
+  if (
+    includesAny(normalized, [
+      "summarize current plant health",
+      "current plant health",
+      "plant health summary",
+      "summarize plant health",
+    ])
+  ) {
+    return buildCopilotResponse("summarize plant status", machines);
+  }
 
   if (
     includesAny(normalized, [

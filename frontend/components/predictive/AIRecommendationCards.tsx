@@ -1,6 +1,6 @@
 "use client";
 
-import { BrainCircuit, ShieldCheck, Wrench } from "lucide-react";
+import { BriefcaseBusiness, BrainCircuit, Gauge, ShieldCheck, Wrench } from "lucide-react";
 import type { PredictiveRecommendation } from "@/types/predictive";
 import { riskBadgeClass, riskBorderClass } from "./predictiveStyles";
 
@@ -50,15 +50,49 @@ export default function AIRecommendationCards({
             </div>
 
             <div className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-lg border border-slate-800 bg-slate-900/80 p-3">
+                  <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-300">
+                    <Gauge size={16} className="text-cyan-300" />
+                    Confidence
+                  </div>
+                  <p className="text-2xl font-black text-white">
+                    {item.confidence}%
+                  </p>
+                </div>
+
+                <div className="rounded-lg border border-slate-800 bg-slate-900/80 p-3">
+                  <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-300">
+                    <Wrench size={16} className="text-cyan-300" />
+                    Priority
+                  </div>
+                  <p className="text-2xl font-black text-white">
+                    {item.maintenancePriority || item.priority}
+                  </p>
+                </div>
+              </div>
+
               <div className="rounded-lg border border-slate-800 bg-slate-900/80 p-3">
                 <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-300">
                   <ShieldCheck size={16} className="text-cyan-300" />
-                  Probable cause
+                  Probable root cause
                 </div>
                 <p className="text-sm leading-6 text-slate-300">
                   {item.probableCause}
                 </p>
               </div>
+
+              {item.businessImpact ? (
+                <div className="rounded-lg border border-slate-800 bg-slate-900/80 p-3">
+                  <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-300">
+                    <BriefcaseBusiness size={16} className="text-cyan-300" />
+                    Business impact
+                  </div>
+                  <p className="text-sm leading-6 text-slate-300">
+                    {item.businessImpact}
+                  </p>
+                </div>
+              ) : null}
 
               <div className="rounded-lg border border-slate-800 bg-slate-900/80 p-3">
                 <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-300">

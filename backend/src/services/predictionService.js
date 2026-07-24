@@ -218,6 +218,44 @@ const getRecommendation = (machine, riskLevel) => {
   return "Continue normal operation with routine monitoring.";
 };
 
+const getBusinessImpact = (machine, riskLevel, failureProbability) => {
+  const energy = round(getEnergy(machine), 1);
+  const downtimeHours = getEstimatedDowntimeHours(riskLevel);
+  const downtimeCostPerHour = Number(process.env.DOWNTIME_COST_PER_HOUR || 5000);
+  const estimatedDowntimeCost = Math.round(downtimeHours * downtimeCostPerHour);
+
+  if (riskLevel === "Critical") {
+    return `Critical production exposure: ${failureProbability}% failure probability could cause about ${downtimeHours}h downtime, estimated $${estimatedDowntimeCost.toLocaleString()} loss, safety escalation, and unplanned line stoppage.`;
+  }
+
+  if (riskLevel === "High") {
+    return `High operational exposure: likely output loss within the next service window, about ${downtimeHours}h planned downtime, and elevated energy draw near ${energy} kWh.`;
+  }
+
+  if (riskLevel === "Medium") {
+    return `Moderate business impact: maintenance deferral may increase downtime risk and quality variance; current energy/load signature is ${energy} kWh.`;
+  }
+
+  return "Low business impact: no immediate production constraint detected; continue preventive monitoring.";
+};
+
+const buildRootCauseAnalysis = (machine, prediction) => ({
+  probableRootCause: prediction.probableCause,
+  probableCause: prediction.probableCause,
+  confidencePercent: prediction.aiConfidence,
+  confidence: prediction.aiConfidence,
+  businessImpact: getBusinessImpact(
+    machine,
+    prediction.riskLevel,
+    prediction.failureProbability
+  ),
+  recommendedAction: prediction.recommendation,
+  maintenancePriority: prediction.maintenancePriority,
+  riskLevel: prediction.riskLevel,
+  failureProbability: prediction.failureProbability,
+  generatedAt: new Date().toISOString(),
+});
+
 const getCalendarOffsetDays = (riskLevel) => {
   if (riskLevel === "Critical") return 0;
   if (riskLevel === "High") return 2;
@@ -341,6 +379,7 @@ export const createMachinePrediction = (machine) => {
     probableCause: getProbableCause(machine),
     recommendation: getRecommendation(machine, riskLevel),
     recommendedAction: getRecommendation(machine, riskLevel),
+    businessImpact: getBusinessImpact(machine, riskLevel, failureProbability),
     estimatedDowntimeHours: getEstimatedDowntimeHours(riskLevel),
     inspectionDate: createCalendarDate(riskLevel),
     telemetry: {
@@ -376,6 +415,7 @@ export const createMachinePrediction = (machine) => {
 
   return {
     ...prediction,
+    rootCauseAnalysis: buildRootCauseAnalysis(machine, prediction),
     riskScore: prediction.failureProbability,
     rootCause: prediction.probableCause,
     confidenceScore: prediction.aiConfidence,
@@ -571,7 +611,10 @@ export const buildPredictiveOverview = (machines) => {
       riskLevel: prediction.riskLevel,
       priority: prediction.maintenancePriority,
       probableCause: prediction.probableCause,
+      businessImpact: prediction.businessImpact,
       recommendation: prediction.recommendation,
+      recommendedAction: prediction.recommendedAction,
+      maintenancePriority: prediction.maintenancePriority,
       confidence: prediction.aiConfidence,
     })),
   };
